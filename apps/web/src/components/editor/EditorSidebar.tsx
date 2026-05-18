@@ -19,7 +19,7 @@ const BLOCK_PALETTE: SidebarBlock[] = [
   { type: "divider",   label: "Divider",   icon: "—",  description: "Horizontal rule" },
 ];
 
-export function EditorSidebar() {
+export function EditorSidebar({ width = 220 }: { width?: number }) {
   const addBlock = useEditorStore((s) => s.addBlock);
 
   const handleAdd = (type: string) => {
@@ -33,7 +33,7 @@ export function EditorSidebar() {
 
   return (
     <aside style={{
-      width: 220,
+      width,
       background: "var(--bg-surface)",
       borderRight: "1px solid var(--border-subtle)",
       display: "flex",

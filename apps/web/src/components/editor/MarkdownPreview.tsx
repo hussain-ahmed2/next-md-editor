@@ -4,14 +4,14 @@ import { useEditorStore } from "@next-md-editor/editor-core";
 import { serializeToMarkdown } from "@/features/markdown/serializer";
 import { useState } from "react";
 
-export function MarkdownPreview() {
+export function MarkdownPreview({ width = 360 }: { width?: number }) {
   const blocks = useEditorStore((s) => s.blocks);
   const markdown = serializeToMarkdown(blocks);
   const [activeTab, setActiveTab] = useState<"preview" | "raw">("preview");
 
   return (
     <aside style={{
-      width: 360,
+      width,
       background: "var(--bg-surface)",
       borderLeft: "1px solid var(--border-subtle)",
       display: "flex",
