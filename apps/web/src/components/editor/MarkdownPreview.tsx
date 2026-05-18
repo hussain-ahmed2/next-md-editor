@@ -3,6 +3,7 @@
 import { useEditorStore } from "@next-md-editor/editor-core";
 import { serializeToMarkdown } from "@/features/markdown/serializer";
 import { useState } from "react";
+import { highlightCodeHtml } from "@/features/markdown/highlighter";
 
 export function MarkdownPreview({ width = 360 }: { width?: number }) {
   const blocks = useEditorStore((s) => s.blocks);
@@ -18,239 +19,287 @@ export function MarkdownPreview({ width = 360 }: { width?: number }) {
       flexDirection: "column",
       flexShrink: 0,
       overflow: "hidden",
+      padding: "16px",
+      gap: 12,
     }}>
-      {/* Header and Tab Switcher */}
+      {/* File badge/status explorer */}
       <div style={{
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        padding: "0 16px",
-        height: 48,
-        borderBottom: "1px solid var(--border-subtle)",
-        flexShrink: 0,
+        fontSize: 12,
+        color: "var(--text-secondary)",
       }}>
-        <div style={{
-          fontSize: 11,
+        <div style={{ display: "flex", alignItems: "center", gap: 6, fontWeight: 500 }}>
+          <span style={{ color: "var(--text-muted)" }}>next-md-editor</span>
+          <span style={{ color: "var(--text-muted)" }}>/</span>
+          <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>document.md</span>
+        </div>
+        <span style={{
+          padding: "2px 6px",
+          borderRadius: 4,
+          background: "var(--accent-muted)",
+          color: "var(--accent)",
+          fontSize: 10,
           fontWeight: 600,
-          letterSpacing: "0.08em",
+          letterSpacing: "0.02em",
           textTransform: "uppercase",
-          color: "var(--text-muted)",
-          display: "flex",
-          alignItems: "center",
-          gap: 6,
         }}>
-          <span style={{
-            width: 6,
-            height: 6,
-            borderRadius: "50%",
-            background: "var(--accent)",
-            display: "inline-block",
-          }} />
-          Preview
-        </div>
-        <div style={{
-          display: "flex",
-          gap: 4,
-          background: "var(--bg-base)",
-          padding: 3,
-          borderRadius: 6,
-          border: "1px solid var(--border)",
-        }}>
-          <button
-            onClick={() => setActiveTab("preview")}
-            style={{
-              padding: "4px 10px",
-              fontSize: 11,
-              fontWeight: 600,
-              borderRadius: 4,
-              border: "none",
-              background: activeTab === "preview" ? "var(--bg-elevated)" : "transparent",
-              color: activeTab === "preview" ? "var(--text-primary)" : "var(--text-secondary)",
-              cursor: "pointer",
-              transition: "all 0.15s ease",
-            }}
-          >
-            Rendered
-          </button>
-          <button
-            onClick={() => setActiveTab("raw")}
-            style={{
-              padding: "4px 10px",
-              fontSize: 11,
-              fontWeight: 600,
-              borderRadius: 4,
-              border: "none",
-              background: activeTab === "raw" ? "var(--bg-elevated)" : "transparent",
-              color: activeTab === "raw" ? "var(--text-primary)" : "var(--text-secondary)",
-              cursor: "pointer",
-              transition: "all 0.15s ease",
-            }}
-          >
-            Raw MD
-          </button>
-        </div>
+          GitHub GFM View
+        </span>
       </div>
 
-      {/* Preview Content Container */}
+      {/* GitHub Repository File Container Box */}
       <div style={{
         flex: 1,
-        overflow: "auto",
-        padding: "24px 20px",
+        display: "flex",
+        flexDirection: "column",
+        background: "#0d1117", // Exact GitHub Dark Theme background
+        border: "1px solid #30363d", // Exact GitHub Dark border
+        borderRadius: 6,
+        overflow: "hidden",
       }}>
-        {blocks.length === 0 ? (
+        {/* GitHub File Box Header */}
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "8px 14px",
+          background: "#161b22", // Exact GitHub Dark header background
+          borderBottom: "1px solid #30363d",
+          height: 44,
+          flexShrink: 0,
+        }}>
+          {/* File information */}
           <div style={{
             display: "flex",
             alignItems: "center",
-            justifyContent: "center",
-            height: "100%",
-            color: "var(--text-muted)",
-            fontSize: 13,
-            fontStyle: "italic",
-            textAlign: "center",
-          }}>
-            Add blocks to see active preview…
-          </div>
-        ) : activeTab === "raw" ? (
-          <pre style={{
-            margin: 0,
+            gap: 8,
             fontSize: 12.5,
-            lineHeight: 1.7,
-            fontFamily: "var(--font-mono)",
-            color: "var(--text-secondary)",
-            whiteSpace: "pre-wrap",
-            wordBreak: "break-word",
+            color: "#c9d1d9",
+            fontWeight: 500,
           }}>
-            {markdown}
-          </pre>
-        ) : (
-          <div className="github-gfm-preview" style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 16,
-            color: "#e6edf3",
-          }}>
-            {blocks.map((block) => {
-              switch (block.type) {
-                case "heading": {
-                  const level = (block.props.level as number) ?? 1;
-                  const text = (block.props.text as string) ?? "";
-                  const fontSize = level === 1 ? "2em" : level === 2 ? "1.5em" : "1.25em";
-                  const borderBottom = level <= 2 ? "1px solid #30363d" : "none";
-                  const paddingBottom = level <= 2 ? "0.3em" : "0";
-
-                  return (
-                    <div
-                      key={block.id}
-                      style={{
-                        fontSize,
-                        fontWeight: 600,
-                        lineHeight: 1.25,
-                        color: "#f0f6fc",
-                        borderBottom,
-                        paddingBottom,
-                        marginTop: 12,
-                        wordBreak: "break-word",
-                      }}
-                    >
-                      {text || <span style={{ color: "rgba(255,255,255,0.15)", fontStyle: "italic" }}>Heading {level}</span>}
-                    </div>
-                  );
-                }
-                case "paragraph": {
-                  const text = (block.props.text as string) ?? "";
-                  return (
-                    <p
-                      key={block.id}
-                      style={{
-                        margin: 0,
-                        fontSize: 15,
-                        lineHeight: 1.6,
-                        color: "#e6edf3",
-                        wordBreak: "break-word",
-                      }}
-                    >
-                      {text || <span style={{ color: "rgba(255,255,255,0.15)", fontStyle: "italic" }}>Empty paragraph</span>}
-                    </p>
-                  );
-                }
-                case "quote": {
-                  const text = (block.props.text as string) ?? "";
-                  return (
-                    <blockquote
-                      key={block.id}
-                      style={{
-                        margin: 0,
-                        padding: "0 1em",
-                        color: "#8b949e",
-                        borderLeft: "4px solid #30363d",
-                      }}
-                    >
-                      {text.split("\n").map((line, idx) => (
-                        <p key={idx} style={{ margin: 0, lineHeight: 1.6, fontSize: 15 }}>
-                          {line || <span style={{ color: "rgba(255,255,255,0.1)", fontStyle: "italic" }}>Empty quote line</span>}
-                        </p>
-                      ))}
-                    </blockquote>
-                  );
-                }
-                case "code": {
-                  const code = (block.props.code as string) ?? "";
-                  const lang = (block.props.language as string) ?? "";
-                  return (
-                    <div
-                      key={block.id}
-                      style={{
-                        position: "relative",
-                        borderRadius: 6,
-                        background: "#161b22",
-                        border: "1px solid #30363d",
-                        padding: 16,
-                        overflow: "auto",
-                      }}
-                    >
-                      {lang && (
-                        <span style={{
-                          position: "absolute",
-                          top: 6,
-                          right: 12,
-                          fontSize: 10,
-                          fontWeight: 600,
-                          textTransform: "uppercase",
-                          color: "#8b949e",
-                          userSelect: "none",
-                        }}>{lang}</span>
-                      )}
-                      <pre style={{
-                        margin: 0,
-                        fontFamily: "var(--font-mono)",
-                        fontSize: 13,
-                        lineHeight: 1.6,
-                        color: "#e6edf3",
-                        whiteSpace: "pre",
-                      }}>{code || "// Empty code block"}</pre>
-                    </div>
-                  );
-                }
-                case "divider": {
-                  return (
-                    <hr
-                      key={block.id}
-                      style={{
-                        height: "0.25em",
-                        padding: 0,
-                        margin: "12px 0",
-                        backgroundColor: "#30363d",
-                        border: 0,
-                      }}
-                    />
-                  );
-                }
-                default:
-                  return null;
-              }
-            })}
+            {/* File Icon */}
+            <svg aria-hidden="true" focusable="false" role="img" viewBox="0 0 16 16" width="14" height="14" fill="currentColor" style={{ color: "#7d8590" }}>
+              <path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l3.243 3.243c.33.33.513.774.513 1.237v9.27c0 .966-.784 1.75-1.75 1.75H3.75A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25a.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h10.5a.25a.25 0 0 0 .25-.25V5.5h-2.75A1.75 1.75 0 0 1 10 3.75V1.5Zm9 3.5H10a.25a.25 0 0 0-.25.25v2.75Z"></path>
+            </svg>
+            <span>document.md</span>
+            <span style={{ color: "#484f58", userSelect: "none" }}>|</span>
+            <span style={{ fontSize: 11.5, color: "#8b949e" }}>{blocks.length} blocks</span>
           </div>
-        )}
+
+          {/* GitHub Tab Selectors */}
+          <div style={{
+            display: "flex",
+            border: "1px solid #30363d",
+            borderRadius: 6,
+            overflow: "hidden",
+            background: "#0d1117",
+            padding: 2,
+          }}>
+            <button
+              onClick={() => setActiveTab("preview")}
+              style={{
+                padding: "3px 12px",
+                fontSize: 12,
+                fontWeight: 600,
+                borderRadius: 4,
+                border: "none",
+                background: activeTab === "preview" ? "#21262d" : "transparent",
+                color: activeTab === "preview" ? "#c9d1d9" : "#8b949e",
+                cursor: "pointer",
+                transition: "all 0.1s ease",
+              }}
+            >
+              Preview
+            </button>
+            <button
+              onClick={() => setActiveTab("raw")}
+              style={{
+                padding: "3px 12px",
+                fontSize: 12,
+                fontWeight: 600,
+                borderRadius: 4,
+                border: "none",
+                background: activeTab === "raw" ? "#21262d" : "transparent",
+                color: activeTab === "raw" ? "#c9d1d9" : "#8b949e",
+                cursor: "pointer",
+                transition: "all 0.1s ease",
+              }}
+            >
+              Code
+            </button>
+          </div>
+        </div>
+
+        {/* GitHub File Box Body */}
+        <div style={{
+          flex: 1,
+          overflow: "auto",
+          padding: "32px",
+          background: "#0d1117",
+        }}>
+          {blocks.length === 0 ? (
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              height: "100%",
+              color: "#8b949e",
+              fontSize: 13,
+              fontStyle: "italic",
+              textAlign: "center",
+            }}>
+              Add blocks to see active GitHub preview…
+            </div>
+          ) : activeTab === "raw" ? (
+            <pre style={{
+              margin: 0,
+              fontSize: 13,
+              lineHeight: 1.6,
+              fontFamily: "ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace",
+              color: "#c9d1d9",
+              whiteSpace: "pre-wrap",
+              wordBreak: "break-word",
+            }}>
+              {markdown}
+            </pre>
+          ) : (
+            <div className="markdown-body" style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 16,
+              fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji"',
+              fontSize: "15px",
+              lineHeight: 1.6,
+              color: "#e6edf3",
+              wordWrap: "break-word",
+            }}>
+              {blocks.map((block) => {
+                switch (block.type) {
+                  case "heading": {
+                    const level = (block.props.level as number) ?? 1;
+                    const text = (block.props.text as string) ?? "";
+                    const fontSize = level === 1 ? "2em" : level === 2 ? "1.5em" : "1.25em";
+                    const borderBottom = level <= 2 ? "1px solid #30363d" : "none";
+                    const paddingBottom = level <= 2 ? "0.3em" : "0";
+
+                    return (
+                      <div
+                        key={block.id}
+                        style={{
+                          fontSize,
+                          fontWeight: 600,
+                          lineHeight: 1.25,
+                          color: "#f0f6fc",
+                          borderBottom,
+                          paddingBottom,
+                          marginTop: 12,
+                          wordBreak: "break-word",
+                        }}
+                      >
+                        {text || <span style={{ color: "rgba(255,255,255,0.1)", fontStyle: "italic" }}>Heading {level}</span>}
+                      </div>
+                    );
+                  }
+                  case "paragraph": {
+                    const text = (block.props.text as string) ?? "";
+                    return (
+                      <p
+                        key={block.id}
+                        style={{
+                          margin: 0,
+                          fontSize: 15,
+                          lineHeight: 1.6,
+                          color: "#e6edf3",
+                          wordBreak: "break-word",
+                        }}
+                      >
+                        {text || <span style={{ color: "rgba(255,255,255,0.1)", fontStyle: "italic" }}>Empty paragraph</span>}
+                      </p>
+                    );
+                  }
+                  case "quote": {
+                    const text = (block.props.text as string) ?? "";
+                    return (
+                      <blockquote
+                        key={block.id}
+                        style={{
+                          margin: 0,
+                          padding: "0 1em",
+                          color: "#8b949e",
+                          borderLeft: "4px solid #30363d",
+                        }}
+                      >
+                        {text.split("\n").map((line, idx) => (
+                          <p key={idx} style={{ margin: 0, lineHeight: 1.6, fontSize: 15 }}>
+                            {line || <span style={{ color: "rgba(255,255,255,0.06)", fontStyle: "italic" }}>Empty quote line</span>}
+                          </p>
+                        ))}
+                      </blockquote>
+                    );
+                  }
+                  case "code": {
+                    const code = (block.props.code as string) ?? "";
+                    const lang = (block.props.language as string) ?? "";
+                    return (
+                      <div
+                        key={block.id}
+                        style={{
+                          position: "relative",
+                          borderRadius: 6,
+                          background: "#161b22",
+                          border: "1px solid #30363d",
+                          padding: 16,
+                          overflow: "auto",
+                        }}
+                      >
+                        {lang && (
+                          <span style={{
+                            position: "absolute",
+                            top: 6,
+                            right: 12,
+                            fontSize: 10,
+                            fontWeight: 600,
+                            textTransform: "uppercase",
+                            color: "#8b949e",
+                            userSelect: "none",
+                          }}>{lang}</span>
+                        )}
+                        <pre style={{
+                          margin: 0,
+                          fontFamily: "ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace",
+                          fontSize: 13,
+                          lineHeight: 1.6,
+                          color: "#e6edf3",
+                          whiteSpace: "pre",
+                        }}>
+                          <code dangerouslySetInnerHTML={{ __html: highlightCodeHtml(code || "// Empty code block", lang) }} />
+                        </pre>
+                      </div>
+                    );
+                  }
+                  case "divider": {
+                    return (
+                      <hr
+                        key={block.id}
+                        style={{
+                          height: "0.25em",
+                          padding: 0,
+                          margin: "12px 0",
+                          backgroundColor: "#30363d",
+                          border: 0,
+                        }}
+                      />
+                    );
+                  }
+                  default:
+                    return null;
+                }
+              })}
+            </div>
+          )}
+        </div>
       </div>
     </aside>
   );

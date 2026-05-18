@@ -2,6 +2,8 @@
 
 import { useEditorStore } from "@next-md-editor/editor-core";
 import type { Block } from "@next-md-editor/types";
+import { useState } from "react";
+import { highlightCodeHtml } from "@/features/markdown/highlighter";
 
 const LANGUAGES = ["ts", "tsx", "js", "jsx", "bash", "json", "css", "html", "python", "rust"];
 
@@ -9,6 +11,7 @@ export function CodeBlock({ block }: { block: Block }) {
   const updateBlock = useEditorStore((s) => s.updateBlock);
   const code = (block.props.code as string) ?? "";
   const lang = (block.props.language as string) ?? "ts";
+  const [isEditing, setIsEditing] = useState(false);
 
   return (
     <div style={{
@@ -47,28 +50,52 @@ export function CodeBlock({ block }: { block: Block }) {
           {LANGUAGES.map((l) => <option key={l} value={l}>{l}</option>)}
         </select>
       </div>
-      {/* Editable code */}
-      <textarea
-        value={code}
-        onChange={(e) => updateBlock(block.id, { code: e.target.value })}
-        placeholder="// Write your code here…"
-        spellCheck={false}
-        style={{
-          display: "block",
-          width: "100%",
-          minHeight: 120,
-          padding: "14px 16px",
-          background: "transparent",
-          border: "none",
-          outline: "none",
-          color: "var(--text-primary)",
-          fontFamily: "var(--font-mono)",
-          fontSize: 13,
-          lineHeight: 1.7,
-          resize: "vertical",
-          boxSizing: "border-box",
-        }}
-      />
+      
+      {/* Code area - Conditionally swap between editing and highlighted preview */}
+      {isEditing ? (
+        <textarea
+          value={code}
+          onChange={(e) => updateBlock(block.id, { code: e.target.value })}
+          onBlur={() => setIsEditing(false)}
+          placeholder="// Write your code here…"
+          spellCheck={false}
+          autoFocus
+          style={{
+            display: "block",
+            width: "100%",
+            minHeight: 120,
+            padding: "14px 16px",
+            background: "transparent",
+            border: "none",
+            outline: "none",
+            color: "var(--text-primary)",
+            fontFamily: "var(--font-mono)",
+            fontSize: 13,
+            lineHeight: 1.7,
+            resize: "vertical",
+            boxSizing: "border-box",
+          }}
+        />
+      ) : (
+        <div
+          onClick={() => setIsEditing(true)}
+          title="Click to edit code"
+          style={{
+            padding: "14px 16px",
+            minHeight: 120,
+            cursor: "text",
+            background: "transparent",
+            fontFamily: "var(--font-mono)",
+            fontSize: 13,
+            lineHeight: 1.7,
+            color: "#e6edf3",
+            whiteSpace: "pre-wrap",
+            wordBreak: "break-word",
+          }}
+        >
+          <code dangerouslySetInnerHTML={{ __html: highlightCodeHtml(code || "// Click to add code…", lang) }} />
+        </div>
+      )}
     </div>
   );
 }
