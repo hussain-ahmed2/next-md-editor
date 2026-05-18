@@ -113,7 +113,22 @@ export default function EditorPage() {
       console.log("[DragOver] overId:", overId);
 
       if (overId === CANVAS_ROOT_ID) {
-        setInsertIndex(blocks.length);
+        if (blocks.length === 0) {
+          setInsertIndex(0);
+        } else {
+          let isTop = false;
+          const firstBlockEl = document.getElementById(blocks[0].id);
+          if (firstBlockEl) {
+            const rect = firstBlockEl.getBoundingClientRect();
+            if (mouseClientY.current < rect.top + rect.height / 2) {
+              isTop = true;
+            }
+          } else if (over.rect) {
+            const canvasCenterY = over.rect.top + over.rect.height / 2;
+            isTop = mouseClientY.current < canvasCenterY;
+          }
+          setInsertIndex(isTop ? 0 : blocks.length);
+        }
         lastDeltaY.current = delta.y;
       } else if (overId === active.id || overId.startsWith("placeholder-")) {
         // Keep current insertIndex to prevent flickering / infinite loops
@@ -200,13 +215,37 @@ export default function EditorPage() {
     if (!over) return;
 
     // Standard canvas reordering
-    if (active.id === over.id || over.id === CANVAS_ROOT_ID) return;
-    const sortableIndex = over.data.current?.sortable?.index;
-    if (typeof sortableIndex === "number") {
-      moveBlock(active.id as string, sortableIndex);
+    if (active.id === over.id) return;
+    
+    let toIndex = -1;
+    if (over.id === CANVAS_ROOT_ID) {
+      if (blocks.length > 0) {
+        let isTop = false;
+        const firstBlockEl = document.getElementById(blocks[0].id);
+        if (firstBlockEl) {
+          const rect = firstBlockEl.getBoundingClientRect();
+          if (mouseClientY.current < rect.top + rect.height / 2) {
+            isTop = true;
+          }
+        } else if (over.rect) {
+          const canvasCenterY = over.rect.top + over.rect.height / 2;
+          isTop = mouseClientY.current < canvasCenterY;
+        }
+        toIndex = isTop ? 0 : blocks.length;
+      } else {
+        toIndex = 0;
+      }
     } else {
-      const fallbackIndex = blocks.findIndex((b) => b.id === over.id);
-      if (fallbackIndex !== -1) moveBlock(active.id as string, fallbackIndex);
+      const sortableIndex = over.data.current?.sortable?.index;
+      if (typeof sortableIndex === "number") {
+        toIndex = sortableIndex;
+      } else {
+        toIndex = blocks.findIndex((b) => b.id === over.id);
+      }
+    }
+
+    if (toIndex !== -1) {
+      moveBlock(active.id as string, toIndex);
     }
   }, [insertIndex, blocks, addBlock, moveBlock]);
 

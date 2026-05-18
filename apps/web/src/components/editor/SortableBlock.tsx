@@ -41,6 +41,7 @@ export function SortableBlock({
     return (
       <div
         ref={setNodeRef}
+        id={id}
         style={{
           ...style,
           position: "relative",
@@ -77,6 +78,7 @@ export function SortableBlock({
   return (
     <div
       ref={setNodeRef}
+      id={id}
       style={{
         ...style,
         position: "relative",
