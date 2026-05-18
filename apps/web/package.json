@@ -2,6 +2,10 @@
     "name": "web",
     "version": "0.1.0",
     "private": true,
+    "author": {
+        "name": "Hussain Ahmed",
+        "url": "https://github.com/hussain-ahmed2"
+    },
     "scripts": {
         "dev": "next dev",
         "build": "next build",

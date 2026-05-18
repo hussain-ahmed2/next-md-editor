@@ -1,6 +1,6 @@
 # ⚡ Next MD Editor
 
-A professional-grade, beautiful, block-based markdown editor built with **Next.js 16**, **React 19**, **Zustand**, and **Turborepo**. Drag, drop, edit, and export GitHub-Flavored Markdown (GFM) with a true-to-life live preview matching the exact GitHub Dark theme down to the pixel.
+A professional-grade, beautiful, block-based markdown editor built with **Next.js 16**, **React 19**, **Zustand**, and **Turborepo**. Created by **[Hussain Ahmed](https://github.com/hussain-ahmed2)**. Drag, drop, edit, and export GitHub-Flavored Markdown (GFM) with a true-to-life live preview matching the exact GitHub Dark theme down to the pixel.
 
 ---
 
@@ -83,3 +83,8 @@ To maintain Next.js 16/React 19 compatibility without introducing bloated or bre
 
 ## 📄 License
 This project is licensed under the MIT License.
+
+---
+
+## 👤 Author
+Developed and maintained with ❤️ by **[Hussain Ahmed](https://github.com/hussain-ahmed2)**.

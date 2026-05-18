@@ -1,6 +1,10 @@
 {
   "name": "next-md-editor-monorepo",
   "private": true,
+  "author": {
+    "name": "Hussain Ahmed",
+    "url": "https://github.com/hussain-ahmed2"
+  },
   "packageManager": "npm@10.9.2",
   "workspaces": [
     "apps/*",
