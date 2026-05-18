@@ -79,6 +79,10 @@ export function SortableBlock({
           borderRadius: 4,
           userSelect: "none",
         }}
+        onMouseEnter={(e) => (e.currentTarget.style.color = "var(--accent)")}
+        onMouseLeave={(e) =>
+          (e.currentTarget.style.color = hovered || isSelected ? "var(--text-muted)" : "transparent")
+        }
       >
         <GripVertical size={16} />
       </div>
