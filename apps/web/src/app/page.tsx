@@ -45,6 +45,11 @@ export default function EditorPage() {
     "idle",
   );
   const [isLoaded, setIsLoaded] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Drag and Drop state
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -244,6 +249,26 @@ console.log(\`Successfully loaded demo in \${editorName}!\`);
     }
     return closestCenter(args);
   };
+
+  if (!mounted) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          height: "100vh",
+          overflow: "hidden",
+          background: "var(--bg-base)",
+        }}
+      >
+        <div style={{ height: 48, background: "var(--bg-elevated)", borderBottom: "1px solid var(--border)" }} />
+        <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+          <div style={{ width: sidebarWidth, background: "var(--bg-elevated)", borderRight: "1px solid var(--border)" }} />
+          <div style={{ flex: 1, background: "var(--bg-base)" }} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
