@@ -6,15 +6,58 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { useDroppable } from "@dnd-kit/core";
+import { useDroppable, useDndContext } from "@dnd-kit/core";
 import { SortableBlock } from "./SortableBlock";
+import { BlockRegistry } from "@next-md-editor/editor-core";
+import { useMemo } from "react";
 
 export function EditorCanvas() {
   const { blocks } = useEditorStore();
+  const { active, over } = useDndContext();
   
   const { setNodeRef } = useDroppable({
     id: "canvas-root",
   });
+
+  const displayBlocks = useMemo(() => {
+    if (active && active.data.current?.isSidebarItem && over) {
+      const type = active.data.current.type;
+      const def = BlockRegistry.get(type);
+      const placeholderBlock = {
+        id: active.id as string,
+        type,
+        props: { ...(def?.defaultProps ?? {}) }
+      };
+
+      const overIndex = blocks.findIndex((b) => b.id === over.id);
+      if (overIndex !== -1) {
+        // Find if we should insert before or after based on mouse position?
+        // Actually, just inserting at overIndex is what dnd-kit expects for the active item
+        // when hovering over another item to shift it.
+        const newBlocks = [...blocks];
+        
+        // dnd-kit provides rects. We can check if dragging below the over item's center
+        const activeRect = active.rect.current.translated;
+        const overRect = over.rect;
+        
+        let insertIndex = overIndex;
+        if (activeRect && overRect) {
+          const isBelowOverItem =
+            activeRect.top + activeRect.height / 2 >
+            overRect.top + overRect.height / 2;
+          if (isBelowOverItem) {
+            insertIndex = overIndex + 1;
+          }
+        }
+        
+        newBlocks.splice(insertIndex, 0, placeholderBlock);
+        return newBlocks;
+      } else if (over.id === "canvas-root") {
+        return [...blocks, placeholderBlock];
+      }
+    }
+    return blocks;
+  }, [blocks, active, over]);
 
   return (
     <main
@@ -30,18 +73,25 @@ export function EditorCanvas() {
       }}
     >
       <div style={{ width: "100%", maxWidth: 720, minHeight: "100%" }}>
-        {blocks.length === 0 && <EmptyState />}
+        {displayBlocks.length === 0 && <EmptyState />}
         
         <SortableContext
-          items={blocks.map((b) => b.id)}
+          items={displayBlocks.map((b) => b.id)}
           strategy={verticalListSortingStrategy}
         >
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            {blocks.map((block) => (
-              <SortableBlock key={block.id} id={block.id}>
-                <BlockRenderer block={block} />
-              </SortableBlock>
-            ))}
+            {displayBlocks.map((block) => {
+              const isPlaceholder = active?.id === block.id && active?.data.current?.isSidebarItem;
+              return (
+                <SortableBlock 
+                  key={block.id} 
+                  id={block.id} 
+                  isPlaceholder={isPlaceholder}
+                >
+                  <BlockRenderer block={block} />
+                </SortableBlock>
+              );
+            })}
           </div>
         </SortableContext>
       </div>

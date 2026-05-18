@@ -9,9 +9,11 @@ import { useState } from "react";
 export function SortableBlock({
   id,
   children,
+  isPlaceholder,
 }: {
   id: string;
   children: React.ReactNode;
+  isPlaceholder?: boolean;
 }) {
   const {
     attributes,
@@ -31,6 +33,8 @@ export function SortableBlock({
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
+    opacity: isPlaceholder ? 0.4 : isDragging ? 0.3 : 1,
+    pointerEvents: (isPlaceholder ? "none" : "auto") as "none" | "auto",
   };
 
   return (
@@ -50,9 +54,8 @@ export function SortableBlock({
             : hovered
               ? "var(--bg-elevated)"
               : "transparent",
-        transition: "border-color 0.15s, background 0.15s",
+        transition: "border-color 0.15s, background 0.15s, opacity 0.15s",
         padding: "2px 0",
-        opacity: isDragging ? 0.3 : 1,
       }}
       onClick={() => selectBlock(id)}
       onMouseEnter={() => setHovered(true)}
