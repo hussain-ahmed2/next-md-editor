@@ -3,7 +3,10 @@
 import { useState, useRef, useEffect } from "react";
 import { useEditorStore } from "@next-md-editor/editor-core";
 import type { Block } from "@next-md-editor/types";
-import { handleEditorKeyboardShortcuts, htmlToMarkdown } from "@/utils/editorShortcuts";
+import {
+  handleEditorKeyboardShortcuts,
+  htmlToMarkdown,
+} from "@/utils/editorShortcuts";
 import { renderInlineMarkdown } from "@/features/markdown/highlighter";
 
 export function ParagraphBlock({ block }: { block: Block }) {
@@ -12,19 +15,10 @@ export function ParagraphBlock({ block }: { block: Block }) {
   const [isFocused, setIsFocused] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  // Sync state changes from store to DOM when not editing
+  // When entering focus, populate raw text and snap caret
   useEffect(() => {
-    if (ref.current && document.activeElement !== ref.current) {
-      ref.current.innerHTML = renderInlineMarkdown(text) || "";
-    }
-  }, [text, isFocused]);
-
-  const handleFocus = () => {
-    setIsFocused(true);
-    if (ref.current) {
-      // Load raw markdown text on entering focus once
+    if (isFocused && ref.current) {
       ref.current.textContent = text;
-      // Set caret to the end
       const range = document.createRange();
       range.selectNodeContents(ref.current);
       range.collapse(false);
@@ -34,7 +28,7 @@ export function ParagraphBlock({ block }: { block: Block }) {
         selection.addRange(range);
       }
     }
-  };
+  }, [isFocused, ref]);
 
   const handleInput = (e: React.FormEvent<HTMLDivElement>) => {
     const rawText = htmlToMarkdown(e.currentTarget.innerHTML);
@@ -51,7 +45,7 @@ export function ParagraphBlock({ block }: { block: Block }) {
       ref={ref}
       contentEditable
       suppressContentEditableWarning
-      onFocus={handleFocus}
+      onFocus={() => setIsFocused(true)}
       onBlur={handleBlur}
       onInput={handleInput}
       onKeyDown={(e) => handleEditorKeyboardShortcuts(e, block.id, updateBlock)}
@@ -63,6 +57,13 @@ export function ParagraphBlock({ block }: { block: Block }) {
         outline: "none",
         minHeight: "1.75em",
       }}
+      {...(!isFocused
+        ? {
+            dangerouslySetInnerHTML: {
+              __html: renderInlineMarkdown(text) || "",
+            },
+          }
+        : {})}
     />
   );
 }
