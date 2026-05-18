@@ -8,6 +8,7 @@ import { useEditorStore } from "@next-md-editor/editor-core";
 import { useEffect, useState } from "react";
 import { initRegistry } from "@/registry";
 import { parseMarkdown } from "@/features/markdown/serializer";
+import { GripVertical } from "lucide-react";
 
 export default function EditorPage() {
   const [previewOpen, setPreviewOpen] = useState(true);
@@ -169,22 +170,33 @@ console.log(\`Successfully loaded demo in \${editorName}!\`);
         <div
           onMouseDown={startResizeSidebar}
           style={{
-            width: 4,
+            width: 8,
             cursor: "col-resize",
-            background: isResizingSidebar ? "var(--accent)" : "transparent",
+            background: isResizingSidebar ? "var(--accent-muted)" : "transparent",
             zIndex: 10,
             transition: "background-color 0.15s ease",
             alignSelf: "stretch",
-            marginLeft: -2,
-            marginRight: -2,
+            marginLeft: -4,
+            marginRight: -4,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
           }}
           onMouseEnter={e => {
-            if (!isResizingSidebar) e.currentTarget.style.background = "var(--accent-muted)";
+            if (!isResizingSidebar) e.currentTarget.style.background = "var(--bg-hover)";
           }}
           onMouseLeave={e => {
             if (!isResizingSidebar) e.currentTarget.style.background = "transparent";
           }}
-        />
+        >
+          <div style={{
+            color: "var(--text-muted)",
+            opacity: isResizingSidebar ? 1 : 0.5,
+            pointerEvents: "none",
+          }}>
+            <GripVertical size={12} />
+          </div>
+        </div>
 
         <EditorCanvas />
 
@@ -194,22 +206,33 @@ console.log(\`Successfully loaded demo in \${editorName}!\`);
             <div
               onMouseDown={startResizePreview}
               style={{
-                width: 4,
+                width: 8,
                 cursor: "col-resize",
-                background: isResizingPreview ? "var(--accent)" : "transparent",
+                background: isResizingPreview ? "var(--accent-muted)" : "transparent",
                 zIndex: 10,
                 transition: "background-color 0.15s ease",
                 alignSelf: "stretch",
-                marginLeft: -2,
-                marginRight: -2,
+                marginLeft: -4,
+                marginRight: -4,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
               }}
               onMouseEnter={e => {
-                if (!isResizingPreview) e.currentTarget.style.background = "var(--accent-muted)";
+                if (!isResizingPreview) e.currentTarget.style.background = "var(--bg-hover)";
               }}
               onMouseLeave={e => {
                 if (!isResizingPreview) e.currentTarget.style.background = "transparent";
               }}
-            />
+            >
+              <div style={{
+                color: "var(--text-muted)",
+                opacity: isResizingPreview ? 1 : 0.5,
+                pointerEvents: "none",
+              }}>
+                <GripVertical size={12} />
+              </div>
+            </div>
             <MarkdownPreview width={previewWidth} />
           </>
         )}
