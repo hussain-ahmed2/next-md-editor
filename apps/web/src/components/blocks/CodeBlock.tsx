@@ -51,51 +51,68 @@ export function CodeBlock({ block }: { block: Block }) {
         </select>
       </div>
       
-      {/* Code area - Conditionally swap between editing and highlighted preview */}
-      {isEditing ? (
-        <textarea
-          value={code}
-          onChange={(e) => updateBlock(block.id, { code: e.target.value })}
-          onBlur={() => setIsEditing(false)}
-          placeholder="// Write your code here…"
-          spellCheck={false}
-          autoFocus
+      {/* Code area - Stacked transparent textarea over syntax-highlighted text */}
+      <div style={{ position: "relative", minHeight: 120 }}>
+        {/* Background layer: Syntax Highlighted Code */}
+        <pre
+          aria-hidden="true"
           style={{
-            display: "block",
-            width: "100%",
-            minHeight: 120,
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            margin: 0,
             padding: "14px 16px",
-            background: "transparent",
-            border: "none",
-            outline: "none",
-            color: "var(--text-primary)",
-            fontFamily: "var(--font-mono)",
-            fontSize: 13,
-            lineHeight: 1.7,
-            resize: "vertical",
-            boxSizing: "border-box",
-          }}
-        />
-      ) : (
-        <div
-          onClick={() => setIsEditing(true)}
-          title="Click to edit code"
-          style={{
-            padding: "14px 16px",
-            minHeight: 120,
-            cursor: "text",
-            background: "transparent",
+            pointerEvents: "none",
             fontFamily: "var(--font-mono)",
             fontSize: 13,
             lineHeight: 1.7,
             color: "#e6edf3",
             whiteSpace: "pre-wrap",
             wordBreak: "break-word",
+            boxSizing: "border-box",
+            overflow: "hidden", // Textarea handles scrolling
           }}
         >
-          <code dangerouslySetInnerHTML={{ __html: highlightCodeHtml(code || "// Click to add code…", lang) }} />
-        </div>
-      )}
+          <code dangerouslySetInnerHTML={{ __html: highlightCodeHtml(code || (isEditing ? "" : "// Click to add code…"), lang) }} />
+        </pre>
+
+        {/* Foreground layer: Invisible editable textarea */}
+        <textarea
+          value={code}
+          onChange={(e) => updateBlock(block.id, { code: e.target.value })}
+          onFocus={() => setIsEditing(true)}
+          onBlur={() => setIsEditing(false)}
+          spellCheck={false}
+          style={{
+            display: "block",
+            width: "100%",
+            height: "100%",
+            minHeight: 120,
+            padding: "14px 16px",
+            background: "transparent",
+            color: "transparent", // Text is transparent, caret is visible
+            caretColor: "var(--text-primary)",
+            border: "none",
+            outline: "none",
+            fontFamily: "var(--font-mono)",
+            fontSize: 13,
+            lineHeight: 1.7,
+            resize: "vertical",
+            boxSizing: "border-box",
+            whiteSpace: "pre-wrap",
+            wordBreak: "break-word",
+            overflow: "hidden", // Let it expand with content or rely on user resize
+          }}
+          onInput={(e) => {
+            // Auto-resize textarea height to fit content
+            const target = e.target as HTMLTextAreaElement;
+            target.style.height = "auto";
+            target.style.height = `${target.scrollHeight}px`;
+          }}
+        />
+      </div>
     </div>
   );
 }
