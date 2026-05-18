@@ -90,3 +90,29 @@ export function highlightCodeHtml(code: string, lang: string = "ts"): string {
 
   return html;
 }
+
+export function renderInlineMarkdown(text: string): string {
+  if (!text) return "";
+
+  // Escape HTML tags to prevent XSS / broken UI
+  let html = text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+
+  // 1. Bold (**text** or __text__)
+  html = html.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+  html = html.replace(/__(.*?)__/g, "<strong>$1</strong>");
+
+  // 2. Italics (*text* or _text_)
+  html = html.replace(/\*(.*?)\*/g, "<em>$1</em>");
+  html = html.replace(/_(.*?)_/g, "<em>$1</em>");
+
+  // 3. Inline code (`code`)
+  html = html.replace(/`(.*?)`/g, '<code style="background: rgba(110,118,129,0.3); padding: 2px 4px; border-radius: 4px; font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, monospace; font-size: 85%; color: #e6edf3;">$1</code>');
+
+  // 4. Links ([text](url))
+  html = html.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" style="color: #58a6ff; text-decoration: none; font-weight: 500;">$1</a>');
+
+  return html;
+}

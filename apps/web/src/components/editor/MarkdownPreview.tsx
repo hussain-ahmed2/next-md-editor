@@ -3,7 +3,7 @@
 import { useEditorStore } from "@next-md-editor/editor-core";
 import { serializeToMarkdown } from "@/features/markdown/serializer";
 import { useState } from "react";
-import { highlightCodeHtml } from "@/features/markdown/highlighter";
+import { highlightCodeHtml, renderInlineMarkdown } from "@/features/markdown/highlighter";
 
 export function MarkdownPreview({ width = 360 }: { width?: number }) {
   const blocks = useEditorStore((s) => s.blocks);
@@ -198,12 +198,68 @@ export function MarkdownPreview({ width = 360 }: { width?: number }) {
                           wordBreak: "break-word",
                         }}
                       >
-                        {text || <span style={{ color: "rgba(255,255,255,0.1)", fontStyle: "italic" }}>Heading {level}</span>}
+                        {text ? (
+                          <span dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(text) }} />
+                        ) : (
+                          <span style={{ color: "rgba(255,255,255,0.1)", fontStyle: "italic" }}>Heading {level}</span>
+                        )}
                       </div>
                     );
                   }
                   case "paragraph": {
                     const text = (block.props.text as string) ?? "";
+                    const isBullet = text.startsWith("- ") || text.startsWith("* ");
+                    const numberMatch = text.match(/^(\d+)\.\s(.*)$/);
+
+                    if (isBullet) {
+                      const cleanText = text.slice(2);
+                      return (
+                        <div
+                          key={block.id}
+                          style={{
+                            display: "flex",
+                            alignItems: "flex-start",
+                            gap: 8,
+                            fontSize: 15,
+                            lineHeight: 1.6,
+                            color: "#e6edf3",
+                            paddingLeft: 8,
+                          }}
+                        >
+                          <span style={{ color: "#8b949e", userSelect: "none" }}>•</span>
+                          <span
+                            dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(cleanText) }}
+                            style={{ flex: 1, wordBreak: "break-word" }}
+                          />
+                        </div>
+                      );
+                    }
+
+                    if (numberMatch) {
+                      const num = numberMatch[1];
+                      const cleanText = numberMatch[2];
+                      return (
+                        <div
+                          key={block.id}
+                          style={{
+                            display: "flex",
+                            alignItems: "flex-start",
+                            gap: 8,
+                            fontSize: 15,
+                            lineHeight: 1.6,
+                            color: "#e6edf3",
+                            paddingLeft: 8,
+                          }}
+                        >
+                          <span style={{ color: "#8b949e", userSelect: "none", minWidth: 16 }}>{num}.</span>
+                          <span
+                            dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(cleanText) }}
+                            style={{ flex: 1, wordBreak: "break-word" }}
+                          />
+                        </div>
+                      );
+                    }
+
                     return (
                       <p
                         key={block.id}
@@ -215,7 +271,11 @@ export function MarkdownPreview({ width = 360 }: { width?: number }) {
                           wordBreak: "break-word",
                         }}
                       >
-                        {text || <span style={{ color: "rgba(255,255,255,0.1)", fontStyle: "italic" }}>Empty paragraph</span>}
+                        {text ? (
+                          <span dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(text) }} />
+                        ) : (
+                          <span style={{ color: "rgba(255,255,255,0.1)", fontStyle: "italic" }}>Empty paragraph</span>
+                        )}
                       </p>
                     );
                   }
@@ -233,7 +293,11 @@ export function MarkdownPreview({ width = 360 }: { width?: number }) {
                       >
                         {text.split("\n").map((line, idx) => (
                           <p key={idx} style={{ margin: 0, lineHeight: 1.6, fontSize: 15 }}>
-                            {line || <span style={{ color: "rgba(255,255,255,0.06)", fontStyle: "italic" }}>Empty quote line</span>}
+                            {line ? (
+                              <span dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(line) }} />
+                            ) : (
+                              <span style={{ color: "rgba(255,255,255,0.06)", fontStyle: "italic" }}>Empty quote line</span>
+                            )}
                           </p>
                         ))}
                       </blockquote>
