@@ -38,12 +38,17 @@ export default function EditorPage() {
   const moveBlock = useEditorStore((s) => s.moveBlock);
   const addBlock = useEditorStore((s) => s.addBlock);
 
-  const [saveStatus, setSaveStatus] = useState<"saving" | "saved" | "idle">("idle");
+  const [saveStatus, setSaveStatus] = useState<"saving" | "saved" | "idle">(
+    "idle",
+  );
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Drag and Drop state
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [activeSidebarItem, setActiveSidebarItem] = useState<{ type: string; label: string } | null>(null);
+  const [activeSidebarItem, setActiveSidebarItem] = useState<{
+    type: string;
+    label: string;
+  } | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -52,7 +57,10 @@ export default function EditorPage() {
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
     if (active.data.current?.isSidebarItem) {
-      setActiveSidebarItem({ type: active.data.current.type, label: active.data.current.label });
+      setActiveSidebarItem({
+        type: active.data.current.type,
+        label: active.data.current.label,
+      });
     } else {
       setActiveId(active.id as string);
     }
@@ -74,33 +82,30 @@ export default function EditorPage() {
         props: { ...(def?.defaultProps ?? {}) },
       };
 
-      // We read the sortable index from the over element, or fall back to appending.
-      // Since dnd-kit translates the active item, over.id might be the id we swapped with.
       const overId = over.id as string;
-      
-      // If it dropped over the canvas root, append it.
+
       if (overId === CANVAS_ROOT_ID) {
         addBlock(newBlock);
         return;
       }
 
-      // If it dropped over a specific block, insert it there.
-      const toIndex = blocks.findIndex((b) => b.id === overId);
-      if (toIndex !== -1) {
-        // dnd-kit rects could tell us if we dropped below or above, but we can default to inserting at the index.
-        addBlock(newBlock, toIndex);
+      const sortableIndex = over.data.current?.sortable?.index;
+      if (typeof sortableIndex === "number") {
+        addBlock(newBlock, sortableIndex);
       } else {
-        // Fallback: append
         addBlock(newBlock);
       }
       return;
     }
 
     // Standard canvas reordering
-    if (active.id === over.id || overId === CANVAS_ROOT_ID) return;
-    const toIndex = blocks.findIndex((b) => b.id === over.id);
-    if (toIndex !== -1) {
-      moveBlock(active.id as string, toIndex);
+    if (active.id === over.id || over.id === CANVAS_ROOT_ID) return;
+    const sortableIndex = over.data.current?.sortable?.index;
+    if (typeof sortableIndex === "number") {
+      moveBlock(active.id as string, sortableIndex);
+    } else {
+      const fallbackIndex = blocks.findIndex((b) => b.id === over.id);
+      if (fallbackIndex !== -1) moveBlock(active.id as string, fallbackIndex);
     }
   };
 
@@ -230,17 +235,19 @@ console.log(\`Successfully loaded demo in \${editorName}!\`);
   };
 
   return (
-    <div style={{
-      display: "flex",
-      flexDirection: "column",
-      height: "100vh",
-      overflow: "hidden",
-      background: "var(--bg-base)",
-      userSelect: isResizingSidebar || isResizingPreview ? "none" : "auto",
-    }}>
-      <EditorToolbar 
-        previewOpen={previewOpen} 
-        onTogglePreview={() => setPreviewOpen(v => !v)} 
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        height: "100vh",
+        overflow: "hidden",
+        background: "var(--bg-base)",
+        userSelect: isResizingSidebar || isResizingPreview ? "none" : "auto",
+      }}
+    >
+      <EditorToolbar
+        previewOpen={previewOpen}
+        onTogglePreview={() => setPreviewOpen((v) => !v)}
         saveStatus={saveStatus}
       />
       <DndContext
@@ -251,14 +258,16 @@ console.log(\`Successfully loaded demo in \${editorName}!\`);
       >
         <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
           <EditorSidebar width={sidebarWidth} />
-          
+
           {/* Sidebar Resize Bar */}
           <div
             onMouseDown={startResizeSidebar}
             style={{
               width: 8,
               cursor: "col-resize",
-              background: isResizingSidebar ? "var(--accent-muted)" : "transparent",
+              background: isResizingSidebar
+                ? "var(--accent-muted)"
+                : "transparent",
               zIndex: 10,
               transition: "background-color 0.15s ease",
               alignSelf: "stretch",
@@ -268,18 +277,22 @@ console.log(\`Successfully loaded demo in \${editorName}!\`);
               alignItems: "center",
               justifyContent: "center",
             }}
-            onMouseEnter={e => {
-              if (!isResizingSidebar) e.currentTarget.style.background = "var(--bg-hover)";
+            onMouseEnter={(e) => {
+              if (!isResizingSidebar)
+                e.currentTarget.style.background = "var(--bg-hover)";
             }}
-            onMouseLeave={e => {
-              if (!isResizingSidebar) e.currentTarget.style.background = "transparent";
+            onMouseLeave={(e) => {
+              if (!isResizingSidebar)
+                e.currentTarget.style.background = "transparent";
             }}
           >
-            <div style={{
-              color: "var(--text-muted)",
-              opacity: isResizingSidebar ? 1 : 0.5,
-              pointerEvents: "none",
-            }}>
+            <div
+              style={{
+                color: "var(--text-muted)",
+                opacity: isResizingSidebar ? 1 : 0.5,
+                pointerEvents: "none",
+              }}
+            >
               <GripVertical size={12} />
             </div>
           </div>
@@ -294,7 +307,9 @@ console.log(\`Successfully loaded demo in \${editorName}!\`);
                 style={{
                   width: 8,
                   cursor: "col-resize",
-                  background: isResizingPreview ? "var(--accent-muted)" : "transparent",
+                  background: isResizingPreview
+                    ? "var(--accent-muted)"
+                    : "transparent",
                   zIndex: 10,
                   transition: "background-color 0.15s ease",
                   alignSelf: "stretch",
@@ -304,18 +319,22 @@ console.log(\`Successfully loaded demo in \${editorName}!\`);
                   alignItems: "center",
                   justifyContent: "center",
                 }}
-                onMouseEnter={e => {
-                  if (!isResizingPreview) e.currentTarget.style.background = "var(--bg-hover)";
+                onMouseEnter={(e) => {
+                  if (!isResizingPreview)
+                    e.currentTarget.style.background = "var(--bg-hover)";
                 }}
-                onMouseLeave={e => {
-                  if (!isResizingPreview) e.currentTarget.style.background = "transparent";
+                onMouseLeave={(e) => {
+                  if (!isResizingPreview)
+                    e.currentTarget.style.background = "transparent";
                 }}
               >
-                <div style={{
-                  color: "var(--text-muted)",
-                  opacity: isResizingPreview ? 1 : 0.5,
-                  pointerEvents: "none",
-                }}>
+                <div
+                  style={{
+                    color: "var(--text-muted)",
+                    opacity: isResizingPreview ? 1 : 0.5,
+                    pointerEvents: "none",
+                  }}
+                >
                   <GripVertical size={12} />
                 </div>
               </div>
@@ -339,24 +358,28 @@ console.log(\`Successfully loaded demo in \${editorName}!\`);
             >
               {(() => {
                 const activeBlock = blocks.find((b) => b.id === activeId);
-                return activeBlock ? <BlockRenderer block={activeBlock} /> : null;
+                return activeBlock ? (
+                  <BlockRenderer block={activeBlock} />
+                ) : null;
               })()}
             </div>
           ) : activeSidebarItem ? (
-            <div style={{
-              padding: "8px 16px",
-              background: "var(--accent)",
-              color: "white",
-              borderRadius: "var(--radius-md)",
-              fontSize: 13,
-              fontWeight: 600,
-              boxShadow: "var(--shadow-lg)",
-              cursor: "grabbing",
-              pointerEvents: "none",
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-            }}>
+            <div
+              style={{
+                padding: "8px 16px",
+                background: "var(--accent)",
+                color: "white",
+                borderRadius: "var(--radius-md)",
+                fontSize: 13,
+                fontWeight: 600,
+                boxShadow: "var(--shadow-lg)",
+                cursor: "grabbing",
+                pointerEvents: "none",
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+              }}
+            >
               Adding {activeSidebarItem.label}...
             </div>
           ) : null}
