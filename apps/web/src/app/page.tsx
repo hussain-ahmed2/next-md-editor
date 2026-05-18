@@ -323,9 +323,22 @@ console.log(\`Successfully loaded demo in \${editorName}!\`);
     // If we are dragging a sidebar item, use the stable pointer-first strategy to prevent loops
     if (args.active.data.current?.isSidebarItem) {
       const pointerCollisions = pointerWithin(args);
-      return pointerCollisions.length > 0
-        ? pointerCollisions
-        : rectIntersection(args);
+      if (pointerCollisions.length > 0) {
+        // Prioritize individual block containers over the background canvas root
+        const blockCollision = pointerCollisions.find(
+          (c) => c.id !== CANVAS_ROOT_ID
+        );
+        return blockCollision ? [blockCollision] : pointerCollisions;
+      }
+      
+      const rectCollisions = rectIntersection(args);
+      if (rectCollisions.length > 0) {
+        const blockCollision = rectCollisions.find(
+          (c) => c.id !== CANVAS_ROOT_ID
+        );
+        return blockCollision ? [blockCollision] : rectCollisions;
+      }
+      return [];
     }
 
     // For standard canvas reordering, use closestCenter which is highly responsive and accurate!
