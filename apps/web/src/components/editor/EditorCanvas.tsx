@@ -13,51 +13,21 @@ import { useMemo } from "react";
 
 export function EditorCanvas() {
   const { blocks } = useEditorStore();
-  const { active, over } = useDndContext();
+  const { active } = useDndContext();
   
   const { setNodeRef } = useDroppable({
     id: "canvas-root",
   });
 
-  const displayBlocks = useMemo(() => {
-    if (active && active.data.current?.isSidebarItem && over) {
-      const type = active.data.current.type;
-      const def = BlockRegistry.get(type);
-      const placeholderBlock = {
-        id: active.id as string,
-        type,
-        props: { ...(def?.defaultProps ?? {}) }
-      };
-
-      const overIndex = blocks.findIndex((b) => b.id === over.id);
-      if (overIndex !== -1) {
-        // Find if we should insert before or after based on mouse position?
-        // Actually, just inserting at overIndex is what dnd-kit expects for the active item
-        // when hovering over another item to shift it.
-        const newBlocks = [...blocks];
-        
-        // dnd-kit provides rects. We can check if dragging below the over item's center
-        const activeRect = active.rect.current.translated;
-        const overRect = over.rect;
-        
-        let insertIndex = overIndex;
-        if (activeRect && overRect) {
-          const isBelowOverItem =
-            activeRect.top + activeRect.height / 2 >
-            overRect.top + overRect.height / 2;
-          if (isBelowOverItem) {
-            insertIndex = overIndex + 1;
-          }
-        }
-        
-        newBlocks.splice(insertIndex, 0, placeholderBlock);
-        return newBlocks;
-      } else if (over.id === "canvas-root") {
-        return [...blocks, placeholderBlock];
-      }
+  const isDraggingSidebarItem = active && active.data.current?.isSidebarItem;
+  
+  const sortableItems = useMemo(() => {
+    const ids = blocks.map((b) => b.id);
+    if (isDraggingSidebarItem) {
+      ids.push(active.id as string);
     }
-    return blocks;
-  }, [blocks, active, over]);
+    return ids;
+  }, [blocks, active, isDraggingSidebarItem]);
 
   return (
     <main
@@ -73,25 +43,38 @@ export function EditorCanvas() {
       }}
     >
       <div style={{ width: "100%", maxWidth: 720, minHeight: "100%" }}>
-        {displayBlocks.length === 0 && <EmptyState />}
+        {blocks.length === 0 && !isDraggingSidebarItem && <EmptyState />}
         
         <SortableContext
-          items={displayBlocks.map((b) => b.id)}
+          items={sortableItems}
           strategy={verticalListSortingStrategy}
         >
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            {displayBlocks.map((block) => {
-              const isPlaceholder = active?.id === block.id && active?.data.current?.isSidebarItem;
-              return (
-                <SortableBlock 
-                  key={block.id} 
-                  id={block.id} 
-                  isPlaceholder={isPlaceholder}
-                >
-                  <BlockRenderer block={block} />
-                </SortableBlock>
-              );
-            })}
+            {blocks.map((block) => (
+              <SortableBlock key={block.id} id={block.id}>
+                <BlockRenderer block={block} />
+              </SortableBlock>
+            ))}
+            
+            {/* Render a placeholder at the end of the list for dnd-kit to measure and shift */}
+            {isDraggingSidebarItem && (
+              <SortableBlock 
+                key={active.id as string} 
+                id={active.id as string} 
+                isPlaceholder={true}
+              >
+                {(() => {
+                  const type = active.data.current?.type;
+                  const def = BlockRegistry.get(type);
+                  const placeholderBlock = {
+                    id: active.id as string,
+                    type,
+                    props: { ...(def?.defaultProps ?? {}) }
+                  };
+                  return <BlockRenderer block={placeholderBlock} />;
+                })()}
+              </SortableBlock>
+            )}
           </div>
         </SortableContext>
       </div>
