@@ -33,7 +33,7 @@ export function EditorCanvas({ activeSidebarItem, insertIndex }: EditorCanvasPro
       const type = activeSidebarItem.type;
       const def = BlockRegistry.get(type);
       const placeholderBlock = {
-        id: `sidebar-${type}`,
+        id: `placeholder-${type}`,
         type,
         props: { ...(def?.defaultProps ?? {}) }
       };
@@ -72,7 +72,7 @@ export function EditorCanvas({ activeSidebarItem, insertIndex }: EditorCanvasPro
         >
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
             {displayBlocks.map((block) => {
-              const isPlaceholder = isDraggingSidebarItem && block.id === `sidebar-${block.type}`;
+              const isPlaceholder = isDraggingSidebarItem && block.id === `placeholder-${block.type}`;
               return (
                 <SortableBlock 
                   key={block.id} 

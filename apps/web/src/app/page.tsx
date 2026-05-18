@@ -88,7 +88,7 @@ export default function EditorPage() {
       const overId = over.id as string;
       if (overId === CANVAS_ROOT_ID) {
         setInsertIndex(blocks.length);
-      } else if (overId === active.id) {
+      } else if (overId === active.id || overId.startsWith("placeholder-")) {
         // Keep current insertIndex to prevent flickering / infinite loops
       } else {
         const idx = blocks.findIndex((b) => b.id === overId);
