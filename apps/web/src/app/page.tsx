@@ -95,9 +95,14 @@ export default function EditorPage() {
       active.data.current?.isSidebarItem ||
       (active.id && active.id.toString().startsWith("sidebar-"));
     if (isSidebarDrag) {
-      if (!over) return; // Keep last known insertIndex to prevent flickering or disappearing placeholder
+      if (!over) {
+        console.log("[DragOver] over is null!");
+        return; // Keep last known insertIndex to prevent flickering or disappearing placeholder
+      }
 
       const overId = over.id as string;
+      console.log("[DragOver] overId:", overId);
+
       if (overId === CANVAS_ROOT_ID) {
         setInsertIndex(blocks.length);
         lastDeltaY.current = delta.y;
@@ -105,23 +110,28 @@ export default function EditorPage() {
         // Keep current insertIndex to prevent flickering / infinite loops
       } else {
         const idx = blocks.findIndex((b) => b.id === overId);
+        console.log("[DragOver] idx of block:", idx);
         if (idx !== -1) {
           // Calculate if we are hovering over the upper or lower 50% of the block
           let targetIndex = idx;
-          const activeRect = active.rect.current.translated || active.rect.current.initial;
+          const initialRect = active.rect.current.initial;
           
-          if (activeRect && over.rect) {
-            const activeCenterY = activeRect.top + activeRect.height / 2;
+          if (initialRect && over.rect) {
+            // Apply the actual real-time translation offset to the starting coordinate!
+            const activeCenterY = initialRect.top + delta.y + initialRect.height / 2;
             const overCenterY = over.rect.top + over.rect.height / 2;
             if (activeCenterY > overCenterY) {
               targetIndex = idx + 1;
             }
           }
 
+          console.log("[DragOver] targetIndex computed:", targetIndex, "current insertIndex:", insertIndex);
+
           if (targetIndex !== insertIndex) {
             if (lastDeltaY.current !== null) {
               const diffY = Math.abs(delta.y - lastDeltaY.current);
               if (diffY < 20) {
+                console.log("[DragOver] Ignored due to low delta:", diffY);
                 // Ignore layout shift updates when mouse is stationary!
                 return;
               }
