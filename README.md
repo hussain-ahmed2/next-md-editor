@@ -29,11 +29,11 @@ This workspace leverages **Turborepo** to orchestrate build pipelines and cache 
 
 ```mermaid
 graph TD
-  apps/web[apps/web] --> packages/editor-core[@next-md-editor/editor-core]
-  apps/web --> packages/markdown[@next-md-editor/markdown]
-  apps/web --> packages/types[@next-md-editor/types]
-  packages/editor-core --> packages/types
-  packages/markdown --> packages/types
+  web["apps/web"] --> core["@next-md-editor/editor-core"]
+  web --> markdown["@next-md-editor/markdown"]
+  web --> types["@next-md-editor/types"]
+  core --> types
+  markdown --> types
 ```
 
 ### Core Workspace Modules:
