@@ -4,7 +4,7 @@ import { useEditorStore } from "@next-md-editor/editor-core";
 import { serializeToMarkdown } from "@/features/markdown/serializer";
 import { useState } from "react";
 import { highlightCodeHtml, renderInlineMarkdown } from "@/features/markdown/highlighter";
-import { Info, Lightbulb, Megaphone, TriangleAlert, OctagonX } from "lucide-react";
+import { Info, Lightbulb, Megaphone, TriangleAlert, OctagonX, FileText } from "lucide-react";
 
 export function MarkdownPreview({ width = 360 }: { width?: number }) {
   const blocks = useEditorStore((s) => s.blocks);
@@ -81,9 +81,7 @@ export function MarkdownPreview({ width = 360 }: { width?: number }) {
             fontWeight: 500,
           }}>
             {/* File Icon */}
-            <svg aria-hidden="true" focusable="false" role="img" viewBox="0 0 16 16" width="14" height="14" fill="currentColor" style={{ color: "#7d8590" }}>
-              <path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l3.243 3.243c.33.33.513.774.513 1.237v9.27c0 .966-.784 1.75-1.75 1.75H3.75A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25V5.5h-2.75A1.75 1.75 0 0 1 10 3.75V1.5Zm9 3.5H10a.25a.25 0 0 0-.25.25v2.75Z"></path>
-            </svg>
+            <FileText size={14} style={{ color: "#7d8590" }} />
             <span>document.md</span>
             <span style={{ color: "#484f58", userSelect: "none" }}>|</span>
             <span style={{ fontSize: 11.5, color: "#8b949e" }}>{blocks.length} blocks</span>
