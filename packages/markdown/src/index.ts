@@ -105,7 +105,67 @@ export function parseMarkdown(markdown: string): Block[] {
       continue;
     }
 
-    // 7. Default: Paragraph
+    // 7. GFM Callout Alerts (> [!NOTE])
+    const calloutHeaderMatch = trimmed.match(/^>\s*\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]$/i);
+    if (calloutHeaderMatch) {
+      const type = calloutHeaderMatch[1].toLowerCase();
+      const bodyLines: string[] = [];
+      i++; // Skip the header line
+      
+      while (i < lines.length && lines[i].trim().startsWith(">")) {
+        const rawBodyLine = lines[i].trim().slice(1);
+        bodyLines.push(rawBodyLine.startsWith(" ") ? rawBodyLine.slice(1) : rawBodyLine);
+        i++;
+      }
+      
+      blocks.push({
+        id: uuidv4(),
+        type: "callout",
+        props: {
+          type,
+          text: bodyLines.join("\n"),
+        },
+      });
+      continue;
+    }
+
+    // 8. GFM Table
+    if (trimmed.startsWith("|")) {
+      const tableLines: string[] = [];
+      let tempI = i;
+      while (tempI < lines.length && lines[tempI].trim().startsWith("|")) {
+        tableLines.push(lines[tempI].trim());
+        tempI++;
+      }
+      
+      if (tableLines.length >= 2 && tableLines[1].includes("---")) {
+        const parsedRows: string[][] = [];
+        for (const tLine of tableLines) {
+          // Skip the GFM separator line (e.g. | --- | --- |)
+          if (tLine.includes("---") && !tLine.match(/[a-zA-Z0-9]/)) {
+            continue;
+          }
+          
+          const cells = tLine.split("|")
+            .map(c => c.trim())
+            .filter((_, idx, arr) => idx > 0 && idx < arr.length - 1);
+          
+          parsedRows.push(cells);
+        }
+        
+        blocks.push({
+          id: uuidv4(),
+          type: "table",
+          props: {
+            rows: parsedRows,
+          },
+        });
+        i = tempI;
+        continue;
+      }
+    }
+
+    // 9. Default: Paragraph
     // We group consecutive non-empty lines as a single paragraph block or keep them separate.
     // In our block editor, separate paragraphs make block reordering much more intuitive.
     blocks.push({
@@ -153,6 +213,23 @@ export function serializeMarkdown(blocks: Block[]): string {
           const alt = (block.props.alt as string) ?? "";
           const url = (block.props.url as string) ?? "";
           return `![${alt}](${url})`;
+        }
+        case "callout": {
+          const text = (block.props.text as string) ?? "";
+          const type = ((block.props.type as string) ?? "note").toUpperCase();
+          const alertHeader = `> [!${type}]`;
+          const alertBody = text.split("\n").map(l => `> ${l}`).join("\n");
+          return `${alertHeader}\n${alertBody}`;
+        }
+        case "table": {
+          const rows = (block.props.rows as string[][]) ?? [["", ""]];
+          if (rows.length === 0) return "";
+          
+          const headerLine = `| ${rows[0].join(" | ")} |`;
+          const separatorLine = `| ${rows[0].map(() => "---").join(" | ")} |`;
+          const dataLines = rows.slice(1).map(r => `| ${r.join(" | ")} |`);
+          
+          return [headerLine, separatorLine, ...dataLines].join("\n");
         }
         default:
           return "";

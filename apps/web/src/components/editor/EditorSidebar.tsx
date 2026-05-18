@@ -18,6 +18,8 @@ const BLOCK_PALETTE: SidebarBlock[] = [
   { type: "code",      label: "Code",      icon: "</>", description: "Code block" },
   { type: "divider",   label: "Divider",   icon: "—",  description: "Horizontal rule" },
   { type: "image",     label: "Image",     icon: "🖼️", description: "Insert an image" },
+  { type: "table",     label: "Table",     icon: "📊", description: "Visual GFM grid table" },
+  { type: "callout",   label: "Callout",   icon: "💡", description: "Pastel alert callout box" },
 ];
 
 export function EditorSidebar({ width = 220 }: { width?: number }) {

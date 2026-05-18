@@ -383,6 +383,106 @@ export function MarkdownPreview({ width = 360 }: { width?: number }) {
                       </div>
                     );
                   }
+                  case "table": {
+                    const rows = (block.props.rows as string[][]) ?? [["", ""]];
+                    return (
+                      <div key={block.id} style={{ overflowX: "auto", margin: "12px 0" }}>
+                        <table style={{
+                          width: "100%",
+                          borderCollapse: "collapse",
+                          fontSize: 14,
+                          textAlign: "left",
+                          border: "1px solid #30363d",
+                        }}>
+                          <thead>
+                            <tr style={{ borderBottom: "2px solid #30363d", background: "#161b22" }}>
+                              {rows[0]?.map((cell, cIdx) => (
+                                <th
+                                  key={cIdx}
+                                  style={{
+                                    padding: "8px 12px",
+                                    fontWeight: 600,
+                                    borderRight: "1px solid #30363d",
+                                    color: "#f0f6fc",
+                                  }}
+                                  dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(cell) || "" }}
+                                />
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {rows.slice(1).map((row, rOffset) => {
+                              const rIdx = rOffset + 1;
+                              return (
+                                <tr
+                                  key={rIdx}
+                                  style={{
+                                    borderBottom: "1px solid #30363d",
+                                    background: rIdx % 2 === 0 ? "#161b22" : "transparent",
+                                  }}
+                                >
+                                  {row.map((cell, cIdx) => (
+                                    <td
+                                      key={cIdx}
+                                      style={{
+                                        padding: "8px 12px",
+                                        borderRight: "1px solid #30363d",
+                                        color: "#c9d1d9",
+                                      }}
+                                      dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(cell) || "" }}
+                                    />
+                                  ))}
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    );
+                  }
+                  case "callout": {
+                    const text = (block.props.text as string) ?? "";
+                    const type = ((block.props.type as string) ?? "note").toLowerCase();
+                    
+                    const alertThemes: Record<string, { label: string; icon: string; border: string; bg: string; text: string }> = {
+                      note: { label: "Note", icon: "ℹ️", border: "#388bfd", bg: "rgba(56, 139, 253, 0.08)", text: "#58a6ff" },
+                      tip: { label: "Tip", icon: "💡", border: "#3fb950", bg: "rgba(63, 185, 80, 0.08)", text: "#56d364" },
+                      important: { label: "Important", icon: "📢", border: "#a371f7", bg: "rgba(163, 113, 247, 0.08)", text: "#bc8cff" },
+                      warning: { label: "Warning", icon: "⚠️", border: "#d29922", bg: "rgba(210, 153, 34, 0.08)", text: "#e3b341" },
+                      caution: { label: "Caution", icon: "🚫", border: "#f85149", bg: "rgba(248, 113, 113, 0.08)", text: "#ff7b72" },
+                    };
+                    const theme = alertThemes[type] ?? alertThemes.note;
+
+                    return (
+                      <div
+                        key={block.id}
+                        style={{
+                          padding: "12px 16px",
+                          borderRadius: 6,
+                          border: "1px solid #30363d",
+                          borderLeft: `4px solid ${theme.border}`,
+                          background: theme.bg,
+                          margin: "12px 0",
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5, fontWeight: 600, color: theme.text, marginBottom: 6 }}>
+                          <span>{theme.icon}</span>
+                          <span>{theme.label}</span>
+                        </div>
+                        <div style={{ fontSize: 14, lineHeight: 1.6, color: "#c9d1d9" }}>
+                          {text.split("\n").map((line, idx) => (
+                            <p key={idx} style={{ margin: 0 }}>
+                              {line ? (
+                                <span dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(line) }} />
+                              ) : (
+                                <br />
+                              )}
+                            </p>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  }
                   default:
                     return null;
                 }
