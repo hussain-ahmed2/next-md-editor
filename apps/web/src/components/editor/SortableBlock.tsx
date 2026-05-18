@@ -33,9 +33,46 @@ export function SortableBlock({
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isPlaceholder ? 0.4 : isDragging ? 0.3 : 1,
+    opacity: isPlaceholder ? 1 : isDragging ? 0.3 : 1,
     pointerEvents: (isPlaceholder ? "none" : "auto") as "none" | "auto",
   };
+
+  if (isPlaceholder) {
+    return (
+      <div
+        ref={setNodeRef}
+        style={{
+          ...style,
+          position: "relative",
+          width: "100%",
+          padding: "6px 0",
+        }}
+      >
+        <div
+          style={{
+            height: 3,
+            background: "var(--accent)",
+            borderRadius: 1.5,
+            position: "relative",
+            width: "100%",
+          }}
+        >
+          {/* Circular anchor dot on the left side */}
+          <div
+            style={{
+              position: "absolute",
+              left: -4,
+              top: -2.5,
+              width: 8,
+              height: 8,
+              borderRadius: "50%",
+              background: "var(--accent)",
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div

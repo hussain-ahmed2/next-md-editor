@@ -59,7 +59,7 @@ export default function EditorPage() {
     label: string;
   } | null>(null);
   const [insertIndex, setInsertIndex] = useState<number | null>(null);
-  const lastDeltaY = useRef<number>(0);
+  const lastDeltaY = useRef<number | null>(null);
 
   const pointerSensor = useSensor(
     PointerSensor,
@@ -83,7 +83,7 @@ export default function EditorPage() {
           type.charAt(0).toUpperCase() + type.slice(1),
       });
       setInsertIndex(blocks.length);
-      lastDeltaY.current = 0;
+      lastDeltaY.current = null;
     } else {
       setActiveId(active.id as string);
     }
@@ -95,13 +95,6 @@ export default function EditorPage() {
       active.data.current?.isSidebarItem ||
       (active.id && active.id.toString().startsWith("sidebar-"));
     if (isSidebarDrag) {
-      // If the mouse has not vertically moved by at least 15 pixels since the last insertion update,
-      // ignore it to prevent loop updates triggered by placeholder insertion layout-shifts!
-      const deltaY = Math.abs(delta.y - lastDeltaY.current);
-      if (deltaY < 15) {
-        return;
-      }
-
       if (!over) return; // Keep last known insertIndex to prevent flickering or disappearing placeholder
 
       const overId = over.id as string;
@@ -113,19 +106,40 @@ export default function EditorPage() {
       } else {
         const idx = blocks.findIndex((b) => b.id === overId);
         if (idx !== -1) {
-          setInsertIndex(idx);
-          lastDeltaY.current = delta.y;
+          // Calculate if we are hovering over the upper or lower 50% of the block
+          let targetIndex = idx;
+          const activeRect = active.rect.current.translated || active.rect.current.initial;
+          
+          if (activeRect && over.rect) {
+            const activeCenterY = activeRect.top + activeRect.height / 2;
+            const overCenterY = over.rect.top + over.rect.height / 2;
+            if (activeCenterY > overCenterY) {
+              targetIndex = idx + 1;
+            }
+          }
+
+          if (targetIndex !== insertIndex) {
+            if (lastDeltaY.current !== null) {
+              const diffY = Math.abs(delta.y - lastDeltaY.current);
+              if (diffY < 20) {
+                // Ignore layout shift updates when mouse is stationary!
+                return;
+              }
+            }
+            setInsertIndex(targetIndex);
+            lastDeltaY.current = delta.y;
+          }
         }
       }
     }
-  }, [blocks]);
+  }, [blocks, insertIndex]);
 
   const handleDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event;
     setActiveId(null);
     const finalInsertIndex = insertIndex;
     setInsertIndex(null);
-    lastDeltaY.current = 0;
+    lastDeltaY.current = null;
 
     const isSidebarDrag =
       active.data.current?.isSidebarItem ||
