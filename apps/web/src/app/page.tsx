@@ -294,12 +294,19 @@ console.log(\`Successfully loaded demo in \${editorName}!\`);
   };
 
   const customCollisionDetection: CollisionDetection = useCallback((args) => {
-    if (args.active.data.current?.isSidebarItem) {
-      const pointerCollisions = pointerWithin(args);
-      return pointerCollisions.length > 0
-        ? pointerCollisions
-        : rectIntersection(args);
+    // First try pointerWithin to ensure stability under the user's cursor
+    const pointerCollisions = pointerWithin(args);
+    if (pointerCollisions.length > 0) {
+      return pointerCollisions;
     }
+
+    // Fall back to rectIntersection
+    const rectCollisions = rectIntersection(args);
+    if (rectCollisions.length > 0) {
+      return rectCollisions;
+    }
+
+    // Finally fall back to closestCenter for edge cases
     return closestCenter(args);
   }, []);
 

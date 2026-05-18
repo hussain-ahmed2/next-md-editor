@@ -20,7 +20,7 @@ interface EditorCanvasProps {
 }
 
 export function EditorCanvas({ activeSidebarItem, insertIndex }: EditorCanvasProps) {
-  const { blocks } = useEditorStore();
+  const blocks = useEditorStore((s) => s.blocks);
   
   const { setNodeRef } = useDroppable({
     id: CANVAS_ROOT_ID,
