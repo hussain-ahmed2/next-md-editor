@@ -13,6 +13,7 @@ import {
   DndContext,
   DragEndEvent,
   DragStartEvent,
+  DragOverEvent,
   PointerSensor,
   closestCenter,
   useSensor,
@@ -57,6 +58,7 @@ export default function EditorPage() {
     type: string;
     label: string;
   } | null>(null);
+  const [insertIndex, setInsertIndex] = useState<number | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -69,8 +71,30 @@ export default function EditorPage() {
         type: active.data.current.type,
         label: active.data.current.label,
       });
+      setInsertIndex(blocks.length);
     } else {
       setActiveId(active.id as string);
+    }
+  };
+
+  const handleDragOver = (event: DragOverEvent) => {
+    const { active, over } = event;
+    if (active.data.current?.isSidebarItem) {
+      if (!over) {
+        setInsertIndex(null);
+        return;
+      }
+      const overId = over.id as string;
+      if (overId === CANVAS_ROOT_ID) {
+        setInsertIndex(blocks.length);
+      } else if (overId === active.id) {
+        // Keep current insertIndex to prevent flickering / infinite loops
+      } else {
+        const idx = blocks.findIndex((b) => b.id === overId);
+        if (idx !== -1) {
+          setInsertIndex(idx);
+        }
+      }
     }
   };
 
@@ -78,6 +102,8 @@ export default function EditorPage() {
     const { active, over } = event;
     setActiveId(null);
     setActiveSidebarItem(null);
+    const finalInsertIndex = insertIndex;
+    setInsertIndex(null);
 
     if (!over) return;
 
@@ -90,16 +116,8 @@ export default function EditorPage() {
         props: { ...(def?.defaultProps ?? {}) },
       };
 
-      const overId = over.id as string;
-
-      if (overId === CANVAS_ROOT_ID) {
-        addBlock(newBlock);
-        return;
-      }
-
-      const sortableIndex = over.data.current?.sortable?.index;
-      if (typeof sortableIndex === "number") {
-        addBlock(newBlock, sortableIndex);
+      if (typeof finalInsertIndex === "number") {
+        addBlock(newBlock, finalInsertIndex);
       } else {
         addBlock(newBlock);
       }
@@ -290,6 +308,7 @@ console.log(\`Successfully loaded demo in \${editorName}!\`);
         sensors={sensors}
         collisionDetection={customCollisionDetection}
         onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
       >
         <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
@@ -333,7 +352,10 @@ console.log(\`Successfully loaded demo in \${editorName}!\`);
             </div>
           </div>
 
-          <EditorCanvas />
+          <EditorCanvas
+            activeSidebarItem={activeSidebarItem}
+            insertIndex={insertIndex}
+          />
 
           {previewOpen && (
             <>

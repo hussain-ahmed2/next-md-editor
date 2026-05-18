@@ -6,52 +6,34 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { useDroppable, useDndContext } from "@dnd-kit/core";
+import { useDroppable } from "@dnd-kit/core";
 import { SortableBlock } from "./SortableBlock";
 import { BlockRegistry } from "@next-md-editor/editor-core";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo } from "react";
 
 export const CANVAS_ROOT_ID = "canvas-root";
 export const SIDEBAR_PLACEHOLDER_ID = "sidebar-placeholder";
 
-export function EditorCanvas() {
+interface EditorCanvasProps {
+  activeSidebarItem: { type: string; label: string } | null;
+  insertIndex: number | null;
+}
+
+export function EditorCanvas({ activeSidebarItem, insertIndex }: EditorCanvasProps) {
   const { blocks } = useEditorStore();
-  const { active, over } = useDndContext();
-  const [insertIndex, setInsertIndex] = useState<number | null>(null);
   
   const { setNodeRef } = useDroppable({
     id: CANVAS_ROOT_ID,
   });
 
-  const isDraggingSidebarItem = active && active.data.current?.isSidebarItem;
-
-  // Track the insertion index based on collisions, preventing infinite loop/flicker
-  useEffect(() => {
-    if (isDraggingSidebarItem) {
-      if (!over) return;
-      
-      const overId = over.id as string;
-      if (overId === CANVAS_ROOT_ID) {
-        setInsertIndex(blocks.length);
-      } else if (active && overId === active.id) {
-        // Crucial: do nothing when hovering over the placeholder to prevent layout loops
-      } else {
-        const idx = blocks.findIndex(b => b.id === overId);
-        if (idx !== -1) {
-          setInsertIndex(idx);
-        }
-      }
-    } else {
-      setInsertIndex(null);
-    }
-  }, [isDraggingSidebarItem, active, over, blocks]);
+  const isDraggingSidebarItem = !!activeSidebarItem;
 
   const displayBlocks = useMemo(() => {
-    if (isDraggingSidebarItem && insertIndex !== null && active) {
-      const type = active.data.current?.type;
+    if (isDraggingSidebarItem && insertIndex !== null && activeSidebarItem) {
+      const type = activeSidebarItem.type;
       const def = BlockRegistry.get(type);
       const placeholderBlock = {
-        id: active.id as string,
+        id: `sidebar-${type}`,
         type,
         props: { ...(def?.defaultProps ?? {}) }
       };
@@ -62,7 +44,7 @@ export function EditorCanvas() {
       return newBlocks;
     }
     return blocks;
-  }, [blocks, isDraggingSidebarItem, insertIndex, active]);
+  }, [blocks, isDraggingSidebarItem, insertIndex, activeSidebarItem]);
 
   const sortableItems = useMemo(() => {
     return displayBlocks.map(b => b.id);
@@ -90,7 +72,7 @@ export function EditorCanvas() {
         >
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
             {displayBlocks.map((block) => {
-              const isPlaceholder = isDraggingSidebarItem && active && block.id === active.id;
+              const isPlaceholder = isDraggingSidebarItem && block.id === `sidebar-${block.type}`;
               return (
                 <SortableBlock 
                   key={block.id} 
