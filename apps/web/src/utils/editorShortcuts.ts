@@ -1,9 +1,50 @@
 import React from "react";
 
 /**
- * Global keyboard shortcuts helper for block-based contentEditable fields.
- * Intercepts Ctrl/Cmd + B (Bold), Ctrl/Cmd + I (Italic), and Ctrl/Cmd + K (Link)
- * and wraps selections in standard markdown formatting while sync-updating Zustand.
+ * Converts rich visual HTML inside contentEditable back into clean Markdown.
+ * Intercepts visual browser tags like <b>, <strong>, <i>, <em>, <code> and <a>
+ * and translates them back to standard GFM syntax.
+ */
+export function htmlToMarkdown(html: string): string {
+  if (!html) return "";
+
+  let text = html;
+
+  // 1. Convert bold structures
+  text = text.replace(/<(strong|b)>(.*?)<\/\1>/gi, "**$2**");
+
+  // 2. Convert italic structures
+  text = text.replace(/<(em|i)>(.*?)<\/\1>/gi, "*$2*");
+
+  // 3. Convert inline code blocks
+  text = text.replace(/<code[^>]*>(.*?)<\/code>/gi, "`$1`");
+
+  // 4. Convert hyperlink structures
+  text = text.replace(/<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/gi, "[$2]($1)");
+
+  // 5. Clean up standard editor container wrappers & breaks
+  text = text.replace(/<br\s*\/?>/gi, "\n");
+  text = text.replace(/<div[^>]*>(.*?)<\/div>/gi, "\n$1");
+  text = text.replace(/<p[^>]*>(.*?)<\/p>/gi, "\n$1");
+
+  // 6. Strip all other browser-injected HTML markup
+  text = text.replace(/<[^>]*>/g, "");
+
+  // 7. Decode HTML entities cleanly
+  text = text
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&nbsp;/g, " ");
+
+  return text.trim();
+}
+
+/**
+ * Intercepts keyboard shortcuts for contentEditable blocks.
+ * - Bold (Ctrl/Cmd+B): Let browser format visually in real-time, saved as **markdown** on blur.
+ * - Italic (Ctrl/Cmd+I): Let browser format visually in real-time, saved as *markdown* on blur.
+ * - Link (Ctrl/Cmd+K): Prompts for hyperlinking, wrapped programmatically.
  */
 export function handleEditorKeyboardShortcuts(
   e: React.KeyboardEvent<HTMLDivElement>,
@@ -11,72 +52,42 @@ export function handleEditorKeyboardShortcuts(
   updateBlock: (id: string, props: any) => void
 ) {
   const hasMeta = e.ctrlKey || e.metaKey;
-
   const key = e.key.toLowerCase();
+
   if (hasMeta && (key === "b" || key === "i" || key === "k")) {
-    e.preventDefault();
+    if (key === "k") {
+      e.preventDefault();
 
-    const selection = window.getSelection();
-    if (!selection || selection.rangeCount === 0) return;
-    const range = selection.getRangeAt(0);
-    const selectedText = range.toString();
+      const selection = window.getSelection();
+      if (!selection || selection.rangeCount === 0) return;
+      const range = selection.getRangeAt(0);
+      const selectedText = range.toString();
 
-    let prefix = "";
-    let suffix = "";
+      // Extract leading/trailing space for clean formatting
+      let startSpace = "";
+      let endSpace = "";
+      let cleanText = selectedText;
 
-    if (key === "b") {
-      prefix = "**";
-      suffix = "**";
-    } else if (key === "i") {
-      prefix = "*";
-      suffix = "*";
-    } else if (key === "k") {
-      prefix = "[";
-      suffix = "](url)";
+      const startMatch = selectedText.match(/^(\s+)/);
+      if (startMatch) {
+        startSpace = startMatch[1];
+        cleanText = cleanText.slice(startSpace.length);
+      }
+
+      const endMatch = selectedText.match(/(\s+)$/);
+      if (endMatch) {
+        endSpace = endMatch[1];
+        cleanText = cleanText.slice(0, cleanText.length - endSpace.length);
+      }
+
+      const textNode = document.createTextNode(startSpace + "[" + cleanText + "](url)" + endSpace);
+      range.deleteContents();
+      range.insertNode(textNode);
+
+      updateBlock(blockId, { text: htmlToMarkdown(e.currentTarget.innerHTML) });
     }
-
-    // Intelligent whitespace extraction to keep spaces OUTSIDE markdown tags
-    let startSpace = "";
-    let endSpace = "";
-    let cleanText = selectedText;
-
-    const startMatch = selectedText.match(/^(\s+)/);
-    if (startMatch) {
-      startSpace = startMatch[1];
-      cleanText = cleanText.slice(startSpace.length);
-    }
-
-    const endMatch = selectedText.match(/(\s+)$/);
-    if (endMatch) {
-      endSpace = endMatch[1];
-      cleanText = cleanText.slice(0, cleanText.length - endSpace.length);
-    }
-
-    const formattedString = startSpace + prefix + cleanText + suffix + endSpace;
-    const textNode = document.createTextNode(formattedString);
-    range.deleteContents();
-    range.insertNode(textNode);
-
-    // Dynamic focus selection handling
-    if (selectedText === "") {
-      const newRange = document.createRange();
-      newRange.setStart(textNode, prefix.length);
-      newRange.setEnd(textNode, prefix.length);
-      selection.removeAllRanges();
-      selection.addRange(newRange);
-    } else {
-      const newRange = document.createRange();
-      // Highlight precisely the clean text inside the wrapping tags
-      const startPos = startSpace.length + prefix.length;
-      const endPos = startPos + cleanText.length;
-      newRange.setStart(textNode, startPos);
-      newRange.setEnd(textNode, endPos);
-      selection.removeAllRanges();
-      selection.addRange(newRange);
-    }
-
-    // Force an immediate state synchronisation with the Zustand store
-    // so the live preview updates in real-time without needing to blur first
-    updateBlock(blockId, { text: e.currentTarget.textContent ?? "" });
+    // Note: For 'b' and 'i', we intentionally do NOT call e.preventDefault().
+    // This allows the browser's native editor to apply direct visual bolding/italics
+    // on the screen inside the block. When the user blurs, htmlToMarkdown parses the HTML back to **markdown**!
   }
 }
