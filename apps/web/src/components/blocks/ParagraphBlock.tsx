@@ -40,6 +40,110 @@ export function ParagraphBlock({ block }: { block: Block }) {
     updateBlock(block.id, { text: htmlToMarkdown(e.currentTarget.innerHTML) });
   };
 
+  // Smart visual decorations for lists and todo checkboxes on blur
+  const isTodo = !isFocused && (text.startsWith("- [ ] ") || text.startsWith("- [x] "));
+  const isBullet = !isFocused && !isTodo && (text.startsWith("- ") || text.startsWith("* "));
+  const numberMatch = !isFocused && !isTodo && !isBullet && text.match(/^(\d+)\.\s(.*)$/);
+
+  if (isTodo) {
+    const checked = text.startsWith("- [x] ");
+    const cleanText = text.slice(6);
+    return (
+      <div style={{ display: "flex", gap: 10, alignItems: "center", width: "100%", paddingLeft: 4 }}>
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={(e) => {
+            const nextText = checked ? `- [ ] ${cleanText}` : `- [x] ${cleanText}`;
+            updateBlock(block.id, { text: nextText });
+          }}
+          style={{
+            cursor: "pointer",
+            width: 16,
+            height: 16,
+            borderRadius: 4,
+            border: "1px solid var(--border)",
+            accentColor: "var(--accent)",
+          }}
+        />
+        <div
+          ref={ref}
+          contentEditable
+          suppressContentEditableWarning
+          onFocus={() => setIsFocused(true)}
+          onBlur={handleBlur}
+          onInput={handleInput}
+          onKeyDown={(e) => handleEditorKeyboardShortcuts(e, block.id, updateBlock)}
+          style={{
+            flex: 1,
+            fontSize: "1rem",
+            lineHeight: 1.75,
+            color: checked ? "var(--text-secondary)" : "var(--text-primary)",
+            textDecoration: checked ? "line-through" : "none",
+            outline: "none",
+            minHeight: "1.75em",
+          }}
+          dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(cleanText) || "" }}
+        />
+      </div>
+    );
+  }
+
+  if (isBullet) {
+    const cleanText = text.slice(2);
+    return (
+      <div style={{ display: "flex", gap: 10, alignItems: "flex-start", width: "100%", paddingLeft: 8 }}>
+        <span style={{ color: "var(--text-secondary)", userSelect: "none", marginTop: 1 }}>•</span>
+        <div
+          ref={ref}
+          contentEditable
+          suppressContentEditableWarning
+          onFocus={() => setIsFocused(true)}
+          onBlur={handleBlur}
+          onInput={handleInput}
+          onKeyDown={(e) => handleEditorKeyboardShortcuts(e, block.id, updateBlock)}
+          style={{
+            flex: 1,
+            fontSize: "1rem",
+            lineHeight: 1.75,
+            color: "var(--text-primary)",
+            outline: "none",
+            minHeight: "1.75em",
+          }}
+          dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(cleanText) || "" }}
+        />
+      </div>
+    );
+  }
+
+  if (numberMatch) {
+    const num = numberMatch[1];
+    const cleanText = numberMatch[2];
+    return (
+      <div style={{ display: "flex", gap: 10, alignItems: "flex-start", width: "100%", paddingLeft: 8 }}>
+        <span style={{ color: "var(--text-secondary)", userSelect: "none", minWidth: 20 }}>{num}.</span>
+        <div
+          ref={ref}
+          contentEditable
+          suppressContentEditableWarning
+          onFocus={() => setIsFocused(true)}
+          onBlur={handleBlur}
+          onInput={handleInput}
+          onKeyDown={(e) => handleEditorKeyboardShortcuts(e, block.id, updateBlock)}
+          style={{
+            flex: 1,
+            fontSize: "1rem",
+            lineHeight: 1.75,
+            color: "var(--text-primary)",
+            outline: "none",
+            minHeight: "1.75em",
+          }}
+          dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(cleanText) || "" }}
+        />
+      </div>
+    );
+  }
+
   return (
     <div
       ref={ref}
