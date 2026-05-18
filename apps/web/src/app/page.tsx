@@ -103,14 +103,18 @@ export default function EditorPage() {
     const finalInsertIndex = insertIndex;
     setInsertIndex(null);
 
-    if (active.data.current?.isSidebarItem) {
-      const type = active.data.current.type;
+    const isSidebarDrag = active.data.current?.isSidebarItem || (active.id && active.id.toString().startsWith("sidebar-"));
+
+    if (isSidebarDrag) {
+      const type = active.data.current?.type || active.id.toString().replace("sidebar-", "");
       const def = BlockRegistry.get(type);
       const newBlock = {
         id: uuidv4(),
         type,
         props: { ...(def?.defaultProps ?? {}) },
       };
+
+      console.log("[DragEnd] Sidebar item dropped:", type, "at index:", finalInsertIndex);
 
       if (typeof finalInsertIndex === "number") {
         addBlock(newBlock, finalInsertIndex);
