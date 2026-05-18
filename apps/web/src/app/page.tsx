@@ -9,6 +9,19 @@ import { useEffect, useState } from "react";
 import { initRegistry } from "@/registry";
 import { parseMarkdown } from "@/features/markdown/serializer";
 import { GripVertical } from "lucide-react";
+import {
+  DndContext,
+  DragEndEvent,
+  DragStartEvent,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  DragOverlay,
+} from "@dnd-kit/core";
+import { v4 as uuidv4 } from "uuid";
+import { BlockRegistry } from "@next-md-editor/editor-core";
+import { BlockRenderer } from "@/components/editor/BlockRenderer";
 
 export default function EditorPage() {
   const [previewOpen, setPreviewOpen] = useState(true);
@@ -21,8 +34,68 @@ export default function EditorPage() {
   const setBlocks = useEditorStore((s) => s.setBlocks);
   const undo = useEditorStore((s) => s.undo);
   const redo = useEditorStore((s) => s.redo);
+  const moveBlock = useEditorStore((s) => s.moveBlock);
+  const addBlock = useEditorStore((s) => s.addBlock);
+
   const [saveStatus, setSaveStatus] = useState<"saving" | "saved" | "idle">("idle");
   const [isLoaded, setIsLoaded] = useState(false);
+
+  // Drag and Drop state
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [activeSidebarItem, setActiveSidebarItem] = useState<{ type: string; label: string } | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+  );
+
+  const handleDragStart = (event: DragStartEvent) => {
+    const { active } = event;
+    if (active.data.current?.isSidebarItem) {
+      setActiveSidebarItem({ type: active.data.current.type, label: active.data.current.label });
+    } else {
+      setActiveId(active.id as string);
+    }
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveId(null);
+    setActiveSidebarItem(null);
+
+    if (!over) return;
+
+    if (active.data.current?.isSidebarItem) {
+      // Dropping a sidebar item into the canvas
+      const type = active.data.current.type;
+      const def = BlockRegistry.get(type);
+      const newBlock = {
+        id: uuidv4(),
+        type,
+        props: { ...(def?.defaultProps ?? {}) },
+      };
+
+      const overId = over.id as string;
+      if (overId === "canvas-root") {
+        addBlock(newBlock);
+      } else {
+        const toIndex = blocks.findIndex((b) => b.id === overId);
+        // If we dropped over an existing block, insert there. Else append at the end.
+        if (toIndex !== -1) {
+          addBlock(newBlock, toIndex);
+        } else {
+          addBlock(newBlock);
+        }
+      }
+      return;
+    }
+
+    // Standard canvas reordering
+    if (active.id === over.id || over.id === "canvas-root") return;
+    const toIndex = blocks.findIndex((b) => b.id === over.id);
+    if (toIndex !== -1) {
+      moveBlock(active.id as string, toIndex);
+    }
+  };
 
   // Initial load
   useEffect(() => {
@@ -163,80 +236,125 @@ console.log(\`Successfully loaded demo in \${editorName}!\`);
         onTogglePreview={() => setPreviewOpen(v => !v)} 
         saveStatus={saveStatus}
       />
-      <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
-        <EditorSidebar width={sidebarWidth} />
-        
-        {/* Sidebar Resize Bar */}
-        <div
-          onMouseDown={startResizeSidebar}
-          style={{
-            width: 8,
-            cursor: "col-resize",
-            background: isResizingSidebar ? "var(--accent-muted)" : "transparent",
-            zIndex: 10,
-            transition: "background-color 0.15s ease",
-            alignSelf: "stretch",
-            marginLeft: -4,
-            marginRight: -4,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-          onMouseEnter={e => {
-            if (!isResizingSidebar) e.currentTarget.style.background = "var(--bg-hover)";
-          }}
-          onMouseLeave={e => {
-            if (!isResizingSidebar) e.currentTarget.style.background = "transparent";
-          }}
-        >
-          <div style={{
-            color: "var(--text-muted)",
-            opacity: isResizingSidebar ? 1 : 0.5,
-            pointerEvents: "none",
-          }}>
-            <GripVertical size={12} />
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+      >
+        <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+          <EditorSidebar width={sidebarWidth} />
+          
+          {/* Sidebar Resize Bar */}
+          <div
+            onMouseDown={startResizeSidebar}
+            style={{
+              width: 8,
+              cursor: "col-resize",
+              background: isResizingSidebar ? "var(--accent-muted)" : "transparent",
+              zIndex: 10,
+              transition: "background-color 0.15s ease",
+              alignSelf: "stretch",
+              marginLeft: -4,
+              marginRight: -4,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+            onMouseEnter={e => {
+              if (!isResizingSidebar) e.currentTarget.style.background = "var(--bg-hover)";
+            }}
+            onMouseLeave={e => {
+              if (!isResizingSidebar) e.currentTarget.style.background = "transparent";
+            }}
+          >
+            <div style={{
+              color: "var(--text-muted)",
+              opacity: isResizingSidebar ? 1 : 0.5,
+              pointerEvents: "none",
+            }}>
+              <GripVertical size={12} />
+            </div>
           </div>
+
+          <EditorCanvas />
+
+          {previewOpen && (
+            <>
+              {/* Preview Resize Bar */}
+              <div
+                onMouseDown={startResizePreview}
+                style={{
+                  width: 8,
+                  cursor: "col-resize",
+                  background: isResizingPreview ? "var(--accent-muted)" : "transparent",
+                  zIndex: 10,
+                  transition: "background-color 0.15s ease",
+                  alignSelf: "stretch",
+                  marginLeft: -4,
+                  marginRight: -4,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+                onMouseEnter={e => {
+                  if (!isResizingPreview) e.currentTarget.style.background = "var(--bg-hover)";
+                }}
+                onMouseLeave={e => {
+                  if (!isResizingPreview) e.currentTarget.style.background = "transparent";
+                }}
+              >
+                <div style={{
+                  color: "var(--text-muted)",
+                  opacity: isResizingPreview ? 1 : 0.5,
+                  pointerEvents: "none",
+                }}>
+                  <GripVertical size={12} />
+                </div>
+              </div>
+              <MarkdownPreview width={previewWidth} />
+            </>
+          )}
         </div>
 
-        <EditorCanvas />
-
-        {previewOpen && (
-          <>
-            {/* Preview Resize Bar */}
+        <DragOverlay adjustScale={false}>
+          {activeId ? (
             <div
-              onMouseDown={startResizePreview}
               style={{
-                width: 8,
-                cursor: "col-resize",
-                background: isResizingPreview ? "var(--accent-muted)" : "transparent",
-                zIndex: 10,
-                transition: "background-color 0.15s ease",
-                alignSelf: "stretch",
-                marginLeft: -4,
-                marginRight: -4,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-              onMouseEnter={e => {
-                if (!isResizingPreview) e.currentTarget.style.background = "var(--bg-hover)";
-              }}
-              onMouseLeave={e => {
-                if (!isResizingPreview) e.currentTarget.style.background = "transparent";
+                borderRadius: "var(--radius-md)",
+                border: "1px solid var(--accent)",
+                background: "var(--bg-elevated)",
+                boxShadow: "var(--shadow-lg)",
+                padding: "8px 12px",
+                cursor: "grabbing",
+                opacity: 0.9,
               }}
             >
-              <div style={{
-                color: "var(--text-muted)",
-                opacity: isResizingPreview ? 1 : 0.5,
-                pointerEvents: "none",
-              }}>
-                <GripVertical size={12} />
-              </div>
+              {(() => {
+                const activeBlock = blocks.find((b) => b.id === activeId);
+                return activeBlock ? <BlockRenderer block={activeBlock} /> : null;
+              })()}
             </div>
-            <MarkdownPreview width={previewWidth} />
-          </>
-        )}
-      </div>
+          ) : activeSidebarItem ? (
+            <div style={{
+              padding: "8px 16px",
+              background: "var(--accent)",
+              color: "white",
+              borderRadius: "var(--radius-md)",
+              fontSize: 13,
+              fontWeight: 600,
+              boxShadow: "var(--shadow-lg)",
+              cursor: "grabbing",
+              pointerEvents: "none",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+            }}>
+              Adding {activeSidebarItem.label}...
+            </div>
+          ) : null}
+        </DragOverlay>
+      </DndContext>
     </div>
   );
 }

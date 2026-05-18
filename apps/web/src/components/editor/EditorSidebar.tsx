@@ -3,6 +3,7 @@
 import { useEditorStore } from "@next-md-editor/editor-core";
 import { BlockRegistry } from "@next-md-editor/editor-core";
 import { v4 as uuidv4 } from "uuid";
+import { useDraggable } from "@dnd-kit/core";
 import {
   Heading,
   Text,
@@ -31,6 +32,73 @@ const BLOCK_PALETTE: SidebarBlock[] = [
   { type: "table",     label: "Table",     icon: <Table size={14} />,      description: "Visual GFM grid table" },
   { type: "callout",   label: "Callout",   icon: <Lightbulb size={14} />,  description: "Pastel alert callout box" },
 ];
+
+function DraggableSidebarItem({ b, handleAdd }: { b: SidebarBlock, handleAdd: (type: string) => void }) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: `sidebar-${b.type}`,
+    data: {
+      isSidebarItem: true,
+      type: b.type,
+      label: b.label,
+    },
+  });
+
+  return (
+    <button
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
+      onClick={() => handleAdd(b.type)}
+      title={b.description}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        padding: "8px 10px",
+        borderRadius: "var(--radius-sm)",
+        border: "1px solid transparent",
+        background: "transparent",
+        color: "var(--text-secondary)",
+        cursor: isDragging ? "grabbing" : "grab",
+        fontSize: 13,
+        fontWeight: 500,
+        transition: "all 0.15s ease",
+        textAlign: "left",
+        opacity: isDragging ? 0.5 : 1,
+      }}
+      onMouseEnter={e => {
+        const el = e.currentTarget;
+        el.style.background = "var(--bg-hover)";
+        el.style.borderColor = "var(--border)";
+        el.style.color = "var(--text-primary)";
+      }}
+      onMouseLeave={e => {
+        const el = e.currentTarget;
+        el.style.background = "transparent";
+        el.style.borderColor = "transparent";
+        el.style.color = "var(--text-secondary)";
+      }}
+    >
+      <span style={{
+        width: 28,
+        height: 28,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        borderRadius: "var(--radius-sm)",
+        background: "var(--accent-muted)",
+        color: "var(--accent)",
+        flexShrink: 0,
+      }}>
+        {b.icon}
+      </span>
+      <div>
+        <div style={{ lineHeight: 1.3 }}>{b.label}</div>
+        <div style={{ fontSize: 11, color: "var(--text-muted)", lineHeight: 1.3 }}>{b.description}</div>
+      </div>
+    </button>
+  );
+}
 
 export function EditorSidebar({ width = 220 }: { width?: number }) {
   const addBlock = useEditorStore((s) => s.addBlock);
@@ -66,56 +134,7 @@ export function EditorSidebar({ width = 220 }: { width?: number }) {
         Blocks
       </div>
       {BLOCK_PALETTE.map((b) => (
-        <button
-          key={b.type}
-          onClick={() => handleAdd(b.type)}
-          title={b.description}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            padding: "8px 10px",
-            borderRadius: "var(--radius-sm)",
-            border: "1px solid transparent",
-            background: "transparent",
-            color: "var(--text-secondary)",
-            cursor: "pointer",
-            fontSize: 13,
-            fontWeight: 500,
-            transition: "all 0.15s ease",
-            textAlign: "left",
-          }}
-          onMouseEnter={e => {
-            const el = e.currentTarget;
-            el.style.background = "var(--bg-hover)";
-            el.style.borderColor = "var(--border)";
-            el.style.color = "var(--text-primary)";
-          }}
-          onMouseLeave={e => {
-            const el = e.currentTarget;
-            el.style.background = "transparent";
-            el.style.borderColor = "transparent";
-            el.style.color = "var(--text-secondary)";
-          }}
-        >
-          <span style={{
-            width: 28,
-            height: 28,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            borderRadius: "var(--radius-sm)",
-            background: "var(--accent-muted)",
-            color: "var(--accent)",
-            flexShrink: 0,
-          }}>
-            {b.icon}
-          </span>
-          <div>
-            <div style={{ lineHeight: 1.3 }}>{b.label}</div>
-            <div style={{ fontSize: 11, color: "var(--text-muted)", lineHeight: 1.3 }}>{b.description}</div>
-          </div>
-        </button>
+        <DraggableSidebarItem key={b.type} b={b} handleAdd={handleAdd} />
       ))}
     </aside>
   );
