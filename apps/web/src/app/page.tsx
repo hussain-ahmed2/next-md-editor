@@ -59,8 +59,6 @@ export default function EditorPage() {
     label: string;
   } | null>(null);
   const [insertIndex, setInsertIndex] = useState<number | null>(null);
-  const [sidebarDragActive, setSidebarDragActive] = useState<boolean>(false);
-  const [sidebarDroppedSuccessfully, setSidebarDroppedSuccessfully] = useState<boolean>(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -82,12 +80,8 @@ export default function EditorPage() {
           type.charAt(0).toUpperCase() + type.slice(1),
       });
       setInsertIndex(blocks.length);
-      setSidebarDragActive(true);
-      setSidebarDroppedSuccessfully(false);
     } else {
       setActiveId(active.id as string);
-      setSidebarDragActive(false);
-      setSidebarDroppedSuccessfully(false);
     }
   };
 
@@ -116,7 +110,6 @@ export default function EditorPage() {
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     setActiveId(null);
-    setActiveSidebarItem(null);
     const finalInsertIndex = insertIndex;
     setInsertIndex(null);
 
@@ -144,18 +137,22 @@ export default function EditorPage() {
 
       const isSuccessfulDrop = !!over;
       if (isSuccessfulDrop) {
-        setSidebarDroppedSuccessfully(true);
         if (typeof finalInsertIndex === "number") {
           addBlock(newBlock, finalInsertIndex);
         } else {
           addBlock(newBlock);
         }
+        // Delay resetting the active sidebar item slightly to let the dropAnimation prop (activeSidebarItem ? null : undefined) evaluate to null and instantly hide the overlay
+        setTimeout(() => {
+          setActiveSidebarItem(null);
+        }, 0);
       } else {
-        setSidebarDroppedSuccessfully(false);
+        setActiveSidebarItem(null);
       }
       return;
     }
 
+    setActiveSidebarItem(null);
     if (!over) return;
 
     // Standard canvas reordering
@@ -451,13 +448,7 @@ console.log(\`Successfully loaded demo in \${editorName}!\`);
 
         <DragOverlay
           adjustScale={false}
-          dropAnimation={
-            sidebarDragActive
-              ? sidebarDroppedSuccessfully
-                ? null
-                : undefined
-              : undefined
-          }
+          dropAnimation={activeSidebarItem ? null : undefined}
         >
           {activeId ? (
             <div
