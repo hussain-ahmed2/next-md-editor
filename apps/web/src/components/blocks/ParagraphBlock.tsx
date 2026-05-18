@@ -35,8 +35,8 @@ export function ParagraphBlock({ block }: { block: Block }) {
   // Sync state changes from store to DOM when they differ (e.g. on undo/redo)
   useEffect(() => {
     if (ref.current) {
-      const currentText = ref.current.textContent || "";
-      if (currentText !== text) {
+      const currentMarkdown = htmlToMarkdown(ref.current.innerHTML);
+      if (currentMarkdown !== text) {
         ref.current.textContent = text;
 
         // Reset caret to the end if focused
@@ -52,7 +52,7 @@ export function ParagraphBlock({ block }: { block: Block }) {
         }
       }
     }
-  }, [text]);
+  }, [text, ref]);
 
   // When entering focus, snap caret and ensure text is populated
   useEffect(() => {

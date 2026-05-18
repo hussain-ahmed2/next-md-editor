@@ -67,8 +67,8 @@ export function HeadingBlock({ block }: { block: Block }) {
   // Sync state changes from store to DOM when they differ (e.g. on undo/redo)
   useEffect(() => {
     if (ref.current) {
-      const currentText = ref.current.textContent || "";
-      if (currentText !== text) {
+      const currentMarkdown = htmlToMarkdown(ref.current.innerHTML);
+      if (currentMarkdown !== text) {
         ref.current.textContent = text;
 
         // Reset caret to the end if focused
@@ -99,7 +99,7 @@ export function HeadingBlock({ block }: { block: Block }) {
         selection.addRange(range);
       }
     }
-  }, [isFocused]);
+  }, [isFocused, ref]);
 
   const handleInput = (e: React.InputEvent<HTMLDivElement>) => {
     const rawText = htmlToMarkdown(e.currentTarget.innerHTML);
