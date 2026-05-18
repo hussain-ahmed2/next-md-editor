@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useEditorStore } from "@next-md-editor/editor-core";
 import type { Block } from "@next-md-editor/types";
 import { handleEditorKeyboardShortcuts, htmlToMarkdown } from "@/utils/editorShortcuts";
@@ -9,27 +9,27 @@ import { renderInlineMarkdown } from "@/features/markdown/highlighter";
 export function QuoteBlock({ block }: { block: Block }) {
   const updateBlock = useEditorStore((s) => s.updateBlock);
   const text = (block.props.text as string) ?? "";
+  const [isFocused, setIsFocused] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  // Synchronise state changes into the DOM only when not actively editing
+  // Set caret to the end when focused
   useEffect(() => {
-    if (ref.current && document.activeElement !== ref.current) {
-      ref.current.innerHTML = renderInlineMarkdown(text) || "";
+    if (isFocused && ref.current) {
+      const el = ref.current;
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      range.collapse(false);
+      const selection = window.getSelection();
+      if (selection) {
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
     }
-  }, [text]);
+  }, [isFocused]);
 
-  const handleFocus = () => {
-    if (ref.current) {
-      ref.current.textContent = text;
-    }
-  };
-
-  const handleBlur = () => {
-    if (ref.current) {
-      const rawText = htmlToMarkdown(ref.current.innerHTML);
-      updateBlock(block.id, { text: rawText });
-      ref.current.innerHTML = renderInlineMarkdown(rawText);
-    }
+  const handleBlur = (e: React.FocusEvent<HTMLDivElement>) => {
+    setIsFocused(false);
+    updateBlock(block.id, { text: htmlToMarkdown(e.currentTarget.innerHTML) });
   };
 
   return (
@@ -51,7 +51,7 @@ export function QuoteBlock({ block }: { block: Block }) {
         ref={ref}
         contentEditable
         suppressContentEditableWarning
-        onFocus={handleFocus}
+        onFocus={() => setIsFocused(true)}
         onBlur={handleBlur}
         onKeyDown={(e) => handleEditorKeyboardShortcuts(e, block.id, updateBlock)}
         style={{
@@ -63,6 +63,11 @@ export function QuoteBlock({ block }: { block: Block }) {
           outline: "none",
           minHeight: "1.6em",
         }}
+        {...(!isFocused ? {
+          dangerouslySetInnerHTML: { __html: renderInlineMarkdown(text) || "" }
+        } : {
+          children: text
+        })}
       />
     </div>
   );
