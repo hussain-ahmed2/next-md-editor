@@ -5,7 +5,7 @@ import { EditorSidebar } from "@/components/editor/EditorSidebar";
 import { EditorCanvas } from "@/components/editor/EditorCanvas";
 import { MarkdownPreview } from "@/components/editor/MarkdownPreview";
 import { useEditorStore } from "@next-md-editor/editor-core";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { initRegistry } from "@/registry";
 import { parseMarkdown } from "@/features/markdown/serializer";
 import { GripVertical } from "lucide-react";
@@ -60,11 +60,13 @@ export default function EditorPage() {
   } | null>(null);
   const [insertIndex, setInsertIndex] = useState<number | null>(null);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+  const pointerSensor = useSensor(
+    PointerSensor,
+    useMemo(() => ({ activationConstraint: { distance: 6 } }), [])
   );
+  const sensors = useSensors(pointerSensor);
 
-  const handleDragStart = (event: DragStartEvent) => {
+  const handleDragStart = useCallback((event: DragStartEvent) => {
     const { active } = event;
     const isSidebarDrag =
       active.data.current?.isSidebarItem ||
@@ -83,9 +85,9 @@ export default function EditorPage() {
     } else {
       setActiveId(active.id as string);
     }
-  };
+  }, [blocks.length]);
 
-  const handleDragOver = (event: DragOverEvent) => {
+  const handleDragOver = useCallback((event: DragOverEvent) => {
     const { active, over } = event;
     const isSidebarDrag =
       active.data.current?.isSidebarItem ||
@@ -105,9 +107,9 @@ export default function EditorPage() {
         }
       }
     }
-  };
+  }, [blocks]);
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event;
     setActiveId(null);
     const finalInsertIndex = insertIndex;
@@ -164,7 +166,7 @@ export default function EditorPage() {
       const fallbackIndex = blocks.findIndex((b) => b.id === over.id);
       if (fallbackIndex !== -1) moveBlock(active.id as string, fallbackIndex);
     }
-  };
+  }, [insertIndex, blocks, addBlock, moveBlock]);
 
   // Initial load
   useEffect(() => {
@@ -291,7 +293,7 @@ console.log(\`Successfully loaded demo in \${editorName}!\`);
     document.addEventListener("mouseup", stopResize);
   };
 
-  const customCollisionDetection: CollisionDetection = (args) => {
+  const customCollisionDetection: CollisionDetection = useCallback((args) => {
     if (args.active.data.current?.isSidebarItem) {
       const pointerCollisions = pointerWithin(args);
       return pointerCollisions.length > 0
@@ -299,7 +301,7 @@ console.log(\`Successfully loaded demo in \${editorName}!\`);
         : rectIntersection(args);
     }
     return closestCenter(args);
-  };
+  }, []);
 
   if (!mounted) {
     return (
