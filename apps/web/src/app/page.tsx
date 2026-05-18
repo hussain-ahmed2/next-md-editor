@@ -5,7 +5,7 @@ import { EditorSidebar } from "@/components/editor/EditorSidebar";
 import { EditorCanvas } from "@/components/editor/EditorCanvas";
 import { MarkdownPreview } from "@/components/editor/MarkdownPreview";
 import { useEditorStore } from "@next-md-editor/editor-core";
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { initRegistry } from "@/registry";
 import { parseMarkdown } from "@/features/markdown/serializer";
 import { GripVertical } from "lucide-react";
@@ -59,6 +59,7 @@ export default function EditorPage() {
     label: string;
   } | null>(null);
   const [insertIndex, setInsertIndex] = useState<number | null>(null);
+  const lastDeltaY = useRef<number>(0);
 
   const pointerSensor = useSensor(
     PointerSensor,
@@ -82,28 +83,38 @@ export default function EditorPage() {
           type.charAt(0).toUpperCase() + type.slice(1),
       });
       setInsertIndex(blocks.length);
+      lastDeltaY.current = 0;
     } else {
       setActiveId(active.id as string);
     }
   }, [blocks.length]);
 
   const handleDragOver = useCallback((event: DragOverEvent) => {
-    const { active, over } = event;
+    const { active, over, delta } = event;
     const isSidebarDrag =
       active.data.current?.isSidebarItem ||
       (active.id && active.id.toString().startsWith("sidebar-"));
     if (isSidebarDrag) {
+      // If the mouse has not vertically moved by at least 15 pixels since the last insertion update,
+      // ignore it to prevent loop updates triggered by placeholder insertion layout-shifts!
+      const deltaY = Math.abs(delta.y - lastDeltaY.current);
+      if (deltaY < 15) {
+        return;
+      }
+
       if (!over) return; // Keep last known insertIndex to prevent flickering or disappearing placeholder
 
       const overId = over.id as string;
       if (overId === CANVAS_ROOT_ID) {
         setInsertIndex(blocks.length);
+        lastDeltaY.current = delta.y;
       } else if (overId === active.id || overId.startsWith("placeholder-")) {
         // Keep current insertIndex to prevent flickering / infinite loops
       } else {
         const idx = blocks.findIndex((b) => b.id === overId);
         if (idx !== -1) {
           setInsertIndex(idx);
+          lastDeltaY.current = delta.y;
         }
       }
     }
@@ -114,6 +125,7 @@ export default function EditorPage() {
     setActiveId(null);
     const finalInsertIndex = insertIndex;
     setInsertIndex(null);
+    lastDeltaY.current = 0;
 
     const isSidebarDrag =
       active.data.current?.isSidebarItem ||
