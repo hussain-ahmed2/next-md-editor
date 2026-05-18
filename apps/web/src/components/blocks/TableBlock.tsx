@@ -2,7 +2,7 @@
 
 import { useEditorStore } from "@next-md-editor/editor-core";
 import type { Block } from "@next-md-editor/types";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { htmlToMarkdown } from "@/utils/editorShortcuts";
 import { renderInlineMarkdown } from "@/features/markdown/highlighter";
 
@@ -11,6 +11,71 @@ export function TableBlock({ block }: { block: Block }) {
   const rows = (block.props.rows as string[][]) ?? [["Column 1", "Column 2"], ["Cell 1", "Cell 2"]];
   const [focusedCell, setFocusedCell] = useState<{ rIdx: number; cIdx: number } | null>(null);
 
+  // A map of refs keyed by "rIdx-cIdx" for imperative DOM access
+  const cellRefs = useRef<Map<string, HTMLElement>>(new Map());
+
+  const setCellRef = (rIdx: number, cIdx: number) => (el: HTMLElement | null) => {
+    const key = `${rIdx}-${cIdx}`;
+    if (el) cellRefs.current.set(key, el);
+    else cellRefs.current.delete(key);
+  };
+
+  // When focus changes to a new cell, imperatively populate its innerHTML
+  // so React's removal of dangerouslySetInnerHTML doesn't clear the content
+  useEffect(() => {
+    if (focusedCell) {
+      const { rIdx, cIdx } = focusedCell;
+      const key = `${rIdx}-${cIdx}`;
+      const el = cellRefs.current.get(key);
+      const cellValue = rows[rIdx]?.[cIdx] ?? "";
+      if (el) {
+        el.innerHTML = renderInlineMarkdown(cellValue);
+        // Move caret to end
+        const range = document.createRange();
+        range.selectNodeContents(el);
+        range.collapse(false);
+        const selection = window.getSelection();
+        if (selection) {
+          selection.removeAllRanges();
+          selection.addRange(range);
+        }
+      }
+    }
+  }, [focusedCell]);
+
+  // Sync cell content when rows change from outside (undo/redo)
+  useEffect(() => {
+    rows.forEach((row, rIdx) => {
+      row.forEach((cell, cIdx) => {
+        const key = `${rIdx}-${cIdx}`;
+        const el = cellRefs.current.get(key);
+        if (el && document.activeElement !== el) {
+          const currentMarkdown = htmlToMarkdown(el.innerHTML);
+          if (currentMarkdown !== cell) {
+            el.innerHTML = renderInlineMarkdown(cell);
+          }
+        }
+      });
+    });
+  }, [rows]);
+
+  const handleCellInput = (rIdx: number, cIdx: number, html: string) => {
+    const markdownValue = htmlToMarkdown(html);
+    const nextRows = rows.map((r, ri) =>
+      ri === rIdx ? r.map((c, ci) => (ci === cIdx ? markdownValue : c)) : r
+    );
+    updateBlock(block.id, { rows: nextRows });
+  };
+
+  const handleCellBlur = (rIdx: number, cIdx: number, html: string) => {
+    setFocusedCell(null);
+    const markdownValue = htmlToMarkdown(html);
+    const nextRows = rows.map((r, ri) =>
+      ri === rIdx ? r.map((c, ci) => (ci === cIdx ? markdownValue : c)) : r
+    );
+    updateBlock(block.id, { rows: nextRows });
+  };
+
   // Add a new row to the table
   const addRow = () => {
     const colCount = rows[0]?.length || 2;
@@ -18,11 +83,10 @@ export function TableBlock({ block }: { block: Block }) {
     updateBlock(block.id, { rows: newRows });
   };
 
-  // Delete the last row
+  // Delete the last row (keep header + at least 1 data row)
   const deleteRow = () => {
-    if (rows.length <= 2) return; // Prevent deleting headers & first row
-    const newRows = rows.slice(0, -1);
-    updateBlock(block.id, { rows: newRows });
+    if (rows.length <= 2) return;
+    updateBlock(block.id, { rows: rows.slice(0, -1) });
   };
 
   // Add a new column
@@ -33,17 +97,41 @@ export function TableBlock({ block }: { block: Block }) {
 
   // Delete the last column
   const deleteColumn = () => {
-    if (rows[0]?.length <= 1) return; // Retain at least 1 column
-    const newRows = rows.map((r) => r.slice(0, -1));
-    updateBlock(block.id, { rows: newRows });
+    if (rows[0]?.length <= 1) return;
+    updateBlock(block.id, { rows: rows.map((r) => r.slice(0, -1)) });
   };
 
-  const handleCellInput = (rIdx: number, cIdx: number, html: string) => {
-    const markdownValue = htmlToMarkdown(html);
-    const nextRows = rows.map((r, ri) =>
-      ri === rIdx ? r.map((c, ci) => (ci === cIdx ? markdownValue : c)) : r
+  const renderCellContent = (rIdx: number, cIdx: number, cell: string, isHeader: boolean) => {
+    const isCellFocused = focusedCell?.rIdx === rIdx && focusedCell?.cIdx === cIdx;
+    const Tag = isHeader ? "th" : "td";
+
+    return (
+      <Tag
+        key={cIdx}
+        // @ts-ignore - ref callback for map
+        ref={setCellRef(rIdx, cIdx)}
+        contentEditable
+        suppressContentEditableWarning
+        onFocus={() => setFocusedCell({ rIdx, cIdx })}
+        onBlur={(e) => handleCellBlur(rIdx, cIdx, e.currentTarget.innerHTML)}
+        onInput={(e) => handleCellInput(rIdx, cIdx, e.currentTarget.innerHTML)}
+        style={{
+          padding: "10px 12px",
+          fontWeight: isHeader ? 600 : 400,
+          color: isHeader ? "var(--text-primary)" : "var(--text-secondary)",
+          borderRight: "1px solid var(--border-subtle)",
+          outline: "none",
+          minWidth: 80,
+        }}
+        {...(!isCellFocused
+          ? {
+              dangerouslySetInnerHTML: {
+                __html: renderInlineMarkdown(cell) || "",
+              },
+            }
+          : {})}
+      />
     );
-    updateBlock(block.id, { rows: nextRows });
   };
 
   return (
@@ -63,34 +151,7 @@ export function TableBlock({ block }: { block: Block }) {
         }}>
           <thead>
             <tr style={{ borderBottom: "2px solid var(--border)", background: "rgba(255,255,255,0.02)" }}>
-              {rows[0]?.map((cell, cIdx) => {
-                const isCellFocused = focusedCell?.rIdx === 0 && focusedCell?.cIdx === cIdx;
-                return (
-                  <th
-                    key={cIdx}
-                    contentEditable
-                    suppressContentEditableWarning
-                    onFocus={() => setFocusedCell({ rIdx: 0, cIdx })}
-                    onBlur={() => setFocusedCell(null)}
-                    onInput={(e) => handleCellInput(0, cIdx, e.currentTarget.innerHTML)}
-                    style={{
-                      padding: "10px 12px",
-                      fontWeight: 600,
-                      color: "var(--text-primary)",
-                      borderRight: "1px solid var(--border-subtle)",
-                      outline: "none",
-                      minWidth: 80,
-                    }}
-                    {...(!isCellFocused
-                      ? {
-                          dangerouslySetInnerHTML: {
-                            __html: renderInlineMarkdown(cell) || "",
-                          },
-                        }
-                      : {})}
-                  />
-                );
-              })}
+              {rows[0]?.map((cell, cIdx) => renderCellContent(0, cIdx, cell, true))}
             </tr>
           </thead>
           <tbody>
@@ -104,32 +165,7 @@ export function TableBlock({ block }: { block: Block }) {
                     background: rIdx % 2 === 0 ? "rgba(255,255,255,0.01)" : "transparent",
                   }}
                 >
-                  {row.map((cell, cIdx) => {
-                    const isCellFocused = focusedCell?.rIdx === rIdx && focusedCell?.cIdx === cIdx;
-                    return (
-                      <td
-                        key={cIdx}
-                        contentEditable
-                        suppressContentEditableWarning
-                        onFocus={() => setFocusedCell({ rIdx, cIdx })}
-                        onBlur={() => setFocusedCell(null)}
-                        onInput={(e) => handleCellInput(rIdx, cIdx, e.currentTarget.innerHTML)}
-                        style={{
-                          padding: "10px 12px",
-                          color: "var(--text-secondary)",
-                          borderRight: "1px solid var(--border-subtle)",
-                          outline: "none",
-                        }}
-                        {...(!isCellFocused
-                          ? {
-                              dangerouslySetInnerHTML: {
-                                __html: renderInlineMarkdown(cell) || "",
-                              },
-                            }
-                          : {})}
-                      />
-                    );
-                  })}
+                  {row.map((cell, cIdx) => renderCellContent(rIdx, cIdx, cell, false))}
                 </tr>
               );
             })}
@@ -149,66 +185,29 @@ export function TableBlock({ block }: { block: Block }) {
         borderRadius: 6,
       }}>
         <span style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 500, marginRight: 4 }}>GRID CONTROLS:</span>
-        <button
-          onClick={addRow}
-          style={{
-            padding: "4px 8px",
-            fontSize: 11,
-            fontWeight: 600,
-            borderRadius: 4,
-            border: "1px solid var(--border)",
-            background: "transparent",
-            color: "var(--text-secondary)",
-            cursor: "pointer",
-          }}
-        >
-          ➕ Row
-        </button>
-        <button
-          onClick={deleteRow}
-          style={{
-            padding: "4px 8px",
-            fontSize: 11,
-            fontWeight: 600,
-            borderRadius: 4,
-            border: "1px solid var(--border)",
-            background: "transparent",
-            color: "var(--text-secondary)",
-            cursor: "pointer",
-          }}
-        >
-          ➖ Row
-        </button>
-        <button
-          onClick={addColumn}
-          style={{
-            padding: "4px 8px",
-            fontSize: 11,
-            fontWeight: 600,
-            borderRadius: 4,
-            border: "1px solid var(--border)",
-            background: "transparent",
-            color: "var(--text-secondary)",
-            cursor: "pointer",
-          }}
-        >
-          ➕ Col
-        </button>
-        <button
-          onClick={deleteColumn}
-          style={{
-            padding: "4px 8px",
-            fontSize: 11,
-            fontWeight: 600,
-            borderRadius: 4,
-            border: "1px solid var(--border)",
-            background: "transparent",
-            color: "var(--text-secondary)",
-            cursor: "pointer",
-          }}
-        >
-          ➖ Col
-        </button>
+        {[
+          { label: "➕ Row", action: addRow },
+          { label: "➖ Row", action: deleteRow },
+          { label: "➕ Col", action: addColumn },
+          { label: "➖ Col", action: deleteColumn },
+        ].map(({ label, action }) => (
+          <button
+            key={label}
+            onClick={action}
+            style={{
+              padding: "4px 8px",
+              fontSize: 11,
+              fontWeight: 600,
+              borderRadius: 4,
+              border: "1px solid var(--border)",
+              background: "transparent",
+              color: "var(--text-secondary)",
+              cursor: "pointer",
+            }}
+          >
+            {label}
+          </button>
+        ))}
       </div>
     </div>
   );
