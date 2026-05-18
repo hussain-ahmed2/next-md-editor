@@ -23,10 +23,14 @@ export function QuoteBlock({ block }: { block: Block }) {
 
   // Auto-focus synchronization when block is selected
   useEffect(() => {
-    if (selectedBlockId === block.id && ref.current && document.activeElement !== ref.current) {
+    if (
+      selectedBlockId === block.id &&
+      ref.current &&
+      document.activeElement !== ref.current
+    ) {
       ref.current.focus();
     }
-  }, [selectedBlockId, block.id]);
+  }, [selectedBlockId, block.id, ref]);
 
   // When entering focus, populate raw text and snap caret
   useEffect(() => {
@@ -80,7 +84,15 @@ export function QuoteBlock({ block }: { block: Block }) {
         onBlur={handleBlur}
         onInput={handleInput}
         onKeyDown={(e) =>
-          handleEditorKeyboardShortcuts(e, block, blocks, addBlock, removeBlock, updateBlock, selectBlock)
+          handleEditorKeyboardShortcuts(
+            e,
+            block,
+            blocks,
+            addBlock,
+            removeBlock,
+            updateBlock,
+            selectBlock,
+          )
         }
         style={{
           flex: 1,

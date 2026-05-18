@@ -23,10 +23,14 @@ export function ParagraphBlock({ block }: { block: Block }) {
 
   // Auto-focus synchronization when block is selected
   useEffect(() => {
-    if (selectedBlockId === block.id && ref.current && document.activeElement !== ref.current) {
+    if (
+      selectedBlockId === block.id &&
+      ref.current &&
+      document.activeElement !== ref.current
+    ) {
       ref.current.focus();
     }
-  }, [selectedBlockId, block.id]);
+  }, [selectedBlockId, block.id, ref]);
 
   // When entering focus, populate raw text and snap caret
   useEffect(() => {
@@ -54,20 +58,40 @@ export function ParagraphBlock({ block }: { block: Block }) {
   };
 
   // Smart visual decorations for lists and todo checkboxes on blur
-  const isTodo = !isFocused && (text.startsWith("- [ ") || text.startsWith("- [x] ") || text.startsWith("- [ ] "));
-  const isBullet = !isFocused && !isTodo && (text.startsWith("- ") || text.startsWith("* "));
-  const numberMatch = !isFocused && !isTodo && !isBullet && text.match(/^(\d+)\.\s(.*)$/);
+  const isTodo =
+    !isFocused &&
+    (text.startsWith("- [ ") ||
+      text.startsWith("- [x] ") ||
+      text.startsWith("- [ ] "));
+  const isBullet =
+    !isFocused && !isTodo && (text.startsWith("- ") || text.startsWith("* "));
+  const numberMatch =
+    !isFocused && !isTodo && !isBullet && text.match(/^(\d+)\.\s(.*)$/);
 
   if (isTodo) {
     const checked = text.startsWith("- [x] ");
-    const cleanText = text.startsWith("- [x] ") ? text.slice(6) : text.startsWith("- [ ] ") ? text.slice(6) : text.slice(5);
+    const cleanText = text.startsWith("- [x] ")
+      ? text.slice(6)
+      : text.startsWith("- [ ] ")
+        ? text.slice(6)
+        : text.slice(5);
     return (
-      <div style={{ display: "flex", gap: 10, alignItems: "center", width: "100%", paddingLeft: 4 }}>
+      <div
+        style={{
+          display: "flex",
+          gap: 10,
+          alignItems: "center",
+          width: "100%",
+          paddingLeft: 4,
+        }}
+      >
         <input
           type="checkbox"
           checked={checked}
           onChange={(e) => {
-            const nextText = checked ? `- [ ] ${cleanText}` : `- [x] ${cleanText}`;
+            const nextText = checked
+              ? `- [ ] ${cleanText}`
+              : `- [x] ${cleanText}`;
             updateBlock(block.id, { text: nextText });
           }}
           style={{
@@ -86,7 +110,17 @@ export function ParagraphBlock({ block }: { block: Block }) {
           onFocus={() => setIsFocused(true)}
           onBlur={handleBlur}
           onInput={handleInput}
-          onKeyDown={(e) => handleEditorKeyboardShortcuts(e, block, blocks, addBlock, removeBlock, updateBlock, selectBlock)}
+          onKeyDown={(e) =>
+            handleEditorKeyboardShortcuts(
+              e,
+              block,
+              blocks,
+              addBlock,
+              removeBlock,
+              updateBlock,
+              selectBlock,
+            )
+          }
           style={{
             flex: 1,
             fontSize: "1rem",
@@ -96,7 +130,9 @@ export function ParagraphBlock({ block }: { block: Block }) {
             outline: "none",
             minHeight: "1.75em",
           }}
-          dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(cleanText) || "" }}
+          dangerouslySetInnerHTML={{
+            __html: renderInlineMarkdown(cleanText) || "",
+          }}
         />
       </div>
     );
@@ -105,8 +141,24 @@ export function ParagraphBlock({ block }: { block: Block }) {
   if (isBullet) {
     const cleanText = text.slice(2);
     return (
-      <div style={{ display: "flex", gap: 10, alignItems: "flex-start", width: "100%", paddingLeft: 8 }}>
-        <span style={{ color: "var(--text-secondary)", userSelect: "none", marginTop: 1 }}>•</span>
+      <div
+        style={{
+          display: "flex",
+          gap: 10,
+          alignItems: "flex-start",
+          width: "100%",
+          paddingLeft: 8,
+        }}
+      >
+        <span
+          style={{
+            color: "var(--text-secondary)",
+            userSelect: "none",
+            marginTop: 1,
+          }}
+        >
+          •
+        </span>
         <div
           ref={ref}
           contentEditable
@@ -114,7 +166,17 @@ export function ParagraphBlock({ block }: { block: Block }) {
           onFocus={() => setIsFocused(true)}
           onBlur={handleBlur}
           onInput={handleInput}
-          onKeyDown={(e) => handleEditorKeyboardShortcuts(e, block, blocks, addBlock, removeBlock, updateBlock, selectBlock)}
+          onKeyDown={(e) =>
+            handleEditorKeyboardShortcuts(
+              e,
+              block,
+              blocks,
+              addBlock,
+              removeBlock,
+              updateBlock,
+              selectBlock,
+            )
+          }
           style={{
             flex: 1,
             fontSize: "1rem",
@@ -123,7 +185,9 @@ export function ParagraphBlock({ block }: { block: Block }) {
             outline: "none",
             minHeight: "1.75em",
           }}
-          dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(cleanText) || "" }}
+          dangerouslySetInnerHTML={{
+            __html: renderInlineMarkdown(cleanText) || "",
+          }}
         />
       </div>
     );
@@ -133,8 +197,24 @@ export function ParagraphBlock({ block }: { block: Block }) {
     const num = numberMatch[1];
     const cleanText = numberMatch[2];
     return (
-      <div style={{ display: "flex", gap: 10, alignItems: "flex-start", width: "100%", paddingLeft: 8 }}>
-        <span style={{ color: "var(--text-secondary)", userSelect: "none", minWidth: 20 }}>{num}.</span>
+      <div
+        style={{
+          display: "flex",
+          gap: 10,
+          alignItems: "flex-start",
+          width: "100%",
+          paddingLeft: 8,
+        }}
+      >
+        <span
+          style={{
+            color: "var(--text-secondary)",
+            userSelect: "none",
+            minWidth: 20,
+          }}
+        >
+          {num}.
+        </span>
         <div
           ref={ref}
           contentEditable
@@ -142,7 +222,17 @@ export function ParagraphBlock({ block }: { block: Block }) {
           onFocus={() => setIsFocused(true)}
           onBlur={handleBlur}
           onInput={handleInput}
-          onKeyDown={(e) => handleEditorKeyboardShortcuts(e, block, blocks, addBlock, removeBlock, updateBlock, selectBlock)}
+          onKeyDown={(e) =>
+            handleEditorKeyboardShortcuts(
+              e,
+              block,
+              blocks,
+              addBlock,
+              removeBlock,
+              updateBlock,
+              selectBlock,
+            )
+          }
           style={{
             flex: 1,
             fontSize: "1rem",
@@ -151,7 +241,9 @@ export function ParagraphBlock({ block }: { block: Block }) {
             outline: "none",
             minHeight: "1.75em",
           }}
-          dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(cleanText) || "" }}
+          dangerouslySetInnerHTML={{
+            __html: renderInlineMarkdown(cleanText) || "",
+          }}
         />
       </div>
     );
@@ -165,7 +257,17 @@ export function ParagraphBlock({ block }: { block: Block }) {
       onFocus={() => setIsFocused(true)}
       onBlur={handleBlur}
       onInput={handleInput}
-      onKeyDown={(e) => handleEditorKeyboardShortcuts(e, block, blocks, addBlock, removeBlock, updateBlock, selectBlock)}
+      onKeyDown={(e) =>
+        handleEditorKeyboardShortcuts(
+          e,
+          block,
+          blocks,
+          addBlock,
+          removeBlock,
+          updateBlock,
+          selectBlock,
+        )
+      }
       data-placeholder="Start typing…"
       style={{
         fontSize: "1rem",
