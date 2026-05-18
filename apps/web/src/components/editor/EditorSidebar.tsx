@@ -3,23 +3,33 @@
 import { useEditorStore } from "@next-md-editor/editor-core";
 import { BlockRegistry } from "@next-md-editor/editor-core";
 import { v4 as uuidv4 } from "uuid";
+import {
+  Heading,
+  Text,
+  Quote,
+  Code2,
+  Minus,
+  Image,
+  Table,
+  Lightbulb,
+} from "lucide-react";
 
 interface SidebarBlock {
   type: string;
   label: string;
-  icon: string;
+  icon: React.ReactNode;
   description: string;
 }
 
 const BLOCK_PALETTE: SidebarBlock[] = [
-  { type: "heading",   label: "Heading",   icon: "H",  description: "Section title" },
-  { type: "paragraph", label: "Paragraph", icon: "¶",  description: "Body text" },
-  { type: "quote",     label: "Quote",     icon: "❝",  description: "Blockquote" },
-  { type: "code",      label: "Code",      icon: "</>", description: "Code block" },
-  { type: "divider",   label: "Divider",   icon: "—",  description: "Horizontal rule" },
-  { type: "image",     label: "Image",     icon: "🖼️", description: "Insert an image" },
-  { type: "table",     label: "Table",     icon: "📊", description: "Visual GFM grid table" },
-  { type: "callout",   label: "Callout",   icon: "💡", description: "Pastel alert callout box" },
+  { type: "heading",   label: "Heading",   icon: <Heading size={14} />,    description: "Section title" },
+  { type: "paragraph", label: "Paragraph", icon: <Text size={14} />,       description: "Body text" },
+  { type: "quote",     label: "Quote",     icon: <Quote size={14} />,      description: "Blockquote" },
+  { type: "code",      label: "Code",      icon: <Code2 size={14} />,      description: "Code block" },
+  { type: "divider",   label: "Divider",   icon: <Minus size={14} />,      description: "Horizontal rule" },
+  { type: "image",     label: "Image",     icon: <Image size={14} />,      description: "Insert an image" },
+  { type: "table",     label: "Table",     icon: <Table size={14} />,      description: "Visual GFM grid table" },
+  { type: "callout",   label: "Callout",   icon: <Lightbulb size={14} />,  description: "Pastel alert callout box" },
 ];
 
 export function EditorSidebar({ width = 220 }: { width?: number }) {
@@ -97,9 +107,6 @@ export function EditorSidebar({ width = 220 }: { width?: number }) {
             borderRadius: "var(--radius-sm)",
             background: "var(--accent-muted)",
             color: "var(--accent)",
-            fontSize: 12,
-            fontWeight: 700,
-            fontFamily: "var(--font-mono)",
             flexShrink: 0,
           }}>
             {b.icon}

@@ -4,6 +4,7 @@ import { useEditorStore } from "@next-md-editor/editor-core";
 import { serializeToMarkdown } from "@/features/markdown/serializer";
 import { useState } from "react";
 import { highlightCodeHtml, renderInlineMarkdown } from "@/features/markdown/highlighter";
+import { Info, Lightbulb, Megaphone, TriangleAlert, OctagonX } from "lucide-react";
 
 export function MarkdownPreview({ width = 360 }: { width?: number }) {
   const blocks = useEditorStore((s) => s.blocks);
@@ -444,12 +445,12 @@ export function MarkdownPreview({ width = 360 }: { width?: number }) {
                     const text = (block.props.text as string) ?? "";
                     const type = ((block.props.type as string) ?? "note").toLowerCase();
                     
-                    const alertThemes: Record<string, { label: string; icon: string; border: string; bg: string; text: string }> = {
-                      note: { label: "Note", icon: "ℹ️", border: "#388bfd", bg: "rgba(56, 139, 253, 0.08)", text: "#58a6ff" },
-                      tip: { label: "Tip", icon: "💡", border: "#3fb950", bg: "rgba(63, 185, 80, 0.08)", text: "#56d364" },
-                      important: { label: "Important", icon: "📢", border: "#a371f7", bg: "rgba(163, 113, 247, 0.08)", text: "#bc8cff" },
-                      warning: { label: "Warning", icon: "⚠️", border: "#d29922", bg: "rgba(210, 153, 34, 0.08)", text: "#e3b341" },
-                      caution: { label: "Caution", icon: "🚫", border: "#f85149", bg: "rgba(248, 113, 113, 0.08)", text: "#ff7b72" },
+                    const alertThemes: Record<string, { label: string; icon: React.ReactNode; border: string; bg: string; text: string }> = {
+                      note: { label: "Note", icon: <Info size={14} />, border: "#388bfd", bg: "rgba(56, 139, 253, 0.08)", text: "#58a6ff" },
+                      tip: { label: "Tip", icon: <Lightbulb size={14} />, border: "#3fb950", bg: "rgba(63, 185, 80, 0.08)", text: "#56d364" },
+                      important: { label: "Important", icon: <Megaphone size={14} />, border: "#a371f7", bg: "rgba(163, 113, 247, 0.08)", text: "#bc8cff" },
+                      warning: { label: "Warning", icon: <TriangleAlert size={14} />, border: "#d29922", bg: "rgba(210, 153, 34, 0.08)", text: "#e3b341" },
+                      caution: { label: "Caution", icon: <OctagonX size={14} />, border: "#f85149", bg: "rgba(248, 113, 113, 0.08)", text: "#ff7b72" },
                     };
                     const theme = alertThemes[type] ?? alertThemes.note;
 

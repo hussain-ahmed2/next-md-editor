@@ -5,39 +5,40 @@ import { useEditorStore } from "@next-md-editor/editor-core";
 import type { Block } from "@next-md-editor/types";
 import { htmlToMarkdown } from "@/utils/editorShortcuts";
 import { renderInlineMarkdown } from "@/features/markdown/highlighter";
+import { Info, Lightbulb, Megaphone, TriangleAlert, OctagonX } from "lucide-react";
 
 const CALLOUT_TYPES = {
   note: {
     label: "Note",
-    icon: "ℹ️",
+    icon: <Info size={14} />,
     bg: "rgba(56, 139, 253, 0.08)",
     border: "rgba(56, 139, 253, 0.3)",
     accent: "#388bfd",
   },
   tip: {
     label: "Tip",
-    icon: "💡",
+    icon: <Lightbulb size={14} />,
     bg: "rgba(63, 185, 80, 0.08)",
     border: "rgba(63, 185, 80, 0.3)",
     accent: "#3fb950",
   },
   important: {
     label: "Important",
-    icon: "📢",
+    icon: <Megaphone size={14} />,
     bg: "rgba(163, 113, 247, 0.08)",
     border: "rgba(163, 113, 247, 0.3)",
     accent: "#a371f7",
   },
   warning: {
     label: "Warning",
-    icon: "⚠️",
+    icon: <TriangleAlert size={14} />,
     bg: "rgba(210, 153, 34, 0.08)",
     border: "rgba(210, 153, 34, 0.3)",
     accent: "#d29922",
   },
   caution: {
     label: "Caution",
-    icon: "🚫",
+    icon: <OctagonX size={14} />,
     bg: "rgba(248, 113, 113, 0.08)",
     border: "rgba(248, 113, 113, 0.3)",
     accent: "#f85149",

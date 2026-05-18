@@ -3,6 +3,18 @@
 import { useEditorStore } from "@next-md-editor/editor-core";
 import { serializeToMarkdown, parseMarkdown } from "@/features/markdown/serializer";
 import { useRef } from "react";
+import {
+  Undo2,
+  Redo2,
+  Zap,
+  Upload,
+  Eye,
+  EyeOff,
+  Copy,
+  Download,
+  CheckCheck,
+  Loader2,
+} from "lucide-react";
 
 interface EditorToolbarProps {
   previewOpen: boolean;
@@ -64,7 +76,6 @@ export function EditorToolbar({ previewOpen, onTogglePreview, saveStatus = "idle
       }
     };
     reader.readAsText(file);
-    // Reset file input value
     e.target.value = "";
   };
 
@@ -117,33 +128,20 @@ export function EditorToolbar({ previewOpen, onTogglePreview, saveStatus = "idle
       }}>
         {saveStatus === "saving" && (
           <>
-            <span style={{
-              width: 6,
-              height: 6,
-              borderRadius: "50%",
-              background: "var(--warning)",
-              display: "inline-block",
-              animation: "pulse 0.8s infinite alternate",
-            }} />
+            <Loader2 size={13} style={{ color: "var(--warning)", animation: "spin 1s linear infinite" }} />
             <span style={{ color: "var(--text-secondary)", opacity: 0.8, fontWeight: 500 }}>Saving changes…</span>
           </>
         )}
         {saveStatus === "saved" && (
           <>
-            <span style={{
-              width: 6,
-              height: 6,
-              borderRadius: "50%",
-              background: "var(--success)",
-              display: "inline-block",
-            }} />
+            <CheckCheck size={13} style={{ color: "var(--success)" }} />
             <span style={{ color: "var(--text-secondary)", opacity: 0.8, fontWeight: 500 }}>Saved to browser</span>
           </>
         )}
       </div>
 
       {/* Actions */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
         <input
           type="file"
           accept=".md,text/markdown"
@@ -151,29 +149,49 @@ export function EditorToolbar({ previewOpen, onTogglePreview, saveStatus = "idle
           onChange={handleFileChange}
           style={{ display: "none" }}
         />
-        <ToolbarButton onClick={undo} id="btn-undo">
-          ↩ Undo
+        <ToolbarButton onClick={undo} id="btn-undo" tooltip="Undo (Ctrl+Z)">
+          <Undo2 size={14} />
+          Undo
         </ToolbarButton>
-        <ToolbarButton onClick={redo} id="btn-redo">
-          ↪ Redo
+        <ToolbarButton onClick={redo} id="btn-redo" tooltip="Redo (Ctrl+Y)">
+          <Redo2 size={14} />
+          Redo
         </ToolbarButton>
-        <ToolbarButton onClick={handleLoadDemo} id="btn-load-demo">
-          ⚡ Load Demo
+        <Divider />
+        <ToolbarButton onClick={handleLoadDemo} id="btn-load-demo" tooltip="Load demo content">
+          <Zap size={14} />
+          Demo
         </ToolbarButton>
-        <ToolbarButton onClick={handleImportClick} id="btn-import-md">
-          Import .md
+        <ToolbarButton onClick={handleImportClick} id="btn-import-md" tooltip="Import a .md file">
+          <Upload size={14} />
+          Import
         </ToolbarButton>
-        <ToolbarButton onClick={onTogglePreview} active={previewOpen} id="btn-toggle-preview">
-          {previewOpen ? "Hide Preview" : "Show Preview"}
+        <ToolbarButton onClick={onTogglePreview} active={previewOpen} id="btn-toggle-preview" tooltip="Toggle preview pane">
+          {previewOpen ? <EyeOff size={14} /> : <Eye size={14} />}
+          {previewOpen ? "Hide Preview" : "Preview"}
         </ToolbarButton>
-        <ToolbarButton onClick={handleCopy} id="btn-copy-md">
-          Copy Markdown
+        <ToolbarButton onClick={handleCopy} id="btn-copy-md" tooltip="Copy as Markdown">
+          <Copy size={14} />
+          Copy
         </ToolbarButton>
-        <ToolbarButton onClick={handleDownload} primary id="btn-download-md">
-          ↓ Download .md
+        <ToolbarButton onClick={handleDownload} primary id="btn-download-md" tooltip="Download as .md">
+          <Download size={14} />
+          Download
         </ToolbarButton>
       </div>
     </header>
+  );
+}
+
+function Divider() {
+  return (
+    <div style={{
+      width: 1,
+      height: 20,
+      background: "var(--border)",
+      margin: "0 2px",
+      flexShrink: 0,
+    }} />
   );
 }
 
@@ -183,19 +201,25 @@ function ToolbarButton({
   primary,
   active,
   id,
+  tooltip,
 }: {
   children: React.ReactNode;
   onClick: () => void;
   primary?: boolean;
   active?: boolean;
   id?: string;
+  tooltip?: string;
 }) {
   return (
     <button
       id={id}
       onClick={onClick}
+      title={tooltip}
       style={{
-        padding: "6px 14px",
+        display: "flex",
+        alignItems: "center",
+        gap: 5,
+        padding: "5px 10px",
         borderRadius: "var(--radius-sm)",
         border: `1px solid ${primary ? "transparent" : active ? "var(--accent)" : "var(--border)"}`,
         background: primary
@@ -204,11 +228,12 @@ function ToolbarButton({
           ? "var(--accent-muted)"
           : "transparent",
         color: primary ? "#fff" : active ? "var(--accent)" : "var(--text-secondary)",
-        fontSize: 13,
+        fontSize: 12.5,
         fontWeight: 500,
         cursor: "pointer",
         transition: "all 0.15s ease",
         fontFamily: "var(--font-sans)",
+        whiteSpace: "nowrap",
       }}
     >
       {children}

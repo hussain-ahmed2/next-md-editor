@@ -5,6 +5,7 @@ import type { Block } from "@next-md-editor/types";
 import { useState, useRef, useEffect } from "react";
 import { htmlToMarkdown } from "@/utils/editorShortcuts";
 import { renderInlineMarkdown } from "@/features/markdown/highlighter";
+import { PlusCircle, MinusCircle, Columns2, Rows2 } from "lucide-react";
 
 export function TableBlock({ block }: { block: Block }) {
   const updateBlock = useEditorStore((s) => s.updateBlock);
@@ -186,15 +187,18 @@ export function TableBlock({ block }: { block: Block }) {
       }}>
         <span style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 500, marginRight: 4 }}>GRID CONTROLS:</span>
         {[
-          { label: "➕ Row", action: addRow },
-          { label: "➖ Row", action: deleteRow },
-          { label: "➕ Col", action: addColumn },
-          { label: "➖ Col", action: deleteColumn },
-        ].map(({ label, action }) => (
+          { label: "Add Row",    icon: <><PlusCircle size={12} /> Row</>,     action: addRow },
+          { label: "Delete Row", icon: <><MinusCircle size={12} /> Row</>,    action: deleteRow },
+          { label: "Add Col",    icon: <><Columns2 size={12} /> Add Col</>,   action: addColumn },
+          { label: "Delete Col", icon: <><Rows2 size={12} /> Del Col</>,      action: deleteColumn },
+        ].map(({ label, icon, action }) => (
           <button
             key={label}
             onClick={action}
             style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 4,
               padding: "4px 8px",
               fontSize: 11,
               fontWeight: 600,
@@ -205,7 +209,7 @@ export function TableBlock({ block }: { block: Block }) {
               cursor: "pointer",
             }}
           >
-            {label}
+            {icon}
           </button>
         ))}
       </div>
