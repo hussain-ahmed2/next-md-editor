@@ -60,6 +60,15 @@ export default function EditorPage() {
   } | null>(null);
   const [insertIndex, setInsertIndex] = useState<number | null>(null);
   const lastDeltaY = useRef<number | null>(null);
+  const mouseClientY = useRef<number>(0);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      mouseClientY.current = e.clientY;
+    };
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, []);
 
   const pointerSensor = useSensor(
     PointerSensor,
@@ -114,13 +123,10 @@ export default function EditorPage() {
         if (idx !== -1) {
           // Calculate if we are hovering over the upper or lower 50% of the block
           let targetIndex = idx;
-          const initialRect = active.rect.current.initial;
           
-          if (initialRect && over.rect) {
-            // Apply the actual real-time translation offset to the starting coordinate!
-            const activeCenterY = initialRect.top + delta.y + initialRect.height / 2;
+          if (over.rect) {
             const overCenterY = over.rect.top + over.rect.height / 2;
-            if (activeCenterY > overCenterY) {
+            if (mouseClientY.current > overCenterY) {
               targetIndex = idx + 1;
             }
           }
