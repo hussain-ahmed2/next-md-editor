@@ -3,6 +3,7 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useEditorStore } from "@next-md-editor/editor-core";
+import { GripVertical, X } from "lucide-react";
 import { useState } from "react";
 
 export function SortableBlock({
@@ -74,13 +75,12 @@ export function SortableBlock({
           justifyContent: "center",
           cursor: "grab",
           color: hovered || isSelected ? "var(--text-muted)" : "transparent",
-          fontSize: 14,
           transition: "color 0.15s",
           borderRadius: 4,
           userSelect: "none",
         }}
       >
-        ⠿
+        <GripVertical size={16} />
       </div>
 
       {/* Delete button */}
@@ -105,9 +105,7 @@ export function SortableBlock({
             border: "none",
             cursor: "pointer",
             color: "var(--text-muted)",
-            fontSize: 14,
             borderRadius: 4,
-            lineHeight: 1,
             padding: 0,
           }}
           onMouseEnter={(e) => (e.currentTarget.style.color = "var(--danger)")}
@@ -115,7 +113,7 @@ export function SortableBlock({
             (e.currentTarget.style.color = "var(--text-muted)")
           }
         >
-          ×
+          <X size={16} />
         </button>
       )}
 
