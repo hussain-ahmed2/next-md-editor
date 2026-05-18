@@ -3,7 +3,10 @@
 import { useState, useRef, useEffect } from "react";
 import { useEditorStore } from "@next-md-editor/editor-core";
 import type { Block } from "@next-md-editor/types";
-import { handleEditorKeyboardShortcuts, htmlToMarkdown } from "@/utils/editorShortcuts";
+import {
+  handleEditorKeyboardShortcuts,
+  htmlToMarkdown,
+} from "@/utils/editorShortcuts";
 import { renderInlineMarkdown } from "@/features/markdown/highlighter";
 
 export function QuoteBlock({ block }: { block: Block }) {
@@ -25,9 +28,9 @@ export function QuoteBlock({ block }: { block: Block }) {
         selection.addRange(range);
       }
     }
-  }, [isFocused]);
+  }, [isFocused, ref]);
 
-  const handleInput = (e: React.FormEvent<HTMLDivElement>) => {
+  const handleInput = (e: React.InputEvent<HTMLDivElement>) => {
     const rawText = htmlToMarkdown(e.currentTarget.innerHTML);
     updateBlock(block.id, { text: rawText });
   };
@@ -38,20 +41,24 @@ export function QuoteBlock({ block }: { block: Block }) {
   };
 
   return (
-    <div style={{
-      display: "flex",
-      gap: 14,
-      padding: "0 16px",
-      borderRadius: "0",
-      background: "transparent",
-    }}>
-      <div style={{
-        width: 4,
-        borderRadius: 0,
-        background: "#30363d",
-        flexShrink: 0,
-        alignSelf: "stretch",
-      }} />
+    <div
+      style={{
+        display: "flex",
+        gap: 14,
+        padding: "0 16px",
+        borderRadius: "0",
+        background: "transparent",
+      }}
+    >
+      <div
+        style={{
+          width: 4,
+          borderRadius: 0,
+          background: "#30363d",
+          flexShrink: 0,
+          alignSelf: "stretch",
+        }}
+      />
       <div
         ref={ref}
         contentEditable
@@ -59,7 +66,9 @@ export function QuoteBlock({ block }: { block: Block }) {
         onFocus={() => setIsFocused(true)}
         onBlur={handleBlur}
         onInput={handleInput}
-        onKeyDown={(e) => handleEditorKeyboardShortcuts(e, block.id, updateBlock)}
+        onKeyDown={(e) =>
+          handleEditorKeyboardShortcuts(e, block.id, updateBlock)
+        }
         style={{
           flex: 1,
           fontSize: "15px",
@@ -69,9 +78,13 @@ export function QuoteBlock({ block }: { block: Block }) {
           outline: "none",
           minHeight: "1.6em",
         }}
-        {...(!isFocused ? {
-          dangerouslySetInnerHTML: { __html: renderInlineMarkdown(text) || "" }
-        } : {})}
+        {...(!isFocused
+          ? {
+              dangerouslySetInnerHTML: {
+                __html: renderInlineMarkdown(text) || "",
+              },
+            }
+          : {})}
       />
     </div>
   );

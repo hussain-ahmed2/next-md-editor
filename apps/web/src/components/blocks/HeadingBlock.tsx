@@ -3,12 +3,39 @@
 import { useState, useRef, useEffect } from "react";
 import { useEditorStore } from "@next-md-editor/editor-core";
 import type { Block } from "@next-md-editor/types";
-import { handleEditorKeyboardShortcuts, htmlToMarkdown } from "@/utils/editorShortcuts";
+import {
+  handleEditorKeyboardShortcuts,
+  htmlToMarkdown,
+} from "@/utils/editorShortcuts";
 import { renderInlineMarkdown } from "@/features/markdown/highlighter";
 
-const LEVEL_STYLES: Record<number, { fontSize: string; fontWeight: number; lineHeight: string; borderBottom?: string; paddingBottom?: string; marginBottom?: string }> = {
-  1: { fontSize: "2em",    fontWeight: 600, lineHeight: "1.25", borderBottom: "1px solid #30363d", paddingBottom: "0.3em", marginBottom: "8px" },
-  2: { fontSize: "1.5em",  fontWeight: 600, lineHeight: "1.25", borderBottom: "1px solid #30363d", paddingBottom: "0.3em", marginBottom: "8px" },
+const LEVEL_STYLES: Record<
+  number,
+  {
+    fontSize: string;
+    fontWeight: number;
+    lineHeight: string;
+    borderBottom?: string;
+    paddingBottom?: string;
+    marginBottom?: string;
+  }
+> = {
+  1: {
+    fontSize: "2em",
+    fontWeight: 600,
+    lineHeight: "1.25",
+    borderBottom: "1px solid #30363d",
+    paddingBottom: "0.3em",
+    marginBottom: "8px",
+  },
+  2: {
+    fontSize: "1.5em",
+    fontWeight: 600,
+    lineHeight: "1.25",
+    borderBottom: "1px solid #30363d",
+    paddingBottom: "0.3em",
+    marginBottom: "8px",
+  },
   3: { fontSize: "1.25em", fontWeight: 600, lineHeight: "1.25" },
 };
 
@@ -33,9 +60,9 @@ export function HeadingBlock({ block }: { block: Block }) {
         selection.addRange(range);
       }
     }
-  }, [isFocused]);
+  }, [isFocused, ref]);
 
-  const handleInput = (e: React.FormEvent<HTMLDivElement>) => {
+  const handleInput = (e: React.InputEvent<HTMLDivElement>) => {
     const rawText = htmlToMarkdown(e.currentTarget.innerHTML);
     updateBlock(block.id, { text: rawText });
   };
@@ -51,7 +78,10 @@ export function HeadingBlock({ block }: { block: Block }) {
         {[1, 2, 3].map((l) => (
           <button
             key={l}
-            onClick={(e) => { e.stopPropagation(); updateBlock(block.id, { level: l }); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              updateBlock(block.id, { level: l });
+            }}
             style={{
               padding: "1px 7px",
               fontSize: 11,
@@ -76,7 +106,9 @@ export function HeadingBlock({ block }: { block: Block }) {
         onFocus={() => setIsFocused(true)}
         onBlur={handleBlur}
         onInput={handleInput}
-        onKeyDown={(e) => handleEditorKeyboardShortcuts(e, block.id, updateBlock)}
+        onKeyDown={(e) =>
+          handleEditorKeyboardShortcuts(e, block.id, updateBlock)
+        }
         style={{
           ...style,
           color: "var(--text-primary)",
@@ -84,9 +116,13 @@ export function HeadingBlock({ block }: { block: Block }) {
           minHeight: "1.4em",
           letterSpacing: level === 1 ? "-0.03em" : "-0.01em",
         }}
-        {...(!isFocused ? {
-          dangerouslySetInnerHTML: { __html: renderInlineMarkdown(text) || "" }
-        } : {})}
+        {...(!isFocused
+          ? {
+              dangerouslySetInnerHTML: {
+                __html: renderInlineMarkdown(text) || "",
+              },
+            }
+          : {})}
       />
     </div>
   );

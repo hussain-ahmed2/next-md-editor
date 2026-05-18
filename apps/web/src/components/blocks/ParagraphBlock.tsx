@@ -30,7 +30,7 @@ export function ParagraphBlock({ block }: { block: Block }) {
     }
   }, [isFocused, ref]);
 
-  const handleInput = (e: React.FormEvent<HTMLDivElement>) => {
+  const handleInput = (e: React.InputEvent<HTMLDivElement>) => {
     const rawText = htmlToMarkdown(e.currentTarget.innerHTML);
     updateBlock(block.id, { text: rawText });
   };
