@@ -24,14 +24,49 @@ export function EditorCanvas() {
   });
 
   const isDraggingSidebarItem = active && active.data.current?.isSidebarItem;
-  
-  const sortableItems = useMemo(() => {
-    const ids = blocks.map((b) => b.id);
+
+  // Track the insertion index based on collisions, preventing infinite loop/flicker
+  useEffect(() => {
     if (isDraggingSidebarItem) {
-      ids.push(active.id as string);
+      if (!over) return;
+      
+      const overId = over.id as string;
+      if (overId === CANVAS_ROOT_ID) {
+        setInsertIndex(blocks.length);
+      } else if (active && overId === active.id) {
+        // Crucial: do nothing when hovering over the placeholder to prevent layout loops
+      } else {
+        const idx = blocks.findIndex(b => b.id === overId);
+        if (idx !== -1) {
+          setInsertIndex(idx);
+        }
+      }
+    } else {
+      setInsertIndex(null);
     }
-    return ids;
-  }, [blocks, active, isDraggingSidebarItem]);
+  }, [isDraggingSidebarItem, active, over, blocks]);
+
+  const displayBlocks = useMemo(() => {
+    if (isDraggingSidebarItem && insertIndex !== null && active) {
+      const type = active.data.current?.type;
+      const def = BlockRegistry.get(type);
+      const placeholderBlock = {
+        id: active.id as string,
+        type,
+        props: { ...(def?.defaultProps ?? {}) }
+      };
+      
+      const newBlocks = [...blocks];
+      const safeIndex = Math.max(0, Math.min(insertIndex, blocks.length));
+      newBlocks.splice(safeIndex, 0, placeholderBlock);
+      return newBlocks;
+    }
+    return blocks;
+  }, [blocks, isDraggingSidebarItem, insertIndex, active]);
+
+  const sortableItems = useMemo(() => {
+    return displayBlocks.map(b => b.id);
+  }, [displayBlocks]);
 
   return (
     <main
@@ -54,31 +89,18 @@ export function EditorCanvas() {
           strategy={verticalListSortingStrategy}
         >
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            {blocks.map((block) => (
-              <SortableBlock key={block.id} id={block.id}>
-                <BlockRenderer block={block} />
-              </SortableBlock>
-            ))}
-            
-            {/* Render a placeholder at the end of the list for dnd-kit to measure and shift */}
-            {isDraggingSidebarItem && (
-              <SortableBlock 
-                key={active.id as string} 
-                id={active.id as string} 
-                isPlaceholder={true}
-              >
-                {(() => {
-                  const type = active.data.current?.type;
-                  const def = BlockRegistry.get(type);
-                  const placeholderBlock = {
-                    id: active.id as string,
-                    type,
-                    props: { ...(def?.defaultProps ?? {}) }
-                  };
-                  return <BlockRenderer block={placeholderBlock} />;
-                })()}
-              </SortableBlock>
-            )}
+            {displayBlocks.map((block) => {
+              const isPlaceholder = isDraggingSidebarItem && active && block.id === active.id;
+              return (
+                <SortableBlock 
+                  key={block.id} 
+                  id={block.id}
+                  isPlaceholder={isPlaceholder}
+                >
+                  <BlockRenderer block={block} />
+                </SortableBlock>
+              );
+            })}
           </div>
         </SortableContext>
       </div>
