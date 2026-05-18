@@ -21,6 +21,30 @@ export function ParagraphBlock({ block }: { block: Block }) {
   const [isFocused, setIsFocused] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
+  // Smart visual decorations for lists and todo checkboxes (Option B: Pure WYSIWYG)
+  const isTodo =
+    text.startsWith("- [ ") ||
+    text.startsWith("- [x] ") ||
+    text.startsWith("- [ ] ");
+  const isBullet =
+    !isTodo && (text.startsWith("- ") || text.startsWith("* "));
+  const numberMatch =
+    !isTodo && !isBullet && text.match(/^(\d+)\.\s(.*)$/);
+
+  // Extract clean text from store value for visual editing
+  let cleanText = text;
+  if (isTodo) {
+    cleanText = text.startsWith("- [x] ")
+      ? text.slice(6)
+      : text.startsWith("- [ ] ")
+        ? text.slice(6)
+        : text.slice(5);
+  } else if (isBullet) {
+    cleanText = text.slice(2);
+  } else if (numberMatch) {
+    cleanText = numberMatch[2];
+  }
+
   // Auto-focus synchronization when block is selected
   useEffect(() => {
     if (
@@ -36,8 +60,8 @@ export function ParagraphBlock({ block }: { block: Block }) {
   useEffect(() => {
     if (ref.current) {
       const currentMarkdown = htmlToMarkdown(ref.current.innerHTML);
-      if (currentMarkdown !== text) {
-        ref.current.textContent = text;
+      if (currentMarkdown !== cleanText) {
+        ref.current.innerHTML = renderInlineMarkdown(cleanText);
 
         // Reset caret to the end if focused
         if (document.activeElement === ref.current) {
@@ -52,12 +76,12 @@ export function ParagraphBlock({ block }: { block: Block }) {
         }
       }
     }
-  }, [text, ref]);
+  }, [cleanText]);
 
   // When entering focus, snap caret and ensure text is populated
   useEffect(() => {
     if (isFocused && ref.current) {
-      ref.current.textContent = text;
+      ref.current.innerHTML = renderInlineMarkdown(cleanText);
       const range = document.createRange();
       range.selectNodeContents(ref.current);
       range.collapse(false);
@@ -67,36 +91,37 @@ export function ParagraphBlock({ block }: { block: Block }) {
         selection.addRange(range);
       }
     }
-  }, [isFocused, ref]);
+  }, [isFocused]);
 
   const handleInput = (e: React.InputEvent<HTMLDivElement>) => {
-    const rawText = htmlToMarkdown(e.currentTarget.innerHTML);
+    let rawText = htmlToMarkdown(e.currentTarget.innerHTML);
+    if (isTodo) {
+      const checked = text.startsWith("- [x] ");
+      rawText = checked ? `- [x] ${rawText}` : `- [ ] ${rawText}`;
+    } else if (isBullet) {
+      rawText = `- ${rawText}`;
+    } else if (numberMatch) {
+      rawText = `${numberMatch[1]}. ${rawText}`;
+    }
     updateBlock(block.id, { text: rawText });
   };
 
   const handleBlur = (e: React.FocusEvent<HTMLDivElement>) => {
     setIsFocused(false);
-    updateBlock(block.id, { text: htmlToMarkdown(e.currentTarget.innerHTML) });
+    let rawText = htmlToMarkdown(e.currentTarget.innerHTML);
+    if (isTodo) {
+      const checked = text.startsWith("- [x] ");
+      rawText = checked ? `- [x] ${rawText}` : `- [ ] ${rawText}`;
+    } else if (isBullet) {
+      rawText = `- ${rawText}`;
+    } else if (numberMatch) {
+      rawText = `${numberMatch[1]}. ${rawText}`;
+    }
+    updateBlock(block.id, { text: rawText });
   };
-
-  // Smart visual decorations for lists and todo checkboxes on blur
-  const isTodo =
-    !isFocused &&
-    (text.startsWith("- [ ") ||
-      text.startsWith("- [x] ") ||
-      text.startsWith("- [ ] "));
-  const isBullet =
-    !isFocused && !isTodo && (text.startsWith("- ") || text.startsWith("* "));
-  const numberMatch =
-    !isFocused && !isTodo && !isBullet && text.match(/^(\d+)\.\s(.*)$/);
 
   if (isTodo) {
     const checked = text.startsWith("- [x] ");
-    const cleanText = text.startsWith("- [x] ")
-      ? text.slice(6)
-      : text.startsWith("- [ ] ")
-        ? text.slice(6)
-        : text.slice(5);
     return (
       <div
         style={{
@@ -152,16 +177,19 @@ export function ParagraphBlock({ block }: { block: Block }) {
             outline: "none",
             minHeight: "1.75em",
           }}
-          dangerouslySetInnerHTML={{
-            __html: renderInlineMarkdown(cleanText) || "",
-          }}
+          {...(!isFocused
+            ? {
+                dangerouslySetInnerHTML: {
+                  __html: renderInlineMarkdown(cleanText) || "",
+                },
+              }
+            : {})}
         />
       </div>
     );
   }
 
   if (isBullet) {
-    const cleanText = text.slice(2);
     return (
       <div
         style={{
@@ -207,9 +235,13 @@ export function ParagraphBlock({ block }: { block: Block }) {
             outline: "none",
             minHeight: "1.75em",
           }}
-          dangerouslySetInnerHTML={{
-            __html: renderInlineMarkdown(cleanText) || "",
-          }}
+          {...(!isFocused
+            ? {
+                dangerouslySetInnerHTML: {
+                  __html: renderInlineMarkdown(cleanText) || "",
+                },
+              }
+            : {})}
         />
       </div>
     );
@@ -217,7 +249,6 @@ export function ParagraphBlock({ block }: { block: Block }) {
 
   if (numberMatch) {
     const num = numberMatch[1];
-    const cleanText = numberMatch[2];
     return (
       <div
         style={{
@@ -263,9 +294,13 @@ export function ParagraphBlock({ block }: { block: Block }) {
             outline: "none",
             minHeight: "1.75em",
           }}
-          dangerouslySetInnerHTML={{
-            __html: renderInlineMarkdown(cleanText) || "",
-          }}
+          {...(!isFocused
+            ? {
+                dangerouslySetInnerHTML: {
+                  __html: renderInlineMarkdown(cleanText) || "",
+                },
+              }
+            : {})}
         />
       </div>
     );

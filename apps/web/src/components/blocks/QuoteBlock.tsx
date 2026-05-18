@@ -37,7 +37,7 @@ export function QuoteBlock({ block }: { block: Block }) {
     if (ref.current) {
       const currentMarkdown = htmlToMarkdown(ref.current.innerHTML);
       if (currentMarkdown !== text) {
-        ref.current.textContent = text;
+        ref.current.innerHTML = renderInlineMarkdown(text);
 
         // Reset caret to the end if focused
         if (document.activeElement === ref.current) {
@@ -52,12 +52,12 @@ export function QuoteBlock({ block }: { block: Block }) {
         }
       }
     }
-  }, [text, ref]);
+  }, [text]);
 
   // When entering focus, snap caret and ensure text is populated
   useEffect(() => {
     if (isFocused && ref.current) {
-      ref.current.textContent = text;
+      ref.current.innerHTML = renderInlineMarkdown(text);
       const range = document.createRange();
       range.selectNodeContents(ref.current);
       range.collapse(false);
@@ -67,7 +67,7 @@ export function QuoteBlock({ block }: { block: Block }) {
         selection.addRange(range);
       }
     }
-  }, [isFocused, ref]);
+  }, [isFocused]);
 
   const handleInput = (e: React.InputEvent<HTMLDivElement>) => {
     const rawText = htmlToMarkdown(e.currentTarget.innerHTML);
