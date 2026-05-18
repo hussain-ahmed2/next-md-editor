@@ -80,10 +80,8 @@ export default function EditorPage() {
   const handleDragOver = (event: DragOverEvent) => {
     const { active, over } = event;
     if (active.data.current?.isSidebarItem) {
-      if (!over) {
-        setInsertIndex(null);
-        return;
-      }
+      if (!over) return; // Keep last known insertIndex to prevent flickering or disappearing placeholder
+      
       const overId = over.id as string;
       if (overId === CANVAS_ROOT_ID) {
         setInsertIndex(blocks.length);
@@ -105,8 +103,6 @@ export default function EditorPage() {
     const finalInsertIndex = insertIndex;
     setInsertIndex(null);
 
-    if (!over) return;
-
     if (active.data.current?.isSidebarItem) {
       const type = active.data.current.type;
       const def = BlockRegistry.get(type);
@@ -123,6 +119,8 @@ export default function EditorPage() {
       }
       return;
     }
+
+    if (!over) return;
 
     // Standard canvas reordering
     if (active.id === over.id || over.id === CANVAS_ROOT_ID) return;
