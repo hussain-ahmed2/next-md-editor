@@ -11,14 +11,14 @@ export function QuoteBlock({ block }: { block: Block }) {
     <div style={{
       display: "flex",
       gap: 14,
-      padding: "12px 16px",
-      borderRadius: "var(--radius-sm)",
-      background: "rgba(108,126,255,0.06)",
+      padding: "0 16px",
+      borderRadius: "0",
+      background: "transparent",
     }}>
       <div style={{
-        width: 3,
-        borderRadius: 2,
-        background: "var(--accent)",
+        width: 4,
+        borderRadius: 0,
+        background: "#30363d",
         flexShrink: 0,
         alignSelf: "stretch",
       }} />
@@ -28,12 +28,12 @@ export function QuoteBlock({ block }: { block: Block }) {
         onBlur={(e) => updateBlock(block.id, { text: e.currentTarget.textContent ?? "" })}
         style={{
           flex: 1,
-          fontSize: "1rem",
-          lineHeight: 1.75,
-          color: "var(--text-secondary)",
-          fontStyle: "italic",
+          fontSize: "15px",
+          lineHeight: 1.6,
+          color: "#8b949e",
+          fontStyle: "normal",
           outline: "none",
-          minHeight: "1.75em",
+          minHeight: "1.6em",
         }}
       >
         {text}

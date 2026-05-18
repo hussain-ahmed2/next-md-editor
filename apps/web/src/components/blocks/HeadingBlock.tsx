@@ -3,10 +3,10 @@
 import { useEditorStore } from "@next-md-editor/editor-core";
 import type { Block } from "@next-md-editor/types";
 
-const LEVEL_STYLES: Record<number, { fontSize: string; fontWeight: number; lineHeight: string }> = {
-  1: { fontSize: "2rem",   fontWeight: 800, lineHeight: "1.2" },
-  2: { fontSize: "1.5rem", fontWeight: 700, lineHeight: "1.3" },
-  3: { fontSize: "1.25rem",fontWeight: 600, lineHeight: "1.4" },
+const LEVEL_STYLES: Record<number, { fontSize: string; fontWeight: number; lineHeight: string; borderBottom?: string; paddingBottom?: string; marginBottom?: string }> = {
+  1: { fontSize: "2em",    fontWeight: 600, lineHeight: "1.25", borderBottom: "1px solid #30363d", paddingBottom: "0.3em", marginBottom: "8px" },
+  2: { fontSize: "1.5em",  fontWeight: 600, lineHeight: "1.25", borderBottom: "1px solid #30363d", paddingBottom: "0.3em", marginBottom: "8px" },
+  3: { fontSize: "1.25em", fontWeight: 600, lineHeight: "1.25" },
 };
 
 export function HeadingBlock({ block }: { block: Block }) {

@@ -12,10 +12,10 @@ export function CodeBlock({ block }: { block: Block }) {
 
   return (
     <div style={{
-      borderRadius: "var(--radius-md)",
-      border: "1px solid var(--border-subtle)",
+      borderRadius: 6,
+      border: "1px solid #30363d",
       overflow: "hidden",
-      background: "var(--bg-elevated)",
+      background: "#161b22",
     }}>
       {/* Code header */}
       <div style={{
@@ -23,8 +23,8 @@ export function CodeBlock({ block }: { block: Block }) {
         alignItems: "center",
         justifyContent: "space-between",
         padding: "6px 12px",
-        borderBottom: "1px solid var(--border-subtle)",
-        background: "rgba(0,0,0,0.2)",
+        borderBottom: "1px solid #30363d",
+        background: "rgba(0,0,0,0.15)",
       }}>
         <div style={{ display: "flex", gap: 6 }}>
           <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#f87171", display: "inline-block" }} />
