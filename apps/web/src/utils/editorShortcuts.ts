@@ -35,7 +35,25 @@ export function handleEditorKeyboardShortcuts(
       suffix = "](url)";
     }
 
-    const textNode = document.createTextNode(prefix + selectedText + suffix);
+    // Intelligent whitespace extraction to keep spaces OUTSIDE markdown tags
+    let startSpace = "";
+    let endSpace = "";
+    let cleanText = selectedText;
+
+    const startMatch = selectedText.match(/^(\s+)/);
+    if (startMatch) {
+      startSpace = startMatch[1];
+      cleanText = cleanText.slice(startSpace.length);
+    }
+
+    const endMatch = selectedText.match(/(\s+)$/);
+    if (endMatch) {
+      endSpace = endMatch[1];
+      cleanText = cleanText.slice(0, cleanText.length - endSpace.length);
+    }
+
+    const formattedString = startSpace + prefix + cleanText + suffix + endSpace;
+    const textNode = document.createTextNode(formattedString);
     range.deleteContents();
     range.insertNode(textNode);
 
@@ -48,8 +66,11 @@ export function handleEditorKeyboardShortcuts(
       selection.addRange(newRange);
     } else {
       const newRange = document.createRange();
-      newRange.setStart(textNode, 0);
-      newRange.setEnd(textNode, textNode.length);
+      // Highlight precisely the clean text inside the wrapping tags
+      const startPos = startSpace.length + prefix.length;
+      const endPos = startPos + cleanText.length;
+      newRange.setStart(textNode, startPos);
+      newRange.setEnd(textNode, endPos);
       selection.removeAllRanges();
       selection.addRange(newRange);
     }
