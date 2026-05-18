@@ -7,6 +7,7 @@ import { useRef } from "react";
 interface EditorToolbarProps {
   previewOpen: boolean;
   onTogglePreview: () => void;
+  saveStatus?: "saving" | "saved" | "idle";
 }
 
 const DEMO_MARKDOWN = `# Welcome to next-md-editor!
@@ -23,7 +24,7 @@ const editorName = "next-md-editor";
 console.log(\`Successfully loaded demo in \${editorName}!\`);
 \`\`\``;
 
-export function EditorToolbar({ previewOpen, onTogglePreview }: EditorToolbarProps) {
+export function EditorToolbar({ previewOpen, onTogglePreview, saveStatus = "idle" }: EditorToolbarProps) {
   const blocks = useEditorStore((s) => s.blocks);
   const setBlocks = useEditorStore((s) => s.setBlocks);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -99,6 +100,44 @@ export function EditorToolbar({ previewOpen, onTogglePreview }: EditorToolbarPro
         <span style={{ fontWeight: 700, fontSize: 15, color: "var(--text-primary)", letterSpacing: "-0.01em" }}>
           next-md-editor
         </span>
+      </div>
+
+      {/* Save Status Indicator */}
+      <div style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 6,
+        fontSize: 12,
+        color: "var(--text-secondary)",
+        marginLeft: 16,
+        marginRight: "auto",
+        transition: "opacity 0.2s ease",
+      }}>
+        {saveStatus === "saving" && (
+          <>
+            <span style={{
+              width: 6,
+              height: 6,
+              borderRadius: "50%",
+              background: "var(--warning)",
+              display: "inline-block",
+              animation: "pulse 0.8s infinite alternate",
+            }} />
+            <span style={{ color: "var(--text-secondary)", opacity: 0.8, fontWeight: 500 }}>Saving changes…</span>
+          </>
+        )}
+        {saveStatus === "saved" && (
+          <>
+            <span style={{
+              width: 6,
+              height: 6,
+              borderRadius: "50%",
+              background: "var(--success)",
+              display: "inline-block",
+            }} />
+            <span style={{ color: "var(--text-secondary)", opacity: 0.8, fontWeight: 500 }}>Saved to browser</span>
+          </>
+        )}
       </div>
 
       {/* Actions */}

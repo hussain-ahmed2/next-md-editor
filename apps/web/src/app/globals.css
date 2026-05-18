@@ -54,3 +54,9 @@ html, body {
 
 /* Focus */
 [contenteditable]:focus { outline: none; }
+
+/* Custom Animations */
+@keyframes pulse {
+  0% { transform: scale(0.9); opacity: 0.5; }
+  100% { transform: scale(1.15); opacity: 1; }
+}

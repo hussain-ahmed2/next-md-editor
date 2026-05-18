@@ -7,6 +7,7 @@ import { MarkdownPreview } from "@/components/editor/MarkdownPreview";
 import { useEditorStore } from "@next-md-editor/editor-core";
 import { useEffect, useState } from "react";
 import { initRegistry } from "@/registry";
+import { parseMarkdown } from "@/features/markdown/serializer";
 
 export default function EditorPage() {
   const [previewOpen, setPreviewOpen] = useState(true);
@@ -15,9 +16,62 @@ export default function EditorPage() {
   const [isResizingSidebar, setIsResizingSidebar] = useState(false);
   const [isResizingPreview, setIsResizingPreview] = useState(false);
 
+  const blocks = useEditorStore((s) => s.blocks);
+  const setBlocks = useEditorStore((s) => s.setBlocks);
+  const [saveStatus, setSaveStatus] = useState<"saving" | "saved" | "idle">("idle");
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  // Initial load
   useEffect(() => {
     initRegistry();
-  }, []);
+    const saved = localStorage.getItem("next-md-editor-blocks");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setBlocks(parsed);
+          setIsLoaded(true);
+          setSaveStatus("saved");
+          return;
+        }
+      } catch (e) {
+        console.error("Failed to parse saved blocks:", e);
+      }
+    }
+
+    // Default fallback demo markdown
+    const DEMO_MARKDOWN = `# Welcome to next-md-editor!
+
+This is a beautiful block-based markdown editor built with Next.js and Turborepo workspaces.
+
+---
+
+> Block-based editing makes reordering elements intuitive and fun. Drag and drop any block using the handle on the left side of the block!
+
+\`\`\`ts
+// Happy coding!
+const editorName = "next-md-editor";
+console.log(\`Successfully loaded demo in \${editorName}!\`);
+\`\`\``;
+
+    const parsedBlocks = parseMarkdown(DEMO_MARKDOWN);
+    setBlocks(parsedBlocks);
+    setIsLoaded(true);
+    setSaveStatus("saved");
+  }, [setBlocks]);
+
+  // Persist to localStorage with 600ms debounce
+  useEffect(() => {
+    if (!isLoaded || blocks.length === 0) return;
+
+    setSaveStatus("saving");
+    const timer = setTimeout(() => {
+      localStorage.setItem("next-md-editor-blocks", JSON.stringify(blocks));
+      setSaveStatus("saved");
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }, [blocks, isLoaded]);
 
   const startResizeSidebar = (mouseDownEvent: React.MouseEvent) => {
     mouseDownEvent.preventDefault();
@@ -72,7 +126,11 @@ export default function EditorPage() {
       background: "var(--bg-base)",
       userSelect: isResizingSidebar || isResizingPreview ? "none" : "auto",
     }}>
-      <EditorToolbar previewOpen={previewOpen} onTogglePreview={() => setPreviewOpen(v => !v)} />
+      <EditorToolbar 
+        previewOpen={previewOpen} 
+        onTogglePreview={() => setPreviewOpen(v => !v)} 
+        saveStatus={saveStatus}
+      />
       <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
         <EditorSidebar width={sidebarWidth} />
         
