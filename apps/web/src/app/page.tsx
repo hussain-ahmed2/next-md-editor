@@ -66,10 +66,12 @@ export default function EditorPage() {
 
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
-    if (active.data.current?.isSidebarItem) {
+    const isSidebarDrag = active.data.current?.isSidebarItem || (active.id && active.id.toString().startsWith("sidebar-"));
+    if (isSidebarDrag) {
+      const type = active.data.current?.type || active.id.toString().replace("sidebar-", "");
       setActiveSidebarItem({
-        type: active.data.current.type,
-        label: active.data.current.label,
+        type,
+        label: active.data.current?.label || type.charAt(0).toUpperCase() + type.slice(1),
       });
       setInsertIndex(blocks.length);
     } else {
@@ -79,7 +81,8 @@ export default function EditorPage() {
 
   const handleDragOver = (event: DragOverEvent) => {
     const { active, over } = event;
-    if (active.data.current?.isSidebarItem) {
+    const isSidebarDrag = active.data.current?.isSidebarItem || (active.id && active.id.toString().startsWith("sidebar-"));
+    if (isSidebarDrag) {
       if (!over) return; // Keep last known insertIndex to prevent flickering or disappearing placeholder
       
       const overId = over.id as string;
