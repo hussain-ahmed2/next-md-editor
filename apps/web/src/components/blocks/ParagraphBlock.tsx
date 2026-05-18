@@ -10,10 +10,23 @@ import {
 import { renderInlineMarkdown } from "@/features/markdown/highlighter";
 
 export function ParagraphBlock({ block }: { block: Block }) {
+  const blocks = useEditorStore((s) => s.blocks);
+  const addBlock = useEditorStore((s) => s.addBlock);
+  const removeBlock = useEditorStore((s) => s.removeBlock);
   const updateBlock = useEditorStore((s) => s.updateBlock);
+  const selectBlock = useEditorStore((s) => s.selectBlock);
+  const selectedBlockId = useEditorStore((s) => s.selectedBlockId);
+
   const text = (block.props.text as string) ?? "";
   const [isFocused, setIsFocused] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+
+  // Auto-focus synchronization when block is selected
+  useEffect(() => {
+    if (selectedBlockId === block.id && ref.current && document.activeElement !== ref.current) {
+      ref.current.focus();
+    }
+  }, [selectedBlockId, block.id]);
 
   // When entering focus, populate raw text and snap caret
   useEffect(() => {
@@ -41,13 +54,13 @@ export function ParagraphBlock({ block }: { block: Block }) {
   };
 
   // Smart visual decorations for lists and todo checkboxes on blur
-  const isTodo = !isFocused && (text.startsWith("- [ ] ") || text.startsWith("- [x] "));
+  const isTodo = !isFocused && (text.startsWith("- [ ") || text.startsWith("- [x] ") || text.startsWith("- [ ] "));
   const isBullet = !isFocused && !isTodo && (text.startsWith("- ") || text.startsWith("* "));
   const numberMatch = !isFocused && !isTodo && !isBullet && text.match(/^(\d+)\.\s(.*)$/);
 
   if (isTodo) {
     const checked = text.startsWith("- [x] ");
-    const cleanText = text.slice(6);
+    const cleanText = text.startsWith("- [x] ") ? text.slice(6) : text.startsWith("- [ ] ") ? text.slice(6) : text.slice(5);
     return (
       <div style={{ display: "flex", gap: 10, alignItems: "center", width: "100%", paddingLeft: 4 }}>
         <input
@@ -73,7 +86,7 @@ export function ParagraphBlock({ block }: { block: Block }) {
           onFocus={() => setIsFocused(true)}
           onBlur={handleBlur}
           onInput={handleInput}
-          onKeyDown={(e) => handleEditorKeyboardShortcuts(e, block.id, updateBlock)}
+          onKeyDown={(e) => handleEditorKeyboardShortcuts(e, block, blocks, addBlock, removeBlock, updateBlock, selectBlock)}
           style={{
             flex: 1,
             fontSize: "1rem",
@@ -101,7 +114,7 @@ export function ParagraphBlock({ block }: { block: Block }) {
           onFocus={() => setIsFocused(true)}
           onBlur={handleBlur}
           onInput={handleInput}
-          onKeyDown={(e) => handleEditorKeyboardShortcuts(e, block.id, updateBlock)}
+          onKeyDown={(e) => handleEditorKeyboardShortcuts(e, block, blocks, addBlock, removeBlock, updateBlock, selectBlock)}
           style={{
             flex: 1,
             fontSize: "1rem",
@@ -129,7 +142,7 @@ export function ParagraphBlock({ block }: { block: Block }) {
           onFocus={() => setIsFocused(true)}
           onBlur={handleBlur}
           onInput={handleInput}
-          onKeyDown={(e) => handleEditorKeyboardShortcuts(e, block.id, updateBlock)}
+          onKeyDown={(e) => handleEditorKeyboardShortcuts(e, block, blocks, addBlock, removeBlock, updateBlock, selectBlock)}
           style={{
             flex: 1,
             fontSize: "1rem",
@@ -152,7 +165,7 @@ export function ParagraphBlock({ block }: { block: Block }) {
       onFocus={() => setIsFocused(true)}
       onBlur={handleBlur}
       onInput={handleInput}
-      onKeyDown={(e) => handleEditorKeyboardShortcuts(e, block.id, updateBlock)}
+      onKeyDown={(e) => handleEditorKeyboardShortcuts(e, block, blocks, addBlock, removeBlock, updateBlock, selectBlock)}
       data-placeholder="Start typing…"
       style={{
         fontSize: "1rem",

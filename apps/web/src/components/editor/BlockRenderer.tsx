@@ -23,5 +23,6 @@ export function BlockRenderer({ block }: { block: Block }) {
     );
   }
 
-  return <>{def.component({ block })}</>;
+  const Component = def.component;
+  return <Component block={block} />;
 }

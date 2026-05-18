@@ -10,10 +10,23 @@ import {
 import { renderInlineMarkdown } from "@/features/markdown/highlighter";
 
 export function QuoteBlock({ block }: { block: Block }) {
+  const blocks = useEditorStore((s) => s.blocks);
+  const addBlock = useEditorStore((s) => s.addBlock);
+  const removeBlock = useEditorStore((s) => s.removeBlock);
   const updateBlock = useEditorStore((s) => s.updateBlock);
+  const selectBlock = useEditorStore((s) => s.selectBlock);
+  const selectedBlockId = useEditorStore((s) => s.selectedBlockId);
+
   const text = (block.props.text as string) ?? "";
   const [isFocused, setIsFocused] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+
+  // Auto-focus synchronization when block is selected
+  useEffect(() => {
+    if (selectedBlockId === block.id && ref.current && document.activeElement !== ref.current) {
+      ref.current.focus();
+    }
+  }, [selectedBlockId, block.id]);
 
   // When entering focus, populate raw text and snap caret
   useEffect(() => {
@@ -67,7 +80,7 @@ export function QuoteBlock({ block }: { block: Block }) {
         onBlur={handleBlur}
         onInput={handleInput}
         onKeyDown={(e) =>
-          handleEditorKeyboardShortcuts(e, block.id, updateBlock)
+          handleEditorKeyboardShortcuts(e, block, blocks, addBlock, removeBlock, updateBlock, selectBlock)
         }
         style={{
           flex: 1,

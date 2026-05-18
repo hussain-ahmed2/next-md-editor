@@ -1,4 +1,6 @@
 import React from "react";
+import { v4 as uuidv4 } from "uuid";
+import type { Block } from "@next-md-editor/types";
 
 /**
  * Converts rich visual HTML inside contentEditable back into clean Markdown.
@@ -42,18 +44,59 @@ export function htmlToMarkdown(html: string): string {
 
 /**
  * Intercepts keyboard shortcuts for contentEditable blocks.
+ * - Enter: Creates a new paragraph block directly below the active block.
+ * - Backspace: If empty, deletes the active block and focuses the previous one.
  * - Bold (Ctrl/Cmd+B): Let browser format visually in real-time, saved as **markdown** on blur.
  * - Italic (Ctrl/Cmd+I): Let browser format visually in real-time, saved as *markdown* on blur.
  * - Link (Ctrl/Cmd+K): Prompts for hyperlinking, wrapped programmatically.
  */
 export function handleEditorKeyboardShortcuts(
   e: React.KeyboardEvent<HTMLDivElement>,
-  blockId: string,
-  updateBlock: (id: string, props: any) => void
+  block: Block,
+  blocks: Block[],
+  addBlock: (block: Block, index?: number) => void,
+  removeBlock: (id: string) => void,
+  updateBlock: (id: string, props: any) => void,
+  selectBlock: (id?: string) => void
 ) {
   const hasMeta = e.ctrlKey || e.metaKey;
   const key = e.key.toLowerCase();
 
+  // 1. Enter Key creates a new Paragraph Block below the current block
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    const currentIndex = blocks.findIndex((b) => b.id === block.id);
+    if (currentIndex !== -1) {
+      addBlock(
+        {
+          id: uuidv4(),
+          type: "paragraph",
+          props: { text: "" },
+        },
+        currentIndex + 1
+      );
+    }
+    return;
+  }
+
+  // 2. Backspace Key on empty block deletes it and focuses the previous block
+  if (e.key === "Backspace") {
+    const rawText = e.currentTarget.textContent ?? "";
+    if (rawText === "") {
+      e.preventDefault();
+      const currentIndex = blocks.findIndex((b) => b.id === block.id);
+      if (currentIndex > 0) {
+        const previousBlock = blocks[currentIndex - 1];
+        selectBlock(previousBlock.id);
+      } else {
+        selectBlock(undefined);
+      }
+      removeBlock(block.id);
+      return;
+    }
+  }
+
+  // 3. Bold, Italic, Link visual shortcuts
   if (hasMeta && (key === "b" || key === "i" || key === "k")) {
     if (key === "k") {
       e.preventDefault();
@@ -63,7 +106,7 @@ export function handleEditorKeyboardShortcuts(
       const range = selection.getRangeAt(0);
       const selectedText = range.toString();
 
-      // Extract leading/trailing space for clean formatting
+      // Extract leading/trailing space for clean GFM formatting
       let startSpace = "";
       let endSpace = "";
       let cleanText = selectedText;
@@ -84,10 +127,8 @@ export function handleEditorKeyboardShortcuts(
       range.deleteContents();
       range.insertNode(textNode);
 
-      updateBlock(blockId, { text: htmlToMarkdown(e.currentTarget.innerHTML) });
+      updateBlock(block.id, { text: htmlToMarkdown(e.currentTarget.innerHTML) });
     }
-    // Note: For 'b' and 'i', we intentionally do NOT call e.preventDefault().
-    // This allows the browser's native editor to apply direct visual bolding/italics
-    // on the screen inside the block. When the user blurs, htmlToMarkdown parses the HTML back to **markdown**!
+    // For 'b' and 'i', browser native styling takes over, converted back to **markdown** on blur
   }
 }
