@@ -9,25 +9,59 @@ import {
 import { useDroppable, useDndContext } from "@dnd-kit/core";
 import { SortableBlock } from "./SortableBlock";
 import { BlockRegistry } from "@next-md-editor/editor-core";
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
+
+export const CANVAS_ROOT_ID = "canvas-root";
+export const SIDEBAR_PLACEHOLDER_ID = "sidebar-placeholder";
 
 export function EditorCanvas() {
   const { blocks } = useEditorStore();
-  const { active } = useDndContext();
+  const { active, over } = useDndContext();
+  const [insertIndex, setInsertIndex] = useState<number | null>(null);
   
   const { setNodeRef } = useDroppable({
-    id: "canvas-root",
+    id: CANVAS_ROOT_ID,
   });
 
   const isDraggingSidebarItem = active && active.data.current?.isSidebarItem;
-  
-  const sortableItems = useMemo(() => {
-    const ids = blocks.map((b) => b.id);
-    if (isDraggingSidebarItem) {
-      ids.push(active.id as string);
+
+  // Calculate where to insert the placeholder
+  useEffect(() => {
+    if (isDraggingSidebarItem && over) {
+      const overId = over.id as string;
+      if (overId === CANVAS_ROOT_ID) {
+        setInsertIndex(blocks.length);
+      } else if (overId !== SIDEBAR_PLACEHOLDER_ID) {
+        const idx = blocks.findIndex(b => b.id === overId);
+        if (idx !== -1) {
+          // If hovering over an item, we can insert before it.
+          // dnd-kit translates items down.
+          setInsertIndex(idx);
+        }
+      }
+      // If overId === "sidebar-placeholder", do nothing (keep current insertIndex)
+    } else {
+      setInsertIndex(null);
     }
-    return ids;
-  }, [blocks, active, isDraggingSidebarItem]);
+  }, [active, over, blocks, isDraggingSidebarItem]);
+
+  const displayBlocks = useMemo(() => {
+    if (isDraggingSidebarItem && insertIndex !== null) {
+      const type = active.data.current?.type;
+      const def = BlockRegistry.get(type);
+      const placeholderBlock = {
+        id: SIDEBAR_PLACEHOLDER_ID, // unique ID, NOT active.id
+        type,
+        props: { ...(def?.defaultProps ?? {}) }
+      };
+      
+      const newBlocks = [...blocks];
+      const safeIndex = Math.max(0, Math.min(insertIndex, blocks.length));
+      newBlocks.splice(safeIndex, 0, placeholderBlock);
+      return newBlocks;
+    }
+    return blocks;
+  }, [blocks, isDraggingSidebarItem, insertIndex, active]);
 
   return (
     <main
@@ -46,35 +80,35 @@ export function EditorCanvas() {
         {blocks.length === 0 && !isDraggingSidebarItem && <EmptyState />}
         
         <SortableContext
-          items={sortableItems}
+          items={blocks.map((b) => b.id)}
           strategy={verticalListSortingStrategy}
         >
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            {blocks.map((block) => (
-              <SortableBlock key={block.id} id={block.id}>
-                <BlockRenderer block={block} />
-              </SortableBlock>
-            ))}
-            
-            {/* Render a placeholder at the end of the list for dnd-kit to measure and shift */}
-            {isDraggingSidebarItem && (
-              <SortableBlock 
-                key={active.id as string} 
-                id={active.id as string} 
-                isPlaceholder={true}
-              >
-                {(() => {
-                  const type = active.data.current?.type;
-                  const def = BlockRegistry.get(type);
-                  const placeholderBlock = {
-                    id: active.id as string,
-                    type,
-                    props: { ...(def?.defaultProps ?? {}) }
-                  };
-                  return <BlockRenderer block={placeholderBlock} />;
-                })()}
-              </SortableBlock>
-            )}
+            {displayBlocks.map((block) => {
+              if (block.id === SIDEBAR_PLACEHOLDER_ID) {
+                return (
+                  <div 
+                    key={SIDEBAR_PLACEHOLDER_ID} 
+                    id={SIDEBAR_PLACEHOLDER_ID}
+                    style={{
+                      opacity: 0.4,
+                      pointerEvents: "none",
+                      borderRadius: "var(--radius-md)",
+                      border: "1.5px dashed var(--accent)",
+                      background: "var(--accent-muted)",
+                      padding: "2px 0",
+                    }}
+                  >
+                    <BlockRenderer block={block} />
+                  </div>
+                );
+              }
+              return (
+                <SortableBlock key={block.id} id={block.id}>
+                  <BlockRenderer block={block} />
+                </SortableBlock>
+              );
+            })}
           </div>
         </SortableContext>
       </div>

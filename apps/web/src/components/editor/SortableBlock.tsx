@@ -44,10 +44,10 @@ export function SortableBlock({
         ...style,
         position: "relative",
         borderRadius: "var(--radius-md)",
-        border: isDragging
+        border: (isDragging || isPlaceholder)
           ? "1.5px dashed var(--accent)"
           : `1px solid ${isSelected ? "var(--accent)" : hovered ? "var(--border)" : "transparent"}`,
-        background: isDragging
+        background: (isDragging || isPlaceholder)
           ? "var(--accent-muted)"
           : isSelected
             ? "var(--accent-muted)"

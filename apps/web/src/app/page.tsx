@@ -22,6 +22,7 @@ import {
 import { v4 as uuidv4 } from "uuid";
 import { BlockRegistry } from "@next-md-editor/editor-core";
 import { BlockRenderer } from "@/components/editor/BlockRenderer";
+import { CANVAS_ROOT_ID } from "@/components/editor/EditorCanvas";
 
 export default function EditorPage() {
   const [previewOpen, setPreviewOpen] = useState(true);
@@ -65,7 +66,6 @@ export default function EditorPage() {
     if (!over) return;
 
     if (active.data.current?.isSidebarItem) {
-      // Dropping a sidebar item into the canvas
       const type = active.data.current.type;
       const def = BlockRegistry.get(type);
       const newBlock = {
@@ -74,23 +74,30 @@ export default function EditorPage() {
         props: { ...(def?.defaultProps ?? {}) },
       };
 
+      // We read the sortable index from the over element, or fall back to appending.
+      // Since dnd-kit translates the active item, over.id might be the id we swapped with.
       const overId = over.id as string;
-      if (overId === "canvas-root") {
+      
+      // If it dropped over the canvas root, append it.
+      if (overId === CANVAS_ROOT_ID) {
         addBlock(newBlock);
+        return;
+      }
+
+      // If it dropped over a specific block, insert it there.
+      const toIndex = blocks.findIndex((b) => b.id === overId);
+      if (toIndex !== -1) {
+        // dnd-kit rects could tell us if we dropped below or above, but we can default to inserting at the index.
+        addBlock(newBlock, toIndex);
       } else {
-        const toIndex = blocks.findIndex((b) => b.id === overId);
-        // If we dropped over an existing block, insert there. Else append at the end.
-        if (toIndex !== -1) {
-          addBlock(newBlock, toIndex);
-        } else {
-          addBlock(newBlock);
-        }
+        // Fallback: append
+        addBlock(newBlock);
       }
       return;
     }
 
     // Standard canvas reordering
-    if (active.id === over.id || over.id === "canvas-root") return;
+    if (active.id === over.id || overId === CANVAS_ROOT_ID) return;
     const toIndex = blocks.findIndex((b) => b.id === over.id);
     if (toIndex !== -1) {
       moveBlock(active.id as string, toIndex);
