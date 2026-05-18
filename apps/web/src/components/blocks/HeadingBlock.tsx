@@ -64,10 +64,31 @@ export function HeadingBlock({ block }: { block: Block }) {
     }
   }, [selectedBlockId, block.id, ref]);
 
-  // When entering focus, populate raw text and snap caret
+  // Sync state changes from store to DOM when they differ (e.g. on undo/redo)
+  useEffect(() => {
+    if (ref.current) {
+      const currentText = ref.current.textContent || "";
+      if (currentText !== text) {
+        ref.current.textContent = text;
+
+        // Reset caret to the end if focused
+        if (document.activeElement === ref.current) {
+          const range = document.createRange();
+          range.selectNodeContents(ref.current);
+          range.collapse(false);
+          const selection = window.getSelection();
+          if (selection) {
+            selection.removeAllRanges();
+            selection.addRange(range);
+          }
+        }
+      }
+    }
+  }, [text]);
+
+  // When entering focus, snap caret
   useEffect(() => {
     if (isFocused && ref.current) {
-      ref.current.textContent = text;
       const range = document.createRange();
       range.selectNodeContents(ref.current);
       range.collapse(false);
@@ -77,7 +98,7 @@ export function HeadingBlock({ block }: { block: Block }) {
         selection.addRange(range);
       }
     }
-  }, [isFocused, ref]);
+  }, [isFocused]);
 
   const handleInput = (e: React.InputEvent<HTMLDivElement>) => {
     const rawText = htmlToMarkdown(e.currentTarget.innerHTML);
