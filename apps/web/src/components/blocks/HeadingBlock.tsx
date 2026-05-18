@@ -2,6 +2,7 @@
 
 import { useEditorStore } from "@next-md-editor/editor-core";
 import type { Block } from "@next-md-editor/types";
+import { handleEditorKeyboardShortcuts } from "@/utils/editorShortcuts";
 
 const LEVEL_STYLES: Record<number, { fontSize: string; fontWeight: number; lineHeight: string; borderBottom?: string; paddingBottom?: string; marginBottom?: string }> = {
   1: { fontSize: "2em",    fontWeight: 600, lineHeight: "1.25", borderBottom: "1px solid #30363d", paddingBottom: "0.3em", marginBottom: "8px" },
@@ -43,6 +44,7 @@ export function HeadingBlock({ block }: { block: Block }) {
         contentEditable
         suppressContentEditableWarning
         onBlur={(e) => updateBlock(block.id, { text: e.currentTarget.textContent ?? "" })}
+        onKeyDown={(e) => handleEditorKeyboardShortcuts(e, block.id, updateBlock)}
         style={{
           ...style,
           color: "var(--text-primary)",

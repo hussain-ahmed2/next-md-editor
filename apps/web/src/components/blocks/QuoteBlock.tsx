@@ -2,6 +2,7 @@
 
 import { useEditorStore } from "@next-md-editor/editor-core";
 import type { Block } from "@next-md-editor/types";
+import { handleEditorKeyboardShortcuts } from "@/utils/editorShortcuts";
 
 export function QuoteBlock({ block }: { block: Block }) {
   const updateBlock = useEditorStore((s) => s.updateBlock);
@@ -26,6 +27,7 @@ export function QuoteBlock({ block }: { block: Block }) {
         contentEditable
         suppressContentEditableWarning
         onBlur={(e) => updateBlock(block.id, { text: e.currentTarget.textContent ?? "" })}
+        onKeyDown={(e) => handleEditorKeyboardShortcuts(e, block.id, updateBlock)}
         style={{
           flex: 1,
           fontSize: "15px",
