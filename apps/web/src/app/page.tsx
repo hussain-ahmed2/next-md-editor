@@ -78,6 +78,14 @@ console.log(\`Successfully loaded demo in \${editorName}!\`);
   // Global Undo / Redo keyboard shortcuts
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      // Skip global undo/redo when the user is actively typing inside a
+      // contentEditable element (paragraph, heading, table cell, etc.)
+      // This lets the browser handle per-keystroke native text undo instead.
+      const activeEl = document.activeElement as HTMLElement | null;
+      if (activeEl && activeEl.contentEditable === "true") {
+        return;
+      }
+
       const isMeta = e.ctrlKey || e.metaKey;
       if (isMeta && e.key.toLowerCase() === "z") {
         e.preventDefault();
