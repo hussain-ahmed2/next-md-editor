@@ -1,0 +1,112 @@
+"use client";
+
+import { useEditorStore } from "@next-md-editor/editor-core";
+import { BlockRegistry } from "@next-md-editor/editor-core";
+import { v4 as uuidv4 } from "uuid";
+
+interface SidebarBlock {
+  type: string;
+  label: string;
+  icon: string;
+  description: string;
+}
+
+const BLOCK_PALETTE: SidebarBlock[] = [
+  { type: "heading",   label: "Heading",   icon: "H",  description: "Section title" },
+  { type: "paragraph", label: "Paragraph", icon: "¶",  description: "Body text" },
+  { type: "quote",     label: "Quote",     icon: "❝",  description: "Blockquote" },
+  { type: "code",      label: "Code",      icon: "</>", description: "Code block" },
+  { type: "divider",   label: "Divider",   icon: "—",  description: "Horizontal rule" },
+];
+
+export function EditorSidebar() {
+  const addBlock = useEditorStore((s) => s.addBlock);
+
+  const handleAdd = (type: string) => {
+    const def = BlockRegistry.get(type);
+    addBlock({
+      id: uuidv4(),
+      type,
+      props: { ...(def?.defaultProps ?? {}) },
+    });
+  };
+
+  return (
+    <aside style={{
+      width: 220,
+      background: "var(--bg-surface)",
+      borderRight: "1px solid var(--border-subtle)",
+      display: "flex",
+      flexDirection: "column",
+      padding: "12px 8px",
+      gap: 4,
+      overflowY: "auto",
+    }}>
+      <div style={{
+        fontSize: 11,
+        fontWeight: 600,
+        letterSpacing: "0.08em",
+        textTransform: "uppercase",
+        color: "var(--text-muted)",
+        padding: "4px 8px 8px",
+      }}>
+        Blocks
+      </div>
+      {BLOCK_PALETTE.map((b) => (
+        <button
+          key={b.type}
+          onClick={() => handleAdd(b.type)}
+          title={b.description}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            padding: "8px 10px",
+            borderRadius: "var(--radius-sm)",
+            border: "1px solid transparent",
+            background: "transparent",
+            color: "var(--text-secondary)",
+            cursor: "pointer",
+            fontSize: 13,
+            fontWeight: 500,
+            transition: "all 0.15s ease",
+            textAlign: "left",
+          }}
+          onMouseEnter={e => {
+            const el = e.currentTarget;
+            el.style.background = "var(--bg-hover)";
+            el.style.borderColor = "var(--border)";
+            el.style.color = "var(--text-primary)";
+          }}
+          onMouseLeave={e => {
+            const el = e.currentTarget;
+            el.style.background = "transparent";
+            el.style.borderColor = "transparent";
+            el.style.color = "var(--text-secondary)";
+          }}
+        >
+          <span style={{
+            width: 28,
+            height: 28,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            borderRadius: "var(--radius-sm)",
+            background: "var(--accent-muted)",
+            color: "var(--accent)",
+            fontSize: 12,
+            fontWeight: 700,
+            fontFamily: "var(--font-mono)",
+            flexShrink: 0,
+          }}>
+            {b.icon}
+          </span>
+          <div>
+            <div style={{ lineHeight: 1.3 }}>{b.label}</div>
+            <div style={{ fontSize: 11, color: "var(--text-muted)", lineHeight: 1.3 }}>{b.description}</div>
+          </div>
+        </button>
+      ))}
+    </aside>
+  );
+}
