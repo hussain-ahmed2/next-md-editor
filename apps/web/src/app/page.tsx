@@ -59,6 +59,8 @@ export default function EditorPage() {
     label: string;
   } | null>(null);
   const [insertIndex, setInsertIndex] = useState<number | null>(null);
+  const [sidebarDragActive, setSidebarDragActive] = useState<boolean>(false);
+  const [sidebarDroppedSuccessfully, setSidebarDroppedSuccessfully] = useState<boolean>(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -66,25 +68,37 @@ export default function EditorPage() {
 
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
-    const isSidebarDrag = active.data.current?.isSidebarItem || (active.id && active.id.toString().startsWith("sidebar-"));
+    const isSidebarDrag =
+      active.data.current?.isSidebarItem ||
+      (active.id && active.id.toString().startsWith("sidebar-"));
     if (isSidebarDrag) {
-      const type = active.data.current?.type || active.id.toString().replace("sidebar-", "");
+      const type =
+        active.data.current?.type ||
+        active.id.toString().replace("sidebar-", "");
       setActiveSidebarItem({
         type,
-        label: active.data.current?.label || type.charAt(0).toUpperCase() + type.slice(1),
+        label:
+          active.data.current?.label ||
+          type.charAt(0).toUpperCase() + type.slice(1),
       });
       setInsertIndex(blocks.length);
+      setSidebarDragActive(true);
+      setSidebarDroppedSuccessfully(false);
     } else {
       setActiveId(active.id as string);
+      setSidebarDragActive(false);
+      setSidebarDroppedSuccessfully(false);
     }
   };
 
   const handleDragOver = (event: DragOverEvent) => {
     const { active, over } = event;
-    const isSidebarDrag = active.data.current?.isSidebarItem || (active.id && active.id.toString().startsWith("sidebar-"));
+    const isSidebarDrag =
+      active.data.current?.isSidebarItem ||
+      (active.id && active.id.toString().startsWith("sidebar-"));
     if (isSidebarDrag) {
       if (!over) return; // Keep last known insertIndex to prevent flickering or disappearing placeholder
-      
+
       const overId = over.id as string;
       if (overId === CANVAS_ROOT_ID) {
         setInsertIndex(blocks.length);
@@ -106,10 +120,14 @@ export default function EditorPage() {
     const finalInsertIndex = insertIndex;
     setInsertIndex(null);
 
-    const isSidebarDrag = active.data.current?.isSidebarItem || (active.id && active.id.toString().startsWith("sidebar-"));
+    const isSidebarDrag =
+      active.data.current?.isSidebarItem ||
+      (active.id && active.id.toString().startsWith("sidebar-"));
 
     if (isSidebarDrag) {
-      const type = active.data.current?.type || active.id.toString().replace("sidebar-", "");
+      const type =
+        active.data.current?.type ||
+        active.id.toString().replace("sidebar-", "");
       const def = BlockRegistry.get(type);
       const newBlock = {
         id: uuidv4(),
@@ -117,12 +135,23 @@ export default function EditorPage() {
         props: { ...(def?.defaultProps ?? {}) },
       };
 
-      console.log("[DragEnd] Sidebar item dropped:", type, "at index:", finalInsertIndex);
+      console.log(
+        "[DragEnd] Sidebar item dropped:",
+        type,
+        "at index:",
+        finalInsertIndex,
+      );
 
-      if (typeof finalInsertIndex === "number") {
-        addBlock(newBlock, finalInsertIndex);
+      const isSuccessfulDrop = !!over;
+      if (isSuccessfulDrop) {
+        setSidebarDroppedSuccessfully(true);
+        if (typeof finalInsertIndex === "number") {
+          addBlock(newBlock, finalInsertIndex);
+        } else {
+          addBlock(newBlock);
+        }
       } else {
-        addBlock(newBlock);
+        setSidebarDroppedSuccessfully(false);
       }
       return;
     }
@@ -268,7 +297,9 @@ console.log(\`Successfully loaded demo in \${editorName}!\`);
   const customCollisionDetection: CollisionDetection = (args) => {
     if (args.active.data.current?.isSidebarItem) {
       const pointerCollisions = pointerWithin(args);
-      return pointerCollisions.length > 0 ? pointerCollisions : rectIntersection(args);
+      return pointerCollisions.length > 0
+        ? pointerCollisions
+        : rectIntersection(args);
     }
     return closestCenter(args);
   };
@@ -284,9 +315,21 @@ console.log(\`Successfully loaded demo in \${editorName}!\`);
           background: "var(--bg-base)",
         }}
       >
-        <div style={{ height: 48, background: "var(--bg-elevated)", borderBottom: "1px solid var(--border)" }} />
+        <div
+          style={{
+            height: 48,
+            background: "var(--bg-elevated)",
+            borderBottom: "1px solid var(--border)",
+          }}
+        />
         <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
-          <div style={{ width: sidebarWidth, background: "var(--bg-elevated)", borderRight: "1px solid var(--border)" }} />
+          <div
+            style={{
+              width: sidebarWidth,
+              background: "var(--bg-elevated)",
+              borderRight: "1px solid var(--border)",
+            }}
+          />
           <div style={{ flex: 1, background: "var(--bg-base)" }} />
         </div>
       </div>
@@ -406,7 +449,16 @@ console.log(\`Successfully loaded demo in \${editorName}!\`);
           )}
         </div>
 
-        <DragOverlay adjustScale={false}>
+        <DragOverlay
+          adjustScale={false}
+          dropAnimation={
+            sidebarDragActive
+              ? sidebarDroppedSuccessfully
+                ? null
+                : undefined
+              : undefined
+          }
+        >
           {activeId ? (
             <div
               style={{

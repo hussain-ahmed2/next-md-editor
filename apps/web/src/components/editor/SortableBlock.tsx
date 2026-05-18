@@ -61,67 +61,85 @@ export function SortableBlock({
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      {/* Drag handle */}
+      {/* Drag handle wrapper */}
       <div
-        {...attributes}
-        {...listeners}
-        title="Drag to reorder"
         style={{
           position: "absolute",
           left: -28,
-          top: "50%",
-          transform: "translateY(-50%)",
-          width: 20,
-          height: 20,
+          top: 0,
+          bottom: 0,
+          width: 36, // extends 8px inside the block to guarantee no gap
           display: "flex",
           alignItems: "center",
-          justifyContent: "center",
-          cursor: "grab",
-          color: hovered || isSelected ? "var(--text-muted)" : "transparent",
-          transition: "color 0.15s",
-          borderRadius: 4,
-          userSelect: "none",
+          justifyContent: "flex-start", // align grip to the far left
         }}
-        onMouseEnter={(e) => (e.currentTarget.style.color = "var(--accent)")}
-        onMouseLeave={(e) =>
-          (e.currentTarget.style.color = hovered || isSelected ? "var(--text-muted)" : "transparent")
-        }
       >
-        <GripVertical size={16} />
-      </div>
-
-      {/* Delete button */}
-      {(hovered || isSelected) && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            removeBlock(id);
-          }}
-          title="Delete block"
+        <div
+          {...attributes}
+          {...listeners}
+          title="Drag to reorder"
           style={{
-            position: "absolute",
-            right: -28,
-            top: "50%",
-            transform: "translateY(-50%)",
             width: 20,
             height: 20,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            background: "transparent",
-            border: "none",
-            cursor: "pointer",
-            color: "var(--text-muted)",
+            cursor: "grab",
+            color: hovered || isSelected ? "var(--text-muted)" : "transparent",
+            transition: "color 0.15s",
             borderRadius: 4,
-            padding: 0,
+            userSelect: "none",
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = "var(--danger)")}
+          onMouseEnter={(e) => (e.currentTarget.style.color = "var(--accent)")}
           onMouseLeave={(e) =>
-            (e.currentTarget.style.color = "var(--text-muted)")
+            (e.currentTarget.style.color = hovered || isSelected ? "var(--text-muted)" : "transparent")
           }
         >
-          <X size={16} />
-        </button>
+          <GripVertical size={16} />
+        </div>
+      </div>
+
+      {/* Delete button wrapper */}
+      {(hovered || isSelected) && (
+        <div
+          style={{
+            position: "absolute",
+            right: -28,
+            top: 0,
+            bottom: 0,
+            width: 36, // extends 8px inside the block to guarantee no gap
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "flex-end", // align button to the far right
+          }}
+        >
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              removeBlock(id);
+            }}
+            title="Delete block"
+            style={{
+              width: 20,
+              height: 20,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: "transparent",
+              border: "none",
+              cursor: "pointer",
+              color: "var(--text-muted)",
+              borderRadius: 4,
+              padding: 0,
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "var(--danger)")}
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.color = "var(--text-muted)")
+            }
+          >
+            <X size={16} />
+          </button>
+        </div>
       )}
 
       <div style={{ padding: "6px 12px" }}>{children}</div>
