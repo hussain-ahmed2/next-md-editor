@@ -18,6 +18,9 @@ import {
   useSensor,
   useSensors,
   DragOverlay,
+  pointerWithin,
+  rectIntersection,
+  CollisionDetection,
 } from "@dnd-kit/core";
 import { v4 as uuidv4 } from "uuid";
 import { BlockRegistry } from "@next-md-editor/editor-core";
@@ -234,6 +237,14 @@ console.log(\`Successfully loaded demo in \${editorName}!\`);
     document.addEventListener("mouseup", stopResize);
   };
 
+  const customCollisionDetection: CollisionDetection = (args) => {
+    if (args.active.data.current?.isSidebarItem) {
+      const pointerCollisions = pointerWithin(args);
+      return pointerCollisions.length > 0 ? pointerCollisions : rectIntersection(args);
+    }
+    return closestCenter(args);
+  };
+
   return (
     <div
       style={{
@@ -252,7 +263,7 @@ console.log(\`Successfully loaded demo in \${editorName}!\`);
       />
       <DndContext
         sensors={sensors}
-        collisionDetection={closestCenter}
+        collisionDetection={customCollisionDetection}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
