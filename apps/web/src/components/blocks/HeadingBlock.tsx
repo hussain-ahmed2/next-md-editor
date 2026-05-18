@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useRef, useEffect } from "react";
 import { useEditorStore } from "@next-md-editor/editor-core";
 import type { Block } from "@next-md-editor/types";
 import { handleEditorKeyboardShortcuts, htmlToMarkdown } from "@/utils/editorShortcuts";
@@ -14,29 +14,31 @@ const LEVEL_STYLES: Record<number, { fontSize: string; fontWeight: number; lineH
 
 export function HeadingBlock({ block }: { block: Block }) {
   const updateBlock = useEditorStore((s) => s.updateBlock);
-  const selectBlock = useEditorStore((s) => s.selectBlock);
   const level = (block.props.level as number) ?? 1;
   const text = (block.props.text as string) ?? "";
   const style = LEVEL_STYLES[level] ?? LEVEL_STYLES[1];
+  const ref = useRef<HTMLDivElement>(null);
 
-  const [isEditing, setIsEditing] = useState(false);
-  const editorRef = useRef<HTMLDivElement>(null);
-
-  // If isEditing goes true, focus and move caret to the end
+  // Synchronise state changes into the DOM only when not actively editing
   useEffect(() => {
-    if (isEditing && editorRef.current) {
-      const el = editorRef.current;
-      el.focus();
-      const range = document.createRange();
-      range.selectNodeContents(el);
-      range.collapse(false);
-      const selection = window.getSelection();
-      if (selection) {
-        selection.removeAllRanges();
-        selection.addRange(range);
-      }
+    if (ref.current && document.activeElement !== ref.current) {
+      ref.current.innerHTML = renderInlineMarkdown(text) || "";
     }
-  }, [isEditing]);
+  }, [text, level]);
+
+  const handleFocus = () => {
+    if (ref.current) {
+      ref.current.textContent = text;
+    }
+  };
+
+  const handleBlur = () => {
+    if (ref.current) {
+      const rawText = htmlToMarkdown(ref.current.innerHTML);
+      updateBlock(block.id, { text: rawText });
+      ref.current.innerHTML = renderInlineMarkdown(rawText);
+    }
+  };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -62,45 +64,21 @@ export function HeadingBlock({ block }: { block: Block }) {
           </button>
         ))}
       </div>
-      {!isEditing ? (
-        <div
-          onClick={() => {
-            setIsEditing(true);
-            selectBlock(block.id);
-          }}
-          style={{
-            ...style,
-            color: text ? "var(--text-primary)" : "rgba(255, 255, 255, 0.25)",
-            outline: "none",
-            minHeight: "1.4em",
-            letterSpacing: level === 1 ? "-0.03em" : "-0.01em",
-            cursor: "text",
-          }}
-          dangerouslySetInnerHTML={{
-            __html: renderInlineMarkdown(text) || `Heading ${level}`
-          }}
-        />
-      ) : (
-        <div
-          ref={editorRef}
-          contentEditable
-          suppressContentEditableWarning
-          onBlur={(e) => {
-            updateBlock(block.id, { text: htmlToMarkdown(e.currentTarget.innerHTML) });
-            setIsEditing(false);
-          }}
-          onKeyDown={(e) => handleEditorKeyboardShortcuts(e, block.id, updateBlock)}
-          style={{
-            ...style,
-            color: "var(--text-primary)",
-            outline: "none",
-            minHeight: "1.4em",
-            letterSpacing: level === 1 ? "-0.03em" : "-0.01em",
-          }}
-        >
-          {text}
-        </div>
-      )}
+      <div
+        ref={ref}
+        contentEditable
+        suppressContentEditableWarning
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+        onKeyDown={(e) => handleEditorKeyboardShortcuts(e, block.id, updateBlock)}
+        style={{
+          ...style,
+          color: "var(--text-primary)",
+          outline: "none",
+          minHeight: "1.4em",
+          letterSpacing: level === 1 ? "-0.03em" : "-0.01em",
+        }}
+      />
     </div>
   );
 }
