@@ -54,9 +54,10 @@ export function ParagraphBlock({ block }: { block: Block }) {
     }
   }, [text]);
 
-  // When entering focus, snap caret
+  // When entering focus, snap caret and ensure text is populated
   useEffect(() => {
     if (isFocused && ref.current) {
+      ref.current.textContent = text;
       const range = document.createRange();
       range.selectNodeContents(ref.current);
       range.collapse(false);
@@ -66,7 +67,7 @@ export function ParagraphBlock({ block }: { block: Block }) {
         selection.addRange(range);
       }
     }
-  }, [isFocused]);
+  }, [isFocused, ref]);
 
   const handleInput = (e: React.InputEvent<HTMLDivElement>) => {
     const rawText = htmlToMarkdown(e.currentTarget.innerHTML);

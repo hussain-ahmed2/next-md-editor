@@ -54,9 +54,10 @@ export function QuoteBlock({ block }: { block: Block }) {
     }
   }, [text]);
 
-  // When entering focus, snap caret
+  // When entering focus, snap caret and ensure text is populated
   useEffect(() => {
     if (isFocused && ref.current) {
+      ref.current.textContent = text;
       const range = document.createRange();
       range.selectNodeContents(ref.current);
       range.collapse(false);
