@@ -12,12 +12,21 @@ export function QuoteBlock({ block }: { block: Block }) {
   const [isFocused, setIsFocused] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  // Set caret to the end when focused
+  // Sync state changes from store to DOM when not editing
   useEffect(() => {
-    if (isFocused && ref.current) {
-      const el = ref.current;
+    if (ref.current && document.activeElement !== ref.current) {
+      ref.current.innerHTML = renderInlineMarkdown(text) || "";
+    }
+  }, [text, isFocused]);
+
+  const handleFocus = () => {
+    setIsFocused(true);
+    if (ref.current) {
+      // Load raw markdown text on entering focus once
+      ref.current.textContent = text;
+      // Set caret to the end
       const range = document.createRange();
-      range.selectNodeContents(el);
+      range.selectNodeContents(ref.current);
       range.collapse(false);
       const selection = window.getSelection();
       if (selection) {
@@ -25,7 +34,12 @@ export function QuoteBlock({ block }: { block: Block }) {
         selection.addRange(range);
       }
     }
-  }, [isFocused]);
+  };
+
+  const handleInput = (e: React.FormEvent<HTMLDivElement>) => {
+    const rawText = htmlToMarkdown(e.currentTarget.innerHTML);
+    updateBlock(block.id, { text: rawText });
+  };
 
   const handleBlur = (e: React.FocusEvent<HTMLDivElement>) => {
     setIsFocused(false);
@@ -51,8 +65,9 @@ export function QuoteBlock({ block }: { block: Block }) {
         ref={ref}
         contentEditable
         suppressContentEditableWarning
-        onFocus={() => setIsFocused(true)}
+        onFocus={handleFocus}
         onBlur={handleBlur}
+        onInput={handleInput}
         onKeyDown={(e) => handleEditorKeyboardShortcuts(e, block.id, updateBlock)}
         style={{
           flex: 1,
@@ -63,11 +78,6 @@ export function QuoteBlock({ block }: { block: Block }) {
           outline: "none",
           minHeight: "1.6em",
         }}
-        {...(!isFocused ? {
-          dangerouslySetInnerHTML: { __html: renderInlineMarkdown(text) || "" }
-        } : {
-          children: text
-        })}
       />
     </div>
   );
