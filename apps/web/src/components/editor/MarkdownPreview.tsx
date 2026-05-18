@@ -357,6 +357,32 @@ export function MarkdownPreview({ width = 360 }: { width?: number }) {
                       />
                     );
                   }
+                  case "image": {
+                    const url = (block.props.url as string) ?? "";
+                    const alt = (block.props.alt as string) ?? "";
+                    return (
+                      <div
+                        key={block.id}
+                        style={{
+                          display: "flex",
+                          justifyContent: "center",
+                          margin: "12px 0",
+                        }}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={url}
+                          alt={alt}
+                          style={{
+                            maxWidth: "100%",
+                            height: "auto",
+                            borderRadius: 6,
+                            border: "1px solid #30363d",
+                          }}
+                        />
+                      </div>
+                    );
+                  }
                   default:
                     return null;
                 }

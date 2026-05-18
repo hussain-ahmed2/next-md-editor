@@ -90,7 +90,22 @@ export function parseMarkdown(markdown: string): Block[] {
       continue;
     }
 
-    // 6. Default: Paragraph
+    // 6. GFM Images (![alt](url))
+    const imageMatch = trimmed.match(/^!\[(.*?)\]\((.*?)\)$/);
+    if (imageMatch) {
+      blocks.push({
+        id: uuidv4(),
+        type: "image",
+        props: {
+          alt: imageMatch[1],
+          url: imageMatch[2],
+        },
+      });
+      i++;
+      continue;
+    }
+
+    // 7. Default: Paragraph
     // We group consecutive non-empty lines as a single paragraph block or keep them separate.
     // In our block editor, separate paragraphs make block reordering much more intuitive.
     blocks.push({
@@ -133,6 +148,11 @@ export function serializeMarkdown(blocks: Block[]): string {
         }
         case "divider": {
           return "---";
+        }
+        case "image": {
+          const alt = (block.props.alt as string) ?? "";
+          const url = (block.props.url as string) ?? "";
+          return `![${alt}](${url})`;
         }
         default:
           return "";

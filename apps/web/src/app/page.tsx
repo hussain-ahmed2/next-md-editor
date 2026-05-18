@@ -18,6 +18,8 @@ export default function EditorPage() {
 
   const blocks = useEditorStore((s) => s.blocks);
   const setBlocks = useEditorStore((s) => s.setBlocks);
+  const undo = useEditorStore((s) => s.undo);
+  const redo = useEditorStore((s) => s.redo);
   const [saveStatus, setSaveStatus] = useState<"saving" | "saved" | "idle">("idle");
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -72,6 +74,27 @@ console.log(\`Successfully loaded demo in \${editorName}!\`);
 
     return () => clearTimeout(timer);
   }, [blocks, isLoaded]);
+
+  // Global Undo / Redo keyboard shortcuts
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      const isMeta = e.ctrlKey || e.metaKey;
+      if (isMeta && e.key.toLowerCase() === "z") {
+        e.preventDefault();
+        if (e.shiftKey) {
+          redo();
+        } else {
+          undo();
+        }
+      } else if (isMeta && e.key.toLowerCase() === "y") {
+        e.preventDefault();
+        redo();
+      }
+    };
+
+    window.addEventListener("keydown", handleGlobalKeyDown);
+    return () => window.removeEventListener("keydown", handleGlobalKeyDown);
+  }, [undo, redo]);
 
   const startResizeSidebar = (mouseDownEvent: React.MouseEvent) => {
     mouseDownEvent.preventDefault();

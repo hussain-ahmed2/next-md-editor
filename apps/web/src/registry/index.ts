@@ -4,6 +4,7 @@ import { ParagraphBlock } from "@/components/blocks/ParagraphBlock";
 import { QuoteBlock } from "@/components/blocks/QuoteBlock";
 import { CodeBlock } from "@/components/blocks/CodeBlock";
 import { DividerBlock } from "@/components/blocks/DividerBlock";
+import { ImageBlock } from "@/components/blocks/ImageBlock";
 
 export function initRegistry() {
   BlockRegistry.register({
@@ -50,5 +51,16 @@ export function initRegistry() {
     component: DividerBlock,
     defaultProps: {},
     serializer: () => "---",
+  });
+
+  BlockRegistry.register({
+    type: "image",
+    component: ImageBlock,
+    defaultProps: { url: "", alt: "" },
+    serializer: (b) => {
+      const url = (b.props.url as string) ?? "";
+      const alt = (b.props.alt as string) ?? "";
+      return `![${alt}](${url})`;
+    },
   });
 }

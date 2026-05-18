@@ -2,12 +2,27 @@ import { create } from "zustand";
 import { v4 as uuidv4 } from "uuid";
 import type { Block, EditorState } from "@next-md-editor/types";
 
-// Temporarily omitting undo/redo for MVP state setup.
-// Can be added later with middleware like zundo if needed.
+// Extend internally to support history stacks
+interface HistoryState {
+  past: Block[][];
+  future: Block[][];
+  isInitialLoadDone?: boolean;
+}
 
-export const useEditorStore = create<EditorState>((set) => ({
+const pushHistory = (past: Block[][], blocks: Block[]) => {
+  const newPast = [...past, blocks];
+  if (newPast.length > 100) {
+    newPast.shift();
+  }
+  return newPast;
+};
+
+export const useEditorStore = create<EditorState & HistoryState>((set) => ({
   blocks: [],
   selectedBlockId: undefined,
+  past: [],
+  future: [],
+  isInitialLoadDone: false,
 
   addBlock: (block: Block, index?: number) =>
     set((state) => {
@@ -17,7 +32,12 @@ export const useEditorStore = create<EditorState>((set) => ({
       } else {
         newBlocks.push(block);
       }
-      return { blocks: newBlocks, selectedBlockId: block.id };
+      return {
+        past: pushHistory(state.past, state.blocks),
+        future: [],
+        blocks: newBlocks,
+        selectedBlockId: block.id,
+      };
     }),
 
   updateBlock: (id: string, props: Record<string, unknown>) =>
@@ -25,13 +45,19 @@ export const useEditorStore = create<EditorState>((set) => ({
       const newBlocks = state.blocks.map((b) =>
         b.id === id ? { ...b, props: { ...b.props, ...props } } : b
       );
-      return { blocks: newBlocks };
+      return {
+        past: pushHistory(state.past, state.blocks),
+        future: [],
+        blocks: newBlocks,
+      };
     }),
 
   removeBlock: (id: string) =>
     set((state) => {
       const newBlocks = state.blocks.filter((b) => b.id !== id);
       return {
+        past: pushHistory(state.past, state.blocks),
+        future: [],
         blocks: newBlocks,
         selectedBlockId: state.selectedBlockId === id ? undefined : state.selectedBlockId,
       };
@@ -46,20 +72,49 @@ export const useEditorStore = create<EditorState>((set) => ({
       const [movedBlock] = newBlocks.splice(currentIndex, 1);
       newBlocks.splice(toIndex, 0, movedBlock);
 
-      return { blocks: newBlocks };
+      return {
+        past: pushHistory(state.past, state.blocks),
+        future: [],
+        blocks: newBlocks,
+      };
     }),
 
   selectBlock: (id?: string) => set({ selectedBlockId: id }),
 
-  setBlocks: (blocks: Block[]) => set({ blocks, selectedBlockId: undefined }),
+  setBlocks: (blocks: Block[]) =>
+    set((state) => ({
+      past: state.isInitialLoadDone ? pushHistory(state.past, state.blocks) : state.past,
+      future: state.isInitialLoadDone ? [] : state.future,
+      blocks,
+      selectedBlockId: undefined,
+      isInitialLoadDone: true,
+    })),
 
-  undo: () => {
-    // To be implemented (requires history management)
-    console.warn("Undo not yet implemented");
-  },
+  undo: () =>
+    set((state) => {
+      if (state.past.length === 0) return {};
 
-  redo: () => {
-    // To be implemented (requires history management)
-    console.warn("Redo not yet implemented");
-  },
+      const previous = state.past[state.past.length - 1];
+      const newPast = state.past.slice(0, state.past.length - 1);
+
+      return {
+        past: newPast,
+        future: [state.blocks, ...state.future],
+        blocks: previous,
+      };
+    }),
+
+  redo: () =>
+    set((state) => {
+      if (state.future.length === 0) return {};
+
+      const next = state.future[0];
+      const newFuture = state.future.slice(1);
+
+      return {
+        past: [...state.past, state.blocks],
+        future: newFuture,
+        blocks: next,
+      };
+    }),
 }));

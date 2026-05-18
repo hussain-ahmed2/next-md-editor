@@ -17,6 +17,7 @@ const BLOCK_PALETTE: SidebarBlock[] = [
   { type: "quote",     label: "Quote",     icon: "❝",  description: "Blockquote" },
   { type: "code",      label: "Code",      icon: "</>", description: "Code block" },
   { type: "divider",   label: "Divider",   icon: "—",  description: "Horizontal rule" },
+  { type: "image",     label: "Image",     icon: "🖼️", description: "Insert an image" },
 ];
 
 export function EditorSidebar({ width = 220 }: { width?: number }) {

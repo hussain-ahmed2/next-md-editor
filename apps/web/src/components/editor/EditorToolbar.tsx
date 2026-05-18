@@ -27,6 +27,8 @@ console.log(\`Successfully loaded demo in \${editorName}!\`);
 export function EditorToolbar({ previewOpen, onTogglePreview, saveStatus = "idle" }: EditorToolbarProps) {
   const blocks = useEditorStore((s) => s.blocks);
   const setBlocks = useEditorStore((s) => s.setBlocks);
+  const undo = useEditorStore((s) => s.undo);
+  const redo = useEditorStore((s) => s.redo);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleCopy = async () => {
@@ -149,6 +151,12 @@ export function EditorToolbar({ previewOpen, onTogglePreview, saveStatus = "idle
           onChange={handleFileChange}
           style={{ display: "none" }}
         />
+        <ToolbarButton onClick={undo} id="btn-undo">
+          ↩ Undo
+        </ToolbarButton>
+        <ToolbarButton onClick={redo} id="btn-redo">
+          ↪ Redo
+        </ToolbarButton>
         <ToolbarButton onClick={handleLoadDemo} id="btn-load-demo">
           ⚡ Load Demo
         </ToolbarButton>
