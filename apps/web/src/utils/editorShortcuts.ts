@@ -10,8 +10,7 @@ export function handleEditorKeyboardShortcuts(
   blockId: string,
   updateBlock: (id: string, props: any) => void
 ) {
-  const isMac = typeof window !== "undefined" && /Mac|iPod|iPhone|iPad/.test(window.navigator.platform);
-  const hasMeta = isMac ? e.metaKey : e.ctrlKey;
+  const hasMeta = e.ctrlKey || e.metaKey;
 
   const key = e.key.toLowerCase();
   if (hasMeta && (key === "b" || key === "i" || key === "k")) {
