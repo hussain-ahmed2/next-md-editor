@@ -306,19 +306,15 @@ console.log(\`Successfully loaded demo in \${editorName}!\`);
   };
 
   const customCollisionDetection: CollisionDetection = useCallback((args) => {
-    // First try pointerWithin to ensure stability under the user's cursor
-    const pointerCollisions = pointerWithin(args);
-    if (pointerCollisions.length > 0) {
-      return pointerCollisions;
+    // If we are dragging a sidebar item, use the stable pointer-first strategy to prevent loops
+    if (args.active.data.current?.isSidebarItem) {
+      const pointerCollisions = pointerWithin(args);
+      return pointerCollisions.length > 0
+        ? pointerCollisions
+        : rectIntersection(args);
     }
 
-    // Fall back to rectIntersection
-    const rectCollisions = rectIntersection(args);
-    if (rectCollisions.length > 0) {
-      return rectCollisions;
-    }
-
-    // Finally fall back to closestCenter for edge cases
+    // For standard canvas reordering, use closestCenter which is highly responsive and accurate!
     return closestCenter(args);
   }, []);
 
