@@ -186,3 +186,78 @@ html, body {
   list-style-type: lower-alpha !important;
 }
 
+/* Universal fluid responsiveness for Image Grid controls on any size */
+.image-grid-controls {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px 12px !important;
+}
+
+.image-grid-actions {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 8px 16px !important;
+}
+
+/* Responsive adjustments for mobile screens */
+@media (max-width: 768px) {
+  /* Allow toolbar to scroll horizontally on small mobile viewports */
+  header {
+    padding: 0 10px !important;
+    gap: 8px !important;
+  }
+  
+  header > div:nth-child(3) {
+    overflow-x: auto !important;
+    white-space: nowrap !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+    padding: 4px 0 !important;
+  }
+  header > div:nth-child(3)::-webkit-scrollbar {
+    display: none !important;
+  }
+  
+  header > div:first-child span {
+    display: none !important; /* Hide branding text on mobile */
+  }
+
+  /* Hide button text and save text on mobile to make icons fit cleanly */
+  .btn-label,
+  .save-status-label {
+    display: none !important;
+  }
+  
+  /* Responsive paddings for editor block containers */
+  .block-container {
+    padding: 4px 4px !important;
+  }
+
+  /* Image Grid Mobile Customizations */
+  .image-grid-controls {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+    padding: 8px 10px !important;
+  }
+
+  .image-grid-actions {
+    width: 100% !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+  }
+
+  .image-grid-captions-label span,
+  .image-grid-cols-wrapper span {
+    font-size: 9px !important;
+  }
+
+  .image-grid-container {
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)) !important;
+    gap: 8px !important;
+  }
+}
+

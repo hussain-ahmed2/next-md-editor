@@ -8,7 +8,7 @@ import { useEditorStore } from "@next-md-editor/editor-core";
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { initRegistry } from "@/registry";
 import { parseMarkdown } from "@/features/markdown/serializer";
-import { GripVertical } from "lucide-react";
+import { GripVertical, LayoutGrid, Edit3, Eye } from "lucide-react";
 import {
   DndContext,
   DragEndEvent,
@@ -34,6 +34,18 @@ export default function EditorPage() {
   const [previewWidth, setPreviewWidth] = useState(360);
   const [isResizingSidebar, setIsResizingSidebar] = useState(false);
   const [isResizingPreview, setIsResizingPreview] = useState(false);
+
+  const [isMobile, setIsMobile] = useState(false);
+  const [mobileTab, setMobileTab] = useState<"blocks" | "editor" | "preview">("editor");
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   const blocks = useEditorStore((s) => s.blocks);
   const setBlocks = useEditorStore((s) => s.setBlocks);
@@ -462,8 +474,14 @@ _A showcase of visual abstract card grids inside a responsive 3-column container
       }}
     >
       <EditorToolbar
-        previewOpen={previewOpen}
-        onTogglePreview={() => setPreviewOpen((v) => !v)}
+        previewOpen={isMobile ? mobileTab === "preview" : previewOpen}
+        onTogglePreview={() => {
+          if (isMobile) {
+            setMobileTab((curr) => (curr === "preview" ? "editor" : "preview"));
+          } else {
+            setPreviewOpen((v) => !v);
+          }
+        }}
         saveStatus={saveStatus}
       />
       <DndContext
@@ -473,61 +491,29 @@ _A showcase of visual abstract card grids inside a responsive 3-column container
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
       >
-        <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
-          <EditorSidebar width={sidebarWidth} />
-
-          {/* Sidebar Resize Bar */}
-          <div
-            onMouseDown={startResizeSidebar}
-            style={{
-              width: 8,
-              cursor: "col-resize",
-              background: isResizingSidebar
-                ? "var(--accent-muted)"
-                : "transparent",
-              zIndex: 10,
-              transition: "background-color 0.15s ease",
-              alignSelf: "stretch",
-              marginLeft: -4,
-              marginRight: -4,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-            onMouseEnter={(e) => {
-              if (!isResizingSidebar)
-                e.currentTarget.style.background = "var(--bg-hover)";
-            }}
-            onMouseLeave={(e) => {
-              if (!isResizingSidebar)
-                e.currentTarget.style.background = "transparent";
-            }}
-          >
-            <div
-              style={{
-                color: "var(--text-muted)",
-                opacity: isResizingSidebar ? 1 : 0.5,
-                pointerEvents: "none",
-              }}
-            >
-              <GripVertical size={12} />
-            </div>
-          </div>
-
-          <EditorCanvas
-            activeSidebarItem={activeSidebarItem}
-            insertIndex={insertIndex}
-          />
-
-          {previewOpen && (
+        <div style={{ display: "flex", flex: 1, overflow: "hidden", position: "relative" }}>
+          {isMobile ? (
             <>
-              {/* Preview Resize Bar */}
+              {mobileTab === "blocks" && <EditorSidebar width={undefined} />}
+              {mobileTab === "editor" && (
+                <EditorCanvas
+                  activeSidebarItem={activeSidebarItem}
+                  insertIndex={insertIndex}
+                />
+              )}
+              {mobileTab === "preview" && <MarkdownPreview width={undefined} />}
+            </>
+          ) : (
+            <>
+              <EditorSidebar width={sidebarWidth} />
+
+              {/* Sidebar Resize Bar */}
               <div
-                onMouseDown={startResizePreview}
+                onMouseDown={startResizeSidebar}
                 style={{
                   width: 8,
                   cursor: "col-resize",
-                  background: isResizingPreview
+                  background: isResizingSidebar
                     ? "var(--accent-muted)"
                     : "transparent",
                   zIndex: 10,
@@ -540,25 +526,72 @@ _A showcase of visual abstract card grids inside a responsive 3-column container
                   justifyContent: "center",
                 }}
                 onMouseEnter={(e) => {
-                  if (!isResizingPreview)
+                  if (!isResizingSidebar)
                     e.currentTarget.style.background = "var(--bg-hover)";
                 }}
                 onMouseLeave={(e) => {
-                  if (!isResizingPreview)
+                  if (!isResizingSidebar)
                     e.currentTarget.style.background = "transparent";
                 }}
               >
                 <div
                   style={{
                     color: "var(--text-muted)",
-                    opacity: isResizingPreview ? 1 : 0.5,
+                    opacity: isResizingSidebar ? 1 : 0.5,
                     pointerEvents: "none",
                   }}
                 >
                   <GripVertical size={12} />
                 </div>
               </div>
-              <MarkdownPreview width={previewWidth} />
+
+              <EditorCanvas
+                activeSidebarItem={activeSidebarItem}
+                insertIndex={insertIndex}
+              />
+
+              {previewOpen && (
+                <>
+                  {/* Preview Resize Bar */}
+                  <div
+                    onMouseDown={startResizePreview}
+                    style={{
+                      width: 8,
+                      cursor: "col-resize",
+                      background: isResizingPreview
+                        ? "var(--accent-muted)"
+                        : "transparent",
+                      zIndex: 10,
+                      transition: "background-color 0.15s ease",
+                      alignSelf: "stretch",
+                      marginLeft: -4,
+                      marginRight: -4,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isResizingPreview)
+                        e.currentTarget.style.background = "var(--bg-hover)";
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isResizingPreview)
+                        e.currentTarget.style.background = "transparent";
+                    }}
+                  >
+                    <div
+                      style={{
+                        color: "var(--text-muted)",
+                        opacity: isResizingPreview ? 1 : 0.5,
+                        pointerEvents: "none",
+                      }}
+                    >
+                      <GripVertical size={12} />
+                    </div>
+                  </div>
+                  <MarkdownPreview width={previewWidth} />
+                </>
+              )}
             </>
           )}
         </div>
@@ -635,6 +668,114 @@ _A showcase of visual abstract card grids inside a responsive 3-column container
           ) : null}
         </DragOverlay>
       </DndContext>
+
+      {isMobile && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: 16,
+            left: "50%",
+            transform: "translateX(-50%)",
+            width: "calc(100% - 32px)",
+            maxWidth: "210px",
+            background: "rgba(22, 27, 34, 0.85)",
+            backdropFilter: "blur(16px)",
+            WebkitBackdropFilter: "blur(16px)",
+            border: "1px solid rgba(240, 246, 252, 0.12)",
+            borderRadius: 20,
+            padding: "6px 10px",
+            display: "flex",
+            justifyContent: "space-around",
+            alignItems: "center",
+            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.5)",
+            zIndex: 9999,
+          }}
+        >
+          {/* Blocks Tab */}
+          <button
+            onClick={() => setMobileTab("blocks")}
+            style={{
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 2,
+              border: "none",
+              background: "transparent",
+              color: mobileTab === "blocks" ? "var(--accent)" : "var(--text-secondary)",
+              cursor: "pointer",
+              transition: "all 0.2s ease",
+              padding: "4px 0",
+            }}
+          >
+            <LayoutGrid 
+              size={15} 
+              style={{
+                transform: mobileTab === "blocks" ? "scale(1.1)" : "scale(1)",
+                transition: "transform 0.2s ease",
+              }} 
+            />
+            <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.02em" }}>Blocks</span>
+          </button>
+
+          {/* Canvas Tab */}
+          <button
+            onClick={() => setMobileTab("editor")}
+            style={{
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 2,
+              border: "none",
+              background: "transparent",
+              color: mobileTab === "editor" ? "var(--accent)" : "var(--text-secondary)",
+              cursor: "pointer",
+              transition: "all 0.2s ease",
+              padding: "4px 0",
+            }}
+          >
+            <Edit3 
+              size={15} 
+              style={{
+                transform: mobileTab === "editor" ? "scale(1.1)" : "scale(1)",
+                transition: "transform 0.2s ease",
+              }} 
+            />
+            <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.02em" }}>Canvas</span>
+          </button>
+
+          {/* Preview Tab */}
+          <button
+            onClick={() => setMobileTab("preview")}
+            style={{
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 2,
+              border: "none",
+              background: "transparent",
+              color: mobileTab === "preview" ? "var(--accent)" : "var(--text-secondary)",
+              cursor: "pointer",
+              transition: "all 0.2s ease",
+              padding: "4px 0",
+            }}
+          >
+            <Eye 
+              size={15} 
+              style={{
+                transform: mobileTab === "preview" ? "scale(1.1)" : "scale(1)",
+                transition: "transform 0.2s ease",
+              }} 
+            />
+            <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.02em" }}>Preview</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 }

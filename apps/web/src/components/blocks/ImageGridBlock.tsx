@@ -150,6 +150,7 @@ export function ImageGridBlock({ block }: { block: Block }) {
       {/* Control panel bar */}
       <div
         contentEditable={false}
+        className="image-grid-controls"
         style={{
           display: "flex",
           alignItems: "center",
@@ -160,16 +161,17 @@ export function ImageGridBlock({ block }: { block: Block }) {
           border: "1px solid var(--border)",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <div className="image-grid-title-wrapper" style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <LayoutGrid size={14} style={{ color: "var(--accent)" }} />
           <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text-primary)" }}>
             IMAGE GRID
           </span>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+        <div className="image-grid-actions" style={{ display: "flex", alignItems: "center", gap: 16 }}>
           {/* Show Captions Toggle */}
           <label 
+            className="image-grid-captions-label"
             onClick={(e) => e.stopPropagation()}
             onMouseDown={(e) => e.stopPropagation()}
             style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", userSelect: "none" }}
@@ -194,6 +196,7 @@ export function ImageGridBlock({ block }: { block: Block }) {
 
           {/* Custom Column Stepper */}
           <div 
+            className="image-grid-cols-wrapper"
             onClick={(e) => e.stopPropagation()}
             onMouseDown={(e) => e.stopPropagation()}
             style={{ display: "flex", alignItems: "center", gap: 6 }}
@@ -228,6 +231,7 @@ export function ImageGridBlock({ block }: { block: Block }) {
           </div>
 
           <button
+            className="image-grid-add-btn"
             onClick={(e) => {
               e.stopPropagation();
               handleAddImage();
@@ -425,6 +429,7 @@ export function ImageGridBlock({ block }: { block: Block }) {
       {/* Grid container */}
       <div
         contentEditable={false}
+        className="image-grid-container"
         style={{
           display: "grid",
           gridTemplateColumns: `repeat(${cols}, 1fr)`,

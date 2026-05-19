@@ -163,13 +163,13 @@ export function EditorToolbar({ previewOpen, onTogglePreview, saveStatus = "idle
         {saveStatus === "saving" && (
           <>
             <Loader2 size={13} style={{ color: "var(--warning)", animation: "spin 1s linear infinite" }} />
-            <span style={{ color: "var(--text-secondary)", opacity: 0.8, fontWeight: 500 }}>Saving changes…</span>
+            <span className="save-status-label" style={{ color: "var(--text-secondary)", opacity: 0.8, fontWeight: 500 }}>Saving changes…</span>
           </>
         )}
         {saveStatus === "saved" && (
           <>
             <CheckCheck size={13} style={{ color: "var(--success)" }} />
-            <span style={{ color: "var(--text-secondary)", opacity: 0.8, fontWeight: 500 }}>Saved to browser</span>
+            <span className="save-status-label" style={{ color: "var(--text-secondary)", opacity: 0.8, fontWeight: 500 }}>Saved to browser</span>
           </>
         )}
       </div>
@@ -185,32 +185,32 @@ export function EditorToolbar({ previewOpen, onTogglePreview, saveStatus = "idle
         />
         <ToolbarButton onClick={undo} id="btn-undo" tooltip="Undo (Ctrl+Z)">
           <Undo2 size={14} />
-          Undo
+          <span className="btn-label">Undo</span>
         </ToolbarButton>
         <ToolbarButton onClick={redo} id="btn-redo" tooltip="Redo (Ctrl+Y)">
           <Redo2 size={14} />
-          Redo
+          <span className="btn-label">Redo</span>
         </ToolbarButton>
         <Divider />
         <ToolbarButton onClick={handleLoadDemo} id="btn-load-demo" tooltip="Load demo content">
           <Zap size={14} />
-          Demo
+          <span className="btn-label">Demo</span>
         </ToolbarButton>
         <ToolbarButton onClick={handleImportClick} id="btn-import-md" tooltip="Import a .md file">
           <Upload size={14} />
-          Import
+          <span className="btn-label">Import</span>
         </ToolbarButton>
         <ToolbarButton onClick={onTogglePreview} active={previewOpen} id="btn-toggle-preview" tooltip="Toggle preview pane">
           {previewOpen ? <EyeOff size={14} /> : <Eye size={14} />}
-          {previewOpen ? "Hide Preview" : "Preview"}
+          <span className="btn-label">{previewOpen ? "Hide Preview" : "Preview"}</span>
         </ToolbarButton>
         <ToolbarButton onClick={handleCopy} id="btn-copy-md" tooltip="Copy as Markdown">
           <Copy size={14} />
-          Copy
+          <span className="btn-label">Copy</span>
         </ToolbarButton>
         <ToolbarButton onClick={handleDownload} primary id="btn-download-md" tooltip="Download as .md">
           <Download size={14} />
-          Download
+          <span className="btn-label">Download</span>
         </ToolbarButton>
       </div>
     </header>
