@@ -15,6 +15,7 @@ import {
   DragStartEvent,
   DragOverEvent,
   PointerSensor,
+  TouchSensor,
   closestCenter,
   useSensor,
   useSensors,
@@ -87,7 +88,16 @@ export default function EditorPage() {
     PointerSensor,
     useMemo(() => ({ activationConstraint: { distance: 6 } }), [])
   );
-  const sensors = useSensors(pointerSensor);
+  const touchSensor = useSensor(
+    TouchSensor,
+    useMemo(() => ({
+      activationConstraint: {
+        delay: 250,
+        tolerance: 5,
+      },
+    }), [])
+  );
+  const sensors = useSensors(pointerSensor, touchSensor);
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
     const { active } = event;
@@ -494,7 +504,12 @@ _A showcase of visual abstract card grids inside a responsive 3-column container
         <div style={{ display: "flex", flex: 1, overflow: "hidden", position: "relative" }}>
           {isMobile ? (
             <>
-              {mobileTab === "blocks" && <EditorSidebar width={undefined} />}
+              {mobileTab === "blocks" && (
+                <EditorSidebar
+                  width={undefined}
+                  onBlockAdded={() => setMobileTab("editor")}
+                />
+              )}
               {mobileTab === "editor" && (
                 <EditorCanvas
                   activeSidebarItem={activeSidebarItem}
@@ -505,7 +520,7 @@ _A showcase of visual abstract card grids inside a responsive 3-column container
             </>
           ) : (
             <>
-              <EditorSidebar width={sidebarWidth} />
+              <EditorSidebar width={sidebarWidth ?? 220} />
 
               {/* Sidebar Resize Bar */}
               <div
@@ -668,27 +683,20 @@ _A showcase of visual abstract card grids inside a responsive 3-column container
           ) : null}
         </DragOverlay>
       </DndContext>
-
+ 
       {isMobile && (
         <div
           style={{
-            position: "fixed",
-            bottom: 16,
-            left: "50%",
-            transform: "translateX(-50%)",
-            width: "calc(100% - 32px)",
-            maxWidth: "210px",
-            background: "rgba(22, 27, 34, 0.85)",
-            backdropFilter: "blur(16px)",
-            WebkitBackdropFilter: "blur(16px)",
-            border: "1px solid rgba(240, 246, 252, 0.12)",
-            borderRadius: 20,
-            padding: "6px 10px",
+            width: "100%",
+            height: 42,
+            background: "var(--bg-surface)",
+            borderTop: "1px solid var(--border-subtle)",
             display: "flex",
             justifyContent: "space-around",
             alignItems: "center",
-            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.5)",
+            boxShadow: "0 -2px 10px rgba(0, 0, 0, 0.05)",
             zIndex: 9999,
+            flexShrink: 0,
           }}
         >
           {/* Blocks Tab */}
@@ -706,19 +714,20 @@ _A showcase of visual abstract card grids inside a responsive 3-column container
               color: mobileTab === "blocks" ? "var(--accent)" : "var(--text-secondary)",
               cursor: "pointer",
               transition: "all 0.2s ease",
-              padding: "4px 0",
+              padding: "2px 0",
+              height: "100%",
             }}
           >
             <LayoutGrid 
-              size={15} 
+              size={14} 
               style={{
-                transform: mobileTab === "blocks" ? "scale(1.1)" : "scale(1)",
+                transform: mobileTab === "blocks" ? "scale(1.08)" : "scale(1)",
                 transition: "transform 0.2s ease",
               }} 
             />
-            <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.02em" }}>Blocks</span>
+            <span style={{ fontSize: 9.5, fontWeight: 600, letterSpacing: "0.01em" }}>Blocks</span>
           </button>
-
+  
           {/* Canvas Tab */}
           <button
             onClick={() => setMobileTab("editor")}
@@ -734,19 +743,20 @@ _A showcase of visual abstract card grids inside a responsive 3-column container
               color: mobileTab === "editor" ? "var(--accent)" : "var(--text-secondary)",
               cursor: "pointer",
               transition: "all 0.2s ease",
-              padding: "4px 0",
+              padding: "2px 0",
+              height: "100%",
             }}
           >
             <Edit3 
-              size={15} 
+              size={14} 
               style={{
-                transform: mobileTab === "editor" ? "scale(1.1)" : "scale(1)",
+                transform: mobileTab === "editor" ? "scale(1.08)" : "scale(1)",
                 transition: "transform 0.2s ease",
               }} 
             />
-            <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.02em" }}>Canvas</span>
+            <span style={{ fontSize: 9.5, fontWeight: 600, letterSpacing: "0.01em" }}>Canvas</span>
           </button>
-
+  
           {/* Preview Tab */}
           <button
             onClick={() => setMobileTab("preview")}
@@ -762,17 +772,18 @@ _A showcase of visual abstract card grids inside a responsive 3-column container
               color: mobileTab === "preview" ? "var(--accent)" : "var(--text-secondary)",
               cursor: "pointer",
               transition: "all 0.2s ease",
-              padding: "4px 0",
+              padding: "2px 0",
+              height: "100%",
             }}
           >
             <Eye 
-              size={15} 
+              size={14} 
               style={{
-                transform: mobileTab === "preview" ? "scale(1.1)" : "scale(1)",
+                transform: mobileTab === "preview" ? "scale(1.08)" : "scale(1)",
                 transition: "transform 0.2s ease",
               }} 
             />
-            <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.02em" }}>Preview</span>
+            <span style={{ fontSize: 9.5, fontWeight: 600, letterSpacing: "0.01em" }}>Preview</span>
           </button>
         </div>
       )}

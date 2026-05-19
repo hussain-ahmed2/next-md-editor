@@ -236,6 +236,12 @@ html, body {
     padding: 4px 4px !important;
   }
 
+  /* Spacious left/right gutters to house absolute positioned drag grips (-28px) and delete buttons (-28px) comfortably, with overflow-x hidden to ensure no horizontal scrollbar */
+  .editor-canvas-container {
+    padding: 24px 38px 80px 38px !important;
+    overflow-x: hidden !important;
+  }
+
   /* Image Grid Mobile Customizations */
   .image-grid-controls {
     flex-direction: column !important;
@@ -256,8 +262,13 @@ html, body {
   }
 
   .image-grid-container {
-    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)) !important;
     gap: 8px !important;
+  }
+
+  /* Make block drag handles visible on mobile since there is no hover state */
+  .drag-handle-grip {
+    color: var(--text-muted) !important;
+    touch-action: none !important;
   }
 }
 

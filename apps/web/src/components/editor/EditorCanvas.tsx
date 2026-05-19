@@ -53,6 +53,7 @@ export function EditorCanvas({ activeSidebarItem, insertIndex }: EditorCanvasPro
   return (
     <main
       ref={setNodeRef}
+      className="editor-canvas-container"
       style={{
         flex: 1,
         overflow: "auto",

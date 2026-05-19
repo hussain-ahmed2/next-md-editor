@@ -13,8 +13,16 @@ interface GridImage {
 }
 
 const DEFAULT_IMAGES = [
-  { id: "1", url: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=600&auto=format&fit=crop", alt: "Fluid abstract shapes" },
-  { id: "2", url: "https://images.unsplash.com/photo-1634017839464-5c339ebe3cb4?q=80&w=600&auto=format&fit=crop", alt: "Glossy 3D composition" }
+  {
+    id: "1",
+    url: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=600&auto=format&fit=crop",
+    alt: "Fluid abstract shapes",
+  },
+  {
+    id: "2",
+    url: "https://images.unsplash.com/photo-1634017839464-5c339ebe3cb4?q=80&w=600&auto=format&fit=crop",
+    alt: "Glossy 3D composition",
+  },
 ];
 
 /**
@@ -23,7 +31,7 @@ const DEFAULT_IMAGES = [
 function handleInputShortcuts(
   e: React.KeyboardEvent<HTMLInputElement>,
   value: string,
-  onChange: (newValue: string) => void
+  onChange: (newValue: string) => void,
 ) {
   const hasMeta = e.ctrlKey || e.metaKey;
   const key = e.key.toLowerCase();
@@ -46,16 +54,17 @@ function handleInputShortcuts(
       newSelected = `${wrapper}${selected}${wrapper}`;
     }
 
-    const newValue = value.substring(0, start) + newSelected + value.substring(end);
+    const newValue =
+      value.substring(0, start) + newSelected + value.substring(end);
     onChange(newValue);
 
     setTimeout(() => {
       input.focus();
       const offset = wrapper.length;
       if (selected.startsWith(wrapper) && selected.endsWith(wrapper)) {
-        input.setSelectionRange(start, end - (offset * 2));
+        input.setSelectionRange(start, end - offset * 2);
       } else {
-        input.setSelectionRange(start, end + (offset * 2));
+        input.setSelectionRange(start, end + offset * 2);
       }
     }, 0);
   }
@@ -83,14 +92,21 @@ export function ImageGridBlock({ block }: { block: Block }) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const isSelected = selectedBlockIds[selectedBlockIds.length - 1] === block.id;
+    const isSelected =
+      selectedBlockIds[selectedBlockIds.length - 1] === block.id;
     if (isSelected && ref.current && document.activeElement !== ref.current) {
       ref.current.focus();
     }
   }, [selectedBlockIds, block.id]);
 
   const handleUpdateCols = (newCols: number) => {
-    updateBlock(block.id, { cols: newCols, images, title, description, showCaptions });
+    updateBlock(block.id, {
+      cols: newCols,
+      images,
+      title,
+      description,
+      showCaptions,
+    });
   };
 
   const handleAddImage = () => {
@@ -99,13 +115,25 @@ export function ImageGridBlock({ block }: { block: Block }) {
       url: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=600&auto=format&fit=crop",
       alt: "New architectural design",
     };
-    updateBlock(block.id, { cols, images: [...images, newImage], title, description, showCaptions });
+    updateBlock(block.id, {
+      cols,
+      images: [...images, newImage],
+      title,
+      description,
+      showCaptions,
+    });
   };
 
   const handleRemoveImage = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     const filtered = images.filter((img) => img.id !== id);
-    updateBlock(block.id, { cols, images: filtered.length ? filtered : DEFAULT_IMAGES, title, description, showCaptions });
+    updateBlock(block.id, {
+      cols,
+      images: filtered.length ? filtered : DEFAULT_IMAGES,
+      title,
+      description,
+      showCaptions,
+    });
   };
 
   const handleStartEdit = (img: GridImage, e: React.MouseEvent) => {
@@ -117,9 +145,17 @@ export function ImageGridBlock({ block }: { block: Block }) {
 
   const handleSaveEdit = () => {
     const updated = images.map((img) =>
-      img.id === editingImageId ? { ...img, url: inputUrl, alt: inputAlt } : img
+      img.id === editingImageId
+        ? { ...img, url: inputUrl, alt: inputAlt }
+        : img,
     );
-    updateBlock(block.id, { cols, images: updated, title, description, showCaptions });
+    updateBlock(block.id, {
+      cols,
+      images: updated,
+      title,
+      description,
+      showCaptions,
+    });
     setEditingImageId(null);
   };
 
@@ -133,7 +169,18 @@ export function ImageGridBlock({ block }: { block: Block }) {
           handleSaveEdit();
           return;
         }
-        handleEditorKeyboardShortcuts(e, block, blocks, selectedBlockIds, addBlock, removeBlocks, updateBlock, selectBlock, indentBlocks, outdentBlocks);
+        handleEditorKeyboardShortcuts(
+          e,
+          block,
+          blocks,
+          selectedBlockIds,
+          addBlock,
+          removeBlocks,
+          updateBlock,
+          selectBlock,
+          indentBlocks,
+          outdentBlocks,
+        );
       }}
       style={{
         outline: "none",
@@ -161,25 +208,51 @@ export function ImageGridBlock({ block }: { block: Block }) {
           border: "1px solid var(--border)",
         }}
       >
-        <div className="image-grid-title-wrapper" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <div
+          className="image-grid-title-wrapper"
+          style={{ display: "flex", alignItems: "center", gap: 8 }}
+        >
           <LayoutGrid size={14} style={{ color: "var(--accent)" }} />
-          <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text-primary)" }}>
+          <span
+            style={{
+              fontSize: 11,
+              fontWeight: 700,
+              color: "var(--text-primary)",
+            }}
+          >
             IMAGE GRID
           </span>
         </div>
 
-        <div className="image-grid-actions" style={{ display: "flex", alignItems: "center", gap: 16 }}>
+        <div
+          className="image-grid-actions"
+          style={{ display: "flex", alignItems: "center", gap: 16 }}
+        >
           {/* Show Captions Toggle */}
-          <label 
+          <label
             className="image-grid-captions-label"
             onClick={(e) => e.stopPropagation()}
             onMouseDown={(e) => e.stopPropagation()}
-            style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", userSelect: "none" }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              cursor: "pointer",
+              userSelect: "none",
+            }}
           >
             <input
               type="checkbox"
               checked={showCaptions}
-              onChange={(e) => updateBlock(block.id, { cols, images, title, description, showCaptions: e.target.checked })}
+              onChange={(e) =>
+                updateBlock(block.id, {
+                  cols,
+                  images,
+                  title,
+                  description,
+                  showCaptions: e.target.checked,
+                })
+              }
               onClick={(e) => e.stopPropagation()}
               onMouseDown={(e) => e.stopPropagation()}
               style={{
@@ -189,19 +262,33 @@ export function ImageGridBlock({ block }: { block: Block }) {
                 cursor: "pointer",
               }}
             />
-            <span style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
+            <span
+              style={{
+                fontSize: 10,
+                fontWeight: 700,
+                color: "var(--text-muted)",
+                fontFamily: "var(--font-mono)",
+              }}
+            >
               CAPTIONS
             </span>
           </label>
 
           {/* Custom Column Stepper */}
-          <div 
+          <div
             className="image-grid-cols-wrapper"
             onClick={(e) => e.stopPropagation()}
             onMouseDown={(e) => e.stopPropagation()}
             style={{ display: "flex", alignItems: "center", gap: 6 }}
           >
-            <span style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
+            <span
+              style={{
+                fontSize: 10,
+                fontWeight: 700,
+                color: "var(--text-muted)",
+                fontFamily: "var(--font-mono)",
+              }}
+            >
               COLS:
             </span>
             <input
@@ -210,7 +297,10 @@ export function ImageGridBlock({ block }: { block: Block }) {
               max={8}
               value={cols}
               onChange={(e) => {
-                const val = Math.max(1, Math.min(8, parseInt(e.target.value) || 2));
+                const val = Math.max(
+                  1,
+                  Math.min(8, parseInt(e.target.value) || 2),
+                );
                 handleUpdateCols(val);
               }}
               onClick={(e) => e.stopPropagation()}
@@ -251,8 +341,12 @@ export function ImageGridBlock({ block }: { block: Block }) {
               gap: 4,
               transition: "all 0.15s ease",
             }}
-            onMouseEnter={(e) => e.currentTarget.style.background = "var(--bg-surface)"}
-            onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.background = "var(--bg-surface)")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.background = "transparent")
+            }
           >
             <Plus size={11} /> Add Image
           </button>
@@ -273,11 +367,25 @@ export function ImageGridBlock({ block }: { block: Block }) {
         <input
           type="text"
           value={title}
-          onChange={(e) => updateBlock(block.id, { cols, images, title: e.target.value, description, showCaptions })}
+          onChange={(e) =>
+            updateBlock(block.id, {
+              cols,
+              images,
+              title: e.target.value,
+              description,
+              showCaptions,
+            })
+          }
           onKeyDown={(e) => {
             e.stopPropagation();
             handleInputShortcuts(e, title, (val) => {
-              updateBlock(block.id, { cols, images, title: val, description, showCaptions });
+              updateBlock(block.id, {
+                cols,
+                images,
+                title: val,
+                description,
+                showCaptions,
+              });
             });
           }}
           onClick={(e) => e.stopPropagation()}
@@ -296,11 +404,25 @@ export function ImageGridBlock({ block }: { block: Block }) {
         <input
           type="text"
           value={description}
-          onChange={(e) => updateBlock(block.id, { cols, images, title, description: e.target.value, showCaptions })}
+          onChange={(e) =>
+            updateBlock(block.id, {
+              cols,
+              images,
+              title,
+              description: e.target.value,
+              showCaptions,
+            })
+          }
           onKeyDown={(e) => {
             e.stopPropagation();
             handleInputShortcuts(e, description, (val) => {
-              updateBlock(block.id, { cols, images, title, description: val, showCaptions });
+              updateBlock(block.id, {
+                cols,
+                images,
+                title,
+                description: val,
+                showCaptions,
+              });
             });
           }}
           onClick={(e) => e.stopPropagation()}
@@ -332,7 +454,14 @@ export function ImageGridBlock({ block }: { block: Block }) {
           }}
         >
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <label style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
+            <label
+              style={{
+                fontSize: 10,
+                fontWeight: 700,
+                color: "var(--text-muted)",
+                fontFamily: "var(--font-mono)",
+              }}
+            >
               IMAGE URL
             </label>
             <input
@@ -357,7 +486,14 @@ export function ImageGridBlock({ block }: { block: Block }) {
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <label style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
+            <label
+              style={{
+                fontSize: 10,
+                fontWeight: 700,
+                color: "var(--text-muted)",
+                fontFamily: "var(--font-mono)",
+              }}
+            >
               ALT TEXT
             </label>
             <input
@@ -451,7 +587,15 @@ export function ImageGridBlock({ block }: { block: Block }) {
               aspectRatio: showCaptions ? undefined : "16/10",
             }}
           >
-            <div style={{ position: "relative", width: "100%", aspectRatio: showCaptions ? "16/10" : "100%", height: showCaptions ? undefined : "100%", overflow: "hidden" }}>
+            <div
+              style={{
+                position: "relative",
+                width: "100%",
+                aspectRatio: showCaptions ? "16/10" : "100%",
+                height: showCaptions ? undefined : "100%",
+                overflow: "hidden",
+              }}
+            >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={img.url}
@@ -477,8 +621,8 @@ export function ImageGridBlock({ block }: { block: Block }) {
                   justifyContent: "center",
                   gap: 8,
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.opacity = "1"}
-                onMouseLeave={(e) => e.currentTarget.style.opacity = "0"}
+                onMouseEnter={(e) => (e.currentTarget.style.opacity = "1")}
+                onMouseLeave={(e) => (e.currentTarget.style.opacity = "0")}
               >
                 <button
                   onClick={(e) => handleStartEdit(img, e)}

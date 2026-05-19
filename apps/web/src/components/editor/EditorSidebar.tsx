@@ -106,7 +106,13 @@ function DraggableSidebarItem({ b, handleAdd }: { b: SidebarBlock, handleAdd: (t
   );
 }
 
-export function EditorSidebar({ width = 220 }: { width?: number }) {
+export function EditorSidebar({ 
+  width, 
+  onBlockAdded 
+}: { 
+  width?: number;
+  onBlockAdded?: () => void;
+}) {
   const addBlock = useEditorStore((s) => s.addBlock);
 
   const handleAdd = (type: string) => {
@@ -116,11 +122,13 @@ export function EditorSidebar({ width = 220 }: { width?: number }) {
       type,
       props: { ...(def?.defaultProps ?? {}) },
     });
+    onBlockAdded?.();
   };
 
   return (
     <aside style={{
-      width,
+      width: width ?? "100%",
+      flex: width === undefined ? 1 : undefined,
       background: "var(--bg-surface)",
       borderRight: "1px solid var(--border-subtle)",
       display: "flex",

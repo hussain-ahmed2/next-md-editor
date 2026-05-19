@@ -125,6 +125,7 @@ export function SortableBlock({
           <div
             {...attributes}
             {...listeners}
+            className="drag-handle-grip"
             title="Drag to reorder"
             style={{
               width: 20,
@@ -137,6 +138,7 @@ export function SortableBlock({
               transition: "color 0.15s",
               borderRadius: 4,
               userSelect: "none",
+              touchAction: "none",
             }}
             onMouseEnter={(e) => (e.currentTarget.style.color = "var(--accent)")}
             onMouseLeave={(e) =>
