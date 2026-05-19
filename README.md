@@ -12,10 +12,18 @@ A professional-grade, beautiful, block-based markdown editor built with **Next.j
 
 - 🎨 **Pixel-Perfect GitHub Dark Theme:** Modern, stunning, and sleek layout resembling real GitHub pages.
 - ⠿ **Shape-Preserved Drag and Drop:** Seamless block reordering using `@dnd-kit` with dedicated `<DragOverlay>` to ensure dragging blocks never lose their shape.
-- ↕ **Interactive Resizable Sidebars:** Fluid drag-to-resize handlers on left block palette and right preview panel with bounded width limits.
+- ↕ **Interactive Resizable Sidebars:** Fluid drag-to-resize handlers on left block palette and right preview panel with bounded width limits and double-click to collapse.
 - 📝 **Hybrid Notion-Style Block Editing:**
   - Standard blocks (headings, paragraphs, dividers, blockquotes) editable inline.
   - Interactive **Code Blocks** that function as an editable `<textarea>` on focus and transition to styled syntax-highlighted codes on blur.
+  - Interactive **Slash Command Palette (`/`):** Transform empty blocks cleanly by pressing the `/` key with full arrow-key keyboard navigation.
+  - **Multi-Block Range Selection:** Multi-select blocks using `Shift + Click` or `Shift + Arrow Keys` to perform bulk reordering, bulk drags, and bulk deletes.
+  - **Dynamic Nested Lists:** Full keyboard indent (`Tab`) and outdent (`Shift + Tab`) supporting cycling numbering styles (`1.`, `i.`, `a.`) that update instantly.
+- 🖼️ **Premium Custom Image Grid:**
+  - Dynamic **1 to 8 column visual grids** controlled via a numeric stepper.
+  - Inline canvas editors for Grid Title and Grid Description supporting `Ctrl+B` / `Ctrl+I` keyboard shortcuts.
+  - **Caption visual toggles** to instantly render captions under each image card based on alt-text.
+  - Clean GFM Markdown table compilation and parsing support.
 - 🔍 **GitHub Repository Box Preview:**
   - Renders rendered markdown or raw code inside an authentic GitHub file box mockup.
   - Fully responsive file explorer headers with real icon vectors and block counters.
@@ -41,6 +49,7 @@ graph TD
 ```
 
 ### Core Workspace Modules:
+
 - **`apps/web`:** Next.js application containing components, block registries, and interactive layouts.
 - **`packages/markdown`:** Independent parser and serializer package that parses markdown line-by-line into clean reactive block structures and serializes blocks back to raw markdown.
 - **`packages/editor-core`:** Custom Zustand store managing block states, mutations, imports, and exports.
@@ -51,23 +60,31 @@ graph TD
 ## 🚀 Getting Started
 
 ### Prerequisites
+
 Make sure you have Node.js (v18+) and npm installed on your system.
 
 ### Installation
+
 Clone the repository and install dependencies at the root directory:
+
 ```bash
 npm install
 ```
 
 ### Development Server
+
 Spin up the local development servers for Next.js app and workspace packages simultaneously:
+
 ```bash
 npm run dev
 ```
+
 Open [http://localhost:3000](http://localhost:3000) in your browser to start editing!
 
 ### Production Build
+
 Build all packages and compiles Next.js optimized bundles with Turbo caching:
+
 ```bash
 npm run build
 ```
@@ -86,9 +103,11 @@ To maintain Next.js 16/React 19 compatibility without introducing bloated or bre
 ---
 
 ## 📄 License
+
 This project is licensed under the MIT License.
 
 ---
 
 ## 👤 Author
+
 Developed and maintained with ❤️ by **[Hussain Ahmed](https://github.com/hussain-ahmed2)**.
