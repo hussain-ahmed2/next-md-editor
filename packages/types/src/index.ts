@@ -22,6 +22,7 @@ export interface EditorState {
   
   addBlock: (block: Block, index?: number) => void;
   updateBlock: (id: string, props: Record<string, unknown>) => void;
+  replaceBlock: (id: string, newBlock: Omit<Block, "id">) => void;
   removeBlock: (id: string) => void;
   moveBlock: (id: string, toIndex: number) => void;
   selectBlock: (id?: string) => void;
