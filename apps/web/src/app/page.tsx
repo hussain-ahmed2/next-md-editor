@@ -377,7 +377,7 @@ _A showcase of visual abstract card grids inside a responsive 3-column container
 
     const doResize = (mouseMoveEvent: MouseEvent) => {
       const deltaX = mouseMoveEvent.clientX - startX;
-      const newWidth = Math.max(160, Math.min(360, startWidth + deltaX));
+      const newWidth = Math.max(120, Math.min(480, startWidth + deltaX));
       setSidebarWidth(newWidth);
     };
 
@@ -399,7 +399,7 @@ _A showcase of visual abstract card grids inside a responsive 3-column container
 
     const doResize = (mouseMoveEvent: MouseEvent) => {
       const deltaX = mouseMoveEvent.clientX - startX;
-      const newWidth = Math.max(260, Math.min(600, startWidth - deltaX));
+      const newWidth = Math.max(200, Math.min(1000, startWidth - deltaX));
       setPreviewWidth(newWidth);
     };
 
