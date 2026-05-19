@@ -10,10 +10,12 @@ const DEFAULT_IMAGE = "https://images.unsplash.com/photo-1618005182384-a83a8bd57
 export function ImageBlock({ block }: { block: Block }) {
   const blocks = useEditorStore((s) => s.blocks);
   const addBlock = useEditorStore((s) => s.addBlock);
-  const removeBlock = useEditorStore((s) => s.removeBlock);
+  const removeBlocks = useEditorStore((s) => s.removeBlocks);
   const updateBlock = useEditorStore((s) => s.updateBlock);
   const selectBlock = useEditorStore((s) => s.selectBlock);
-  const selectedBlockId = useEditorStore((s) => s.selectedBlockId);
+  const selectedBlockIds = useEditorStore((s) => s.selectedBlockIds);
+  const indentBlocks = useEditorStore((s) => s.indentBlocks);
+  const outdentBlocks = useEditorStore((s) => s.outdentBlocks);
 
   const url = (block.props.url as string) ?? "";
   const alt = (block.props.alt as string) ?? "";
@@ -25,10 +27,11 @@ export function ImageBlock({ block }: { block: Block }) {
 
   // Sync focus when selected
   useEffect(() => {
-    if (selectedBlockId === block.id && ref.current && document.activeElement !== ref.current) {
+    const isSelected = selectedBlockIds[selectedBlockIds.length - 1] === block.id;
+    if (isSelected && ref.current && document.activeElement !== ref.current) {
       ref.current.focus();
     }
-  }, [selectedBlockId, block.id]);
+  }, [selectedBlockIds, block.id]);
 
   const handleSave = () => {
     updateBlock(block.id, { url: inputUrl || DEFAULT_IMAGE, alt: inputAlt || "Image Description" });
@@ -45,7 +48,7 @@ export function ImageBlock({ block }: { block: Block }) {
           handleSave();
           return;
         }
-        handleEditorKeyboardShortcuts(e, block, blocks, addBlock, removeBlock, updateBlock, selectBlock);
+        handleEditorKeyboardShortcuts(e, block, blocks, selectedBlockIds, addBlock, removeBlocks, updateBlock, selectBlock, indentBlocks, outdentBlocks);
       }}
       style={{
         outline: "none",

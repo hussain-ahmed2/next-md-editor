@@ -13,6 +13,9 @@ import {
   Image,
   Table,
   Lightbulb,
+  List,
+  ListOrdered,
+  LayoutGrid,
 } from "lucide-react";
 
 interface SidebarBlock {
@@ -29,8 +32,11 @@ const BLOCK_PALETTE: SidebarBlock[] = [
   { type: "code",      label: "Code",      icon: <Code2 size={14} />,      description: "Code block" },
   { type: "divider",   label: "Divider",   icon: <Minus size={14} />,      description: "Horizontal rule" },
   { type: "image",     label: "Image",     icon: <Image size={14} />,      description: "Insert an image" },
+  { type: "image-grid", label: "Image Grid", icon: <LayoutGrid size={14} />, description: "Responsive grid table of images" },
   { type: "table",     label: "Table",     icon: <Table size={14} />,      description: "Visual GFM grid table" },
   { type: "callout",   label: "Callout",   icon: <Lightbulb size={14} />,  description: "Pastel alert callout box" },
+  { type: "bullet-list", label: "Bullet List", icon: <List size={14} />,    description: "Rich text bullet list block" },
+  { type: "numbered-list", label: "Numbered List", icon: <ListOrdered size={14} />, description: "Rich text numbered list block" },
 ];
 
 function DraggableSidebarItem({ b, handleAdd }: { b: SidebarBlock, handleAdd: (type: string) => void }) {

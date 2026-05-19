@@ -60,3 +60,129 @@ html, body {
   0% { transform: scale(0.9); opacity: 0.5; }
   100% { transform: scale(1.15); opacity: 1; }
 }
+
+/* Rich text list block styles with high specificity to bypass CSS resets */
+.rich-list-content ul, 
+.rich-list-content ul li,
+.rich-list-content ol, 
+.rich-list-content ol li,
+.markdown-body .rich-list-content ul,
+.markdown-body .rich-list-content ol {
+  margin: revert !important;
+  padding: revert !important;
+}
+
+.rich-list-content ul,
+.markdown-body .rich-list-content ul {
+  list-style-type: disc !important;
+  list-style-position: outside !important;
+  padding-left: 28px !important;
+  margin: 6px 0 !important;
+  display: block !important;
+}
+
+.rich-list-content ol,
+.markdown-body .rich-list-content ol {
+  list-style-type: decimal !important;
+  list-style-position: outside !important;
+  padding-left: 28px !important;
+  margin: 6px 0 !important;
+  display: block !important;
+}
+
+.rich-list-content li,
+.markdown-body .rich-list-content li {
+  display: list-item !important;
+  margin: 4px 0 !important;
+  list-style: inherit !important;
+}
+
+.rich-list-content ul ul,
+.markdown-body .rich-list-content ul ul {
+  list-style-type: circle !important;
+}
+
+.rich-list-content ul ul ul,
+.markdown-body .rich-list-content ul ul ul {
+  list-style-type: square !important;
+}
+
+/* Pattern-based custom ordered lists rules (3-level looping cycle up to 9 levels of nesting) */
+/* Pattern 1: decimal -> alpha -> roman (Default) */
+.pattern-decimal-alpha-roman ol > li,
+.pattern-decimal-alpha-roman ol ol ol ol > li,
+.pattern-decimal-alpha-roman ol ol ol ol ol ol ol > li,
+.markdown-body .pattern-decimal-alpha-roman ol > li,
+.markdown-body .pattern-decimal-alpha-roman ol ol ol ol > li,
+.markdown-body .pattern-decimal-alpha-roman ol ol ol ol ol ol ol > li {
+  list-style-type: decimal !important;
+}
+.pattern-decimal-alpha-roman ol ol > li,
+.pattern-decimal-alpha-roman ol ol ol ol ol > li,
+.pattern-decimal-alpha-roman ol ol ol ol ol ol ol ol > li,
+.markdown-body .pattern-decimal-alpha-roman ol ol > li,
+.markdown-body .pattern-decimal-alpha-roman ol ol ol ol ol > li,
+.markdown-body .pattern-decimal-alpha-roman ol ol ol ol ol ol ol ol > li {
+  list-style-type: lower-alpha !important;
+}
+.pattern-decimal-alpha-roman ol ol ol > li,
+.pattern-decimal-alpha-roman ol ol ol ol ol ol > li,
+.pattern-decimal-alpha-roman ol ol ol ol ol ol ol ol ol > li,
+.markdown-body .pattern-decimal-alpha-roman ol ol ol > li,
+.markdown-body .pattern-decimal-alpha-roman ol ol ol ol ol ol > li,
+.markdown-body .pattern-decimal-alpha-roman ol ol ol ol ol ol ol ol ol > li {
+  list-style-type: lower-roman !important;
+}
+
+/* Pattern 2: alpha -> roman -> decimal */
+.pattern-alpha-roman-decimal ol > li,
+.pattern-alpha-roman-decimal ol ol ol ol > li,
+.pattern-alpha-roman-decimal ol ol ol ol ol ol ol > li,
+.markdown-body .pattern-alpha-roman-decimal ol > li,
+.markdown-body .pattern-alpha-roman-decimal ol ol ol ol > li,
+.markdown-body .pattern-alpha-roman-decimal ol ol ol ol ol ol ol > li {
+  list-style-type: lower-alpha !important;
+}
+.pattern-alpha-roman-decimal ol ol > li,
+.pattern-alpha-roman-decimal ol ol ol ol ol > li,
+.pattern-alpha-roman-decimal ol ol ol ol ol ol ol ol > li,
+.markdown-body .pattern-alpha-roman-decimal ol ol > li,
+.markdown-body .pattern-alpha-roman-decimal ol ol ol ol ol > li,
+.markdown-body .pattern-alpha-roman-decimal ol ol ol ol ol ol ol ol > li {
+  list-style-type: lower-roman !important;
+}
+.pattern-alpha-roman-decimal ol ol ol > li,
+.pattern-alpha-roman-decimal ol ol ol ol ol ol > li,
+.pattern-alpha-roman-decimal ol ol ol ol ol ol ol ol ol > li,
+.markdown-body .pattern-alpha-roman-decimal ol ol ol > li,
+.markdown-body .pattern-alpha-roman-decimal ol ol ol ol ol ol > li,
+.markdown-body .pattern-alpha-roman-decimal ol ol ol ol ol ol ol ol ol > li {
+  list-style-type: decimal !important;
+}
+
+/* Pattern 3: roman -> decimal -> alpha */
+.pattern-roman-decimal-alpha ol > li,
+.pattern-roman-decimal-alpha ol ol ol ol > li,
+.pattern-roman-decimal-alpha ol ol ol ol ol ol ol > li,
+.markdown-body .pattern-roman-decimal-alpha ol > li,
+.markdown-body .pattern-roman-decimal-alpha ol ol ol ol > li,
+.markdown-body .pattern-roman-decimal-alpha ol ol ol ol ol ol ol > li {
+  list-style-type: lower-roman !important;
+}
+.pattern-roman-decimal-alpha ol ol > li,
+.pattern-roman-decimal-alpha ol ol ol ol ol > li,
+.pattern-roman-decimal-alpha ol ol ol ol ol ol ol ol > li,
+.markdown-body .pattern-roman-decimal-alpha ol ol > li,
+.markdown-body .pattern-roman-decimal-alpha ol ol ol ol ol > li,
+.markdown-body .pattern-roman-decimal-alpha ol ol ol ol ol ol ol ol > li {
+  list-style-type: decimal !important;
+}
+.pattern-roman-decimal-alpha ol ol ol > li,
+.pattern-roman-decimal-alpha ol ol ol ol ol ol > li,
+.pattern-roman-decimal-alpha ol ol ol ol ol ol ol ol ol > li,
+.markdown-body .pattern-roman-decimal-alpha ol ol ol > li,
+.markdown-body .pattern-roman-decimal-alpha ol ol ol ol ol ol > li,
+.markdown-body .pattern-roman-decimal-alpha ol ol ol ol ol ol ol ol ol > li {
+  list-style-type: lower-alpha !important;
+}
+

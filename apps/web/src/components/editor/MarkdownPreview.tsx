@@ -179,20 +179,28 @@ export function MarkdownPreview({ width = 360 }: { width?: number }) {
                   case "heading": {
                     const level = (block.props.level as number) ?? 1;
                     const text = (block.props.text as string) ?? "";
-                    const fontSize = level === 1 ? "2em" : level === 2 ? "1.5em" : "1.25em";
-                    const borderBottom = level <= 2 ? "1px solid #30363d" : "none";
-                    const paddingBottom = level <= 2 ? "0.3em" : "0";
+                    
+                    const headingStyles: Record<number, { fontSize: string; borderBottom: string; paddingBottom: string; color: string }> = {
+                      1: { fontSize: "2em", borderBottom: "1px solid #30363d", paddingBottom: "0.3em", color: "#f0f6fc" },
+                      2: { fontSize: "1.5em", borderBottom: "1px solid #30363d", paddingBottom: "0.3em", color: "#f0f6fc" },
+                      3: { fontSize: "1.25em", borderBottom: "none", paddingBottom: "0", color: "#f0f6fc" },
+                      4: { fontSize: "1.1em", borderBottom: "none", paddingBottom: "0", color: "#f0f6fc" },
+                      5: { fontSize: "1em", borderBottom: "none", paddingBottom: "0", color: "#f0f6fc" },
+                      6: { fontSize: "0.85em", borderBottom: "none", paddingBottom: "0", color: "#8b949e" },
+                    };
+                    
+                    const hStyle = headingStyles[level] ?? headingStyles[3];
 
                     return (
                       <div
                         key={block.id}
                         style={{
-                          fontSize,
+                          fontSize: hStyle.fontSize,
                           fontWeight: 600,
                           lineHeight: 1.25,
-                          color: "#f0f6fc",
-                          borderBottom,
-                          paddingBottom,
+                          color: hStyle.color,
+                          borderBottom: hStyle.borderBottom,
+                          paddingBottom: hStyle.paddingBottom,
                           marginTop: 12,
                           wordBreak: "break-word",
                         }}
@@ -382,6 +390,81 @@ export function MarkdownPreview({ width = 360 }: { width?: number }) {
                       </div>
                     );
                   }
+                  case "image-grid": {
+                    const images = (block.props.images as any[]) ?? [];
+                    const cols = (block.props.cols as number) ?? 2;
+                    const title = (block.props.title as string) ?? "";
+                    const description = (block.props.description as string) ?? "";
+                    const showCaptions = (block.props.showCaptions as boolean) ?? true;
+                    return (
+                      <div key={block.id} style={{ display: "flex", flexDirection: "column", gap: 6, margin: "16px 0" }}>
+                        {title.trim() && (
+                          <h4 style={{ margin: "0 0 2px 0", fontSize: "1.15em", color: "#f0f6fc", fontWeight: 600 }}>
+                            {title.trim()}
+                          </h4>
+                        )}
+                        {description.trim() && (
+                          <div style={{ margin: "0 0 6px 0", fontSize: "0.9em", color: "#8b949e", fontStyle: "italic" }}>
+                            {description.trim()}
+                          </div>
+                        )}
+                        <div
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns: `repeat(${cols}, 1fr)`,
+                            gap: 12,
+                            width: "100%",
+                          }}
+                        >
+                          {images.map((img) => (
+                            <div
+                              key={img.id}
+                              style={{
+                                borderRadius: 6,
+                                overflow: "hidden",
+                                border: "1px solid #30363d",
+                                display: "flex",
+                                flexDirection: "column",
+                                background: "#0d1117",
+                                aspectRatio: showCaptions ? undefined : "16/10",
+                              }}
+                            >
+                              <div style={{ width: "100%", aspectRatio: showCaptions ? "16/10" : "100%", height: showCaptions ? undefined : "100%", overflow: "hidden" }}>
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  src={img.url}
+                                  alt={img.alt}
+                                  style={{
+                                    width: "100%",
+                                    height: "100%",
+                                    objectFit: "cover",
+                                    display: "block",
+                                  }}
+                                />
+                              </div>
+                              {showCaptions && (
+                                <div
+                                  style={{
+                                    padding: "6px 8px",
+                                    borderTop: "1px solid #30363d",
+                                    fontSize: 11,
+                                    fontWeight: 500,
+                                    color: "#8b949e",
+                                    textAlign: "center",
+                                    whiteSpace: "nowrap",
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                  }}
+                                >
+                                  {img.alt || "Untitled Image"}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  }
                   case "table": {
                     const rows = (block.props.rows as string[][]) ?? [["", ""]];
                     return (
@@ -480,6 +563,23 @@ export function MarkdownPreview({ width = 360 }: { width?: number }) {
                           ))}
                         </div>
                       </div>
+                    );
+                  }
+                  case "bullet-list":
+                  case "numbered-list": {
+                    const html = (block.props.html as string) ?? "";
+                    const pattern = (block.props.pattern as string) ?? "decimal-alpha-roman";
+                    return (
+                      <div
+                        key={block.id}
+                        className={`rich-list-content pattern-${pattern}`}
+                        style={{
+                          fontSize: 15,
+                          lineHeight: 1.6,
+                          color: "#e6edf3",
+                        }}
+                        dangerouslySetInnerHTML={{ __html: html }}
+                      />
                     );
                   }
                   default:

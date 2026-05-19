@@ -77,6 +77,7 @@ export function EditorCanvas({ activeSidebarItem, insertIndex }: EditorCanvasPro
                 <SortableBlock 
                   key={block.id} 
                   id={block.id}
+                  block={block}
                   isPlaceholder={isPlaceholder}
                 >
                   <BlockRenderer block={block} />

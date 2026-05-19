@@ -39,8 +39,9 @@ export default function EditorPage() {
   const setBlocks = useEditorStore((s) => s.setBlocks);
   const undo = useEditorStore((s) => s.undo);
   const redo = useEditorStore((s) => s.redo);
-  const moveBlock = useEditorStore((s) => s.moveBlock);
+  const moveBlocks = useEditorStore((s) => s.moveBlocks);
   const addBlock = useEditorStore((s) => s.addBlock);
+  const selectedBlockIds = useEditorStore((s) => s.selectedBlockIds);
 
   const [saveStatus, setSaveStatus] = useState<"saving" | "saved" | "idle">(
     "idle",
@@ -245,9 +246,13 @@ export default function EditorPage() {
     }
 
     if (toIndex !== -1) {
-      moveBlock(active.id as string, toIndex);
+      if (selectedBlockIds.includes(active.id as string) && selectedBlockIds.length > 1) {
+        moveBlocks(selectedBlockIds, toIndex);
+      } else {
+        moveBlocks([active.id as string], toIndex);
+      }
     }
-  }, [insertIndex, blocks, addBlock, moveBlock]);
+  }, [insertIndex, blocks, addBlock, moveBlocks, selectedBlockIds]);
 
   // Initial load
   useEffect(() => {
@@ -542,8 +547,35 @@ console.log(\`Successfully loaded demo in \${editorName}!\`);
             >
               {(() => {
                 const activeBlock = blocks.find((b) => b.id === activeId);
+                const isMultiDrag = selectedBlockIds.includes(activeId as string) && selectedBlockIds.length > 1;
+                
                 return activeBlock ? (
-                  <BlockRenderer block={activeBlock} />
+                  <div style={{ position: "relative" }}>
+                    <BlockRenderer block={activeBlock} />
+                    {isMultiDrag && (
+                      <div
+                        style={{
+                          position: "absolute",
+                          top: -10,
+                          right: -10,
+                          background: "var(--accent)",
+                          color: "white",
+                          fontSize: 12,
+                          fontWeight: "bold",
+                          width: 24,
+                          height: 24,
+                          borderRadius: "50%",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          boxShadow: "var(--shadow-sm)",
+                          zIndex: 10,
+                        }}
+                      >
+                        {selectedBlockIds.length}
+                      </div>
+                    )}
+                  </div>
                 ) : null;
               })()}
             </div>

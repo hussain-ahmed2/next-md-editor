@@ -7,6 +7,8 @@ import { DividerBlock } from "@/components/blocks/DividerBlock";
 import { ImageBlock } from "@/components/blocks/ImageBlock";
 import { TableBlock } from "@/components/blocks/TableBlock";
 import { CalloutBlock } from "@/components/blocks/CalloutBlock";
+import { ListBlock } from "@/components/blocks/ListBlock";
+import { ImageGridBlock } from "@/components/blocks/ImageGridBlock";
 
 export function initRegistry() {
   BlockRegistry.register({
@@ -92,6 +94,71 @@ export function initRegistry() {
       const alertHeader = `> [!${type}]`;
       const alertBody = text.split("\n").map(l => `> ${l}`).join("\n");
       return `${alertHeader}\n${alertBody}`;
+    },
+  });
+
+  BlockRegistry.register({
+    type: "bullet-list",
+    component: ListBlock,
+    defaultProps: { style: "bullet", html: "<ul><li>Item 1</li></ul>" },
+  });
+
+  BlockRegistry.register({
+    type: "numbered-list",
+    component: ListBlock,
+    defaultProps: { style: "numbered", html: "<ol><li>Item 1</li></ol>" },
+  });
+
+  BlockRegistry.register({
+    type: "image-grid",
+    component: ImageGridBlock,
+    defaultProps: {
+      cols: 2,
+      images: [
+        { id: "1", url: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=600&auto=format&fit=crop", alt: "Fluid abstract shapes" },
+        { id: "2", url: "https://images.unsplash.com/photo-1634017839464-5c339ebe3cb4?q=80&w=600&auto=format&fit=crop", alt: "Glossy 3D composition" }
+      ]
+    },
+    serializer: (b) => {
+      const images = (b.props.images as any[]) ?? [];
+      const cols = (b.props.cols as number) ?? 2;
+      const title = (b.props.title as string) ?? "";
+      const description = (b.props.description as string) ?? "";
+      if (images.length === 0) return "";
+
+      const parts: string[] = [];
+      if (title.trim()) {
+        parts.push(`#### ${title.trim()}`);
+      }
+      if (description.trim()) {
+        parts.push(`_${description.trim()}_`);
+      }
+
+      const rows: string[][] = [];
+      let currentRow: string[] = [];
+      images.forEach((img) => {
+        currentRow.push(`![${img.alt || "Image"}](${img.url})`);
+        if (currentRow.length === cols) {
+          rows.push(currentRow);
+          currentRow = [];
+        }
+      });
+      if (currentRow.length > 0) {
+        while (currentRow.length < cols) {
+          currentRow.push(" ");
+        }
+        rows.push(currentRow);
+      }
+
+      const headers = Array.from({ length: cols }, (_, idx) => `Image ${idx + 1}`);
+      const headerLine = `| ${headers.join(" | ")} |`;
+      const separatorLine = `| ${headers.map(() => "---").join(" | ")} |`;
+      const dataLines = rows.map((r) => `| ${r.join(" | ")} |`);
+
+      const tableMarkdown = [headerLine, separatorLine, ...dataLines].join("\n");
+      parts.push(tableMarkdown);
+
+      return parts.join("\n\n");
     },
   });
 }

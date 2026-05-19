@@ -12,10 +12,12 @@ import { renderInlineMarkdown } from "@/features/markdown/highlighter";
 export function QuoteBlock({ block }: { block: Block }) {
   const blocks = useEditorStore((s) => s.blocks);
   const addBlock = useEditorStore((s) => s.addBlock);
-  const removeBlock = useEditorStore((s) => s.removeBlock);
+  const removeBlocks = useEditorStore((s) => s.removeBlocks);
   const updateBlock = useEditorStore((s) => s.updateBlock);
   const selectBlock = useEditorStore((s) => s.selectBlock);
-  const selectedBlockId = useEditorStore((s) => s.selectedBlockId);
+  const selectedBlockIds = useEditorStore((s) => s.selectedBlockIds);
+  const indentBlocks = useEditorStore((s) => s.indentBlocks);
+  const outdentBlocks = useEditorStore((s) => s.outdentBlocks);
 
   const text = (block.props.text as string) ?? "";
   const [isFocused, setIsFocused] = useState(false);
@@ -23,14 +25,11 @@ export function QuoteBlock({ block }: { block: Block }) {
 
   // Auto-focus synchronization when block is selected
   useEffect(() => {
-    if (
-      selectedBlockId === block.id &&
-      ref.current &&
-      document.activeElement !== ref.current
-    ) {
+    const isSelected = selectedBlockIds[selectedBlockIds.length - 1] === block.id;
+    if (isSelected && ref.current && document.activeElement !== ref.current) {
       ref.current.focus();
     }
-  }, [selectedBlockId, block.id, ref]);
+  }, [selectedBlockIds, block.id, ref]);
 
   // Sync state changes from store to DOM when they differ (e.g. on undo/redo)
   useEffect(() => {
@@ -110,10 +109,13 @@ export function QuoteBlock({ block }: { block: Block }) {
             e,
             block,
             blocks,
+            selectedBlockIds,
             addBlock,
-            removeBlock,
+            removeBlocks,
             updateBlock,
             selectBlock,
+            indentBlocks,
+            outdentBlocks,
           )
         }
         style={{

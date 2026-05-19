@@ -54,13 +54,42 @@ export function handleEditorKeyboardShortcuts(
   e: React.KeyboardEvent<HTMLDivElement>,
   block: Block,
   blocks: Block[],
+  selectedBlockIds: string[],
   addBlock: (block: Block, index?: number) => void,
-  removeBlock: (id: string) => void,
+  removeBlocks: (ids: string[]) => void,
   updateBlock: (id: string, props: any) => void,
-  selectBlock: (id?: string) => void
+  selectBlock: (id: string | null, extend?: boolean) => void,
+  indentBlocks?: (ids: string[]) => void,
+  outdentBlocks?: (ids: string[]) => void,
 ) {
   const hasMeta = e.ctrlKey || e.metaKey;
   const key = e.key.toLowerCase();
+
+  // Tab: indent block; Shift+Tab: outdent block
+  if (e.key === "Tab") {
+    e.preventDefault();
+    const idsToModify = selectedBlockIds.includes(block.id) ? selectedBlockIds : [block.id];
+    if (e.shiftKey) {
+      outdentBlocks?.(idsToModify);
+    } else {
+      indentBlocks?.(idsToModify);
+    }
+    return;
+  }
+
+  // Handle Shift + ArrowUp/ArrowDown for multi-selection
+  if (e.shiftKey && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
+    const currentIndex = blocks.findIndex((b) => b.id === block.id);
+    if (currentIndex !== -1) {
+      e.preventDefault();
+      const targetIndex = e.key === "ArrowUp" ? currentIndex - 1 : currentIndex + 1;
+      if (targetIndex >= 0 && targetIndex < blocks.length) {
+        selectBlock(blocks[targetIndex].id, true);
+        // Focus management usually handled by useEffect in block, but we can rely on state
+      }
+    }
+    return;
+  }
 
   // 1. Enter Key creates a new Paragraph Block below the current block
   if (e.key === "Enter" && !e.shiftKey) {
@@ -79,19 +108,26 @@ export function handleEditorKeyboardShortcuts(
     return;
   }
 
-  // 2. Backspace Key on empty block deletes it and focuses the previous block
-  if (e.key === "Backspace") {
+  // 2. Backspace Key
+  if (e.key === "Backspace" || e.key === "Delete") {
+    // If multiple blocks are selected, delete all of them
+    if (selectedBlockIds.length > 1) {
+      e.preventDefault();
+      removeBlocks(selectedBlockIds);
+      return;
+    }
+
     const rawText = e.currentTarget.textContent ?? "";
-    if (rawText === "") {
+    if (rawText === "" && e.key === "Backspace") {
       e.preventDefault();
       const currentIndex = blocks.findIndex((b) => b.id === block.id);
       if (currentIndex > 0) {
         const previousBlock = blocks[currentIndex - 1];
         selectBlock(previousBlock.id);
       } else {
-        selectBlock(undefined);
+        selectBlock(null);
       }
-      removeBlock(block.id);
+      removeBlocks([block.id]);
       return;
     }
   }

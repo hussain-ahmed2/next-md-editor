@@ -6,7 +6,9 @@ export type BlockType =
   | "image" 
   | "code" 
   | "quote" 
-  | "divider" 
+  | "divider"
+  | "bullet-list"
+  | "numbered-list"
   | string;
 
 export interface Block {
@@ -18,14 +20,16 @@ export interface Block {
 
 export interface EditorState {
   blocks: Block[];
-  selectedBlockId?: string;
+  selectedBlockIds: string[];
   
-  addBlock: (block: Block, index?: number) => void;
+  addBlock: (block: Block, index?: number, parentId?: string | null) => void;
   updateBlock: (id: string, props: Record<string, unknown>) => void;
   replaceBlock: (id: string, newBlock: Omit<Block, "id">) => void;
-  removeBlock: (id: string) => void;
-  moveBlock: (id: string, toIndex: number) => void;
-  selectBlock: (id?: string) => void;
+  removeBlocks: (ids: string[]) => void;
+  moveBlocks: (ids: string[], toIndex: number, toParentId?: string | null) => void;
+  indentBlocks: (ids: string[]) => void;
+  outdentBlocks: (ids: string[]) => void;
+  selectBlock: (id: string | null, extend?: boolean) => void;
   setBlocks: (blocks: Block[]) => void;
   
   undo: () => void;

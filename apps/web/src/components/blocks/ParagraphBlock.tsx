@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useContext } from "react";
+import { v4 as uuidv4 } from "uuid";
 import { useEditorStore } from "@next-md-editor/editor-core";
 import type { Block } from "@next-md-editor/types";
 import {
@@ -10,15 +11,37 @@ import {
 import { renderInlineMarkdown } from "@/features/markdown/highlighter";
 import { SlashCommandMenu } from "@/components/editor/SlashCommandMenu";
 import { BlockRegistry } from "@next-md-editor/editor-core";
+import { BlockDepthContext } from "@/components/editor/SortableBlock";
+
+function toRoman(n: number): string {
+  const vals = [1000,900,500,400,100,90,50,40,10,9,5,4,1];
+  const syms = ["m","cm","d","cd","c","xc","l","xl","x","ix","v","iv","i"];
+  let result = "";
+  for (let i = 0; i < vals.length; i++) {
+    while (n >= vals[i]) { result += syms[i]; n -= vals[i]; }
+  }
+  return result;
+}
+
+function getListMarker(num: number, depth: number): string {
+  const style = depth % 3;
+  if (style === 0) return `${num}.`;
+  if (style === 1) return `${toRoman(num)}.`;
+  return `${String.fromCharCode(96 + num)}.`;
+}
 
 export function ParagraphBlock({ block }: { block: Block }) {
   const blocks = useEditorStore((s) => s.blocks);
   const addBlock = useEditorStore((s) => s.addBlock);
-  const removeBlock = useEditorStore((s) => s.removeBlock);
+  const removeBlocks = useEditorStore((s) => s.removeBlocks);
   const updateBlock = useEditorStore((s) => s.updateBlock);
   const replaceBlock = useEditorStore((s) => s.replaceBlock);
   const selectBlock = useEditorStore((s) => s.selectBlock);
-  const selectedBlockId = useEditorStore((s) => s.selectedBlockId);
+  const selectedBlockIds = useEditorStore((s) => s.selectedBlockIds);
+  const indentBlocks = useEditorStore((s) => s.indentBlocks);
+  const outdentBlocks = useEditorStore((s) => s.outdentBlocks);
+
+  const depth = useContext(BlockDepthContext);
 
   const text = (block.props.text as string) ?? "";
   const [isFocused, setIsFocused] = useState(false);
@@ -55,14 +78,11 @@ export function ParagraphBlock({ block }: { block: Block }) {
 
   // Auto-focus synchronization when block is selected
   useEffect(() => {
-    if (
-      selectedBlockId === block.id &&
-      ref.current &&
-      document.activeElement !== ref.current
-    ) {
+    const isSelected = selectedBlockIds[selectedBlockIds.length - 1] === block.id;
+    if (isSelected && ref.current && document.activeElement !== ref.current) {
       ref.current.focus();
     }
-  }, [selectedBlockId, block.id, ref]);
+  }, [selectedBlockIds, block.id, ref]);
 
   // Sync state changes from store to DOM when they differ (e.g. on undo/redo)
   useEffect(() => {
@@ -170,14 +190,51 @@ export function ParagraphBlock({ block }: { block: Block }) {
       }
     }
 
+    // Smart Enter key handling for lists
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      
+      // If the user hits enter on an empty list item, exit the list format
+      if (cleanText.trim() === "" && (isTodo || isBullet || numberMatch)) {
+        updateBlock(block.id, { text: "" });
+        return;
+      }
+
+      // Calculate prefix for the new block
+      let nextText = "";
+      if (isTodo) {
+        nextText = "- [ ] ";
+      } else if (isBullet) {
+        nextText = "- ";
+      } else if (numberMatch) {
+        nextText = `${parseInt(numberMatch[1]) + 1}. `;
+      }
+
+      const currentIndex = blocks.findIndex((b) => b.id === block.id);
+      if (currentIndex !== -1) {
+        addBlock(
+          {
+            id: uuidv4(),
+            type: "paragraph",
+            props: { text: nextText },
+          },
+          currentIndex + 1
+        );
+      }
+      return;
+    }
+
     handleEditorKeyboardShortcuts(
       e,
       block,
       blocks,
+      selectedBlockIds,
       addBlock,
-      removeBlock,
+      removeBlocks,
       updateBlock,
-      selectBlock
+      selectBlock,
+      indentBlocks,
+      outdentBlocks,
     );
   };
 
@@ -220,110 +277,46 @@ export function ParagraphBlock({ block }: { block: Block }) {
       }
     : {};
 
-  if (isTodo) {
-    const checked = text.startsWith("- [x] ");
-    return (
-      <div
-        style={{
-          position: "relative",
-          display: "flex",
-          gap: 10,
-          alignItems: "center",
-          width: "100%",
-          paddingLeft: 4,
-        }}
-      >
+  const checked = isTodo && text.startsWith("- [x] ");
+
+  return (
+    <div style={{ 
+      position: "relative", 
+      display: "flex", 
+      gap: 10, 
+      alignItems: isTodo ? "center" : "flex-start", 
+      width: "100%", 
+      paddingLeft: isTodo ? 4 : (isBullet || numberMatch) ? 8 : 0 
+    }}>
+      {isTodo && (
         <input
           type="checkbox"
           checked={checked}
           onChange={(e) => {
-            const nextText = checked
-              ? `- [ ] ${cleanText}`
-              : `- [x] ${cleanText}`;
+            const nextText = checked ? `- [ ] ${cleanText}` : `- [x] ${cleanText}`;
             updateBlock(block.id, { text: nextText });
           }}
-          style={{
-            cursor: "pointer",
-            width: 16,
-            height: 16,
-            borderRadius: 4,
-            border: "1px solid var(--border)",
-            accentColor: "var(--accent)",
-          }}
+          style={{ cursor: "pointer", width: 16, height: 16, borderRadius: 4, border: "1px solid var(--border)", accentColor: "var(--accent)" }}
         />
-        <div
-          {...commonProps}
-          style={{
-            ...commonProps.style,
-            color: checked ? "var(--text-secondary)" : "var(--text-primary)",
-            textDecoration: checked ? "line-through" : "none",
-          }}
-          {...innerHTMLProp}
-        />
-        {slashMenu}
-      </div>
-    );
-  }
+      )}
+      
+      {isBullet && (
+        <span style={{ color: "var(--text-secondary)", userSelect: "none", marginTop: 1 }}>•</span>
+      )}
 
-  if (isBullet) {
-    return (
-      <div
-        style={{
-          position: "relative",
-          display: "flex",
-          gap: 10,
-          alignItems: "flex-start",
-          width: "100%",
-          paddingLeft: 8,
-        }}
-      >
-        <span
-          style={{
-            color: "var(--text-secondary)",
-            userSelect: "none",
-            marginTop: 1,
-          }}
-        >
-          •
+      {numberMatch && (
+        <span style={{ color: "var(--text-secondary)", userSelect: "none", minWidth: 24, fontVariantNumeric: "tabular-nums" }}>
+          {getListMarker(parseInt(numberMatch[1]), depth)}
         </span>
-        <div {...commonProps} {...innerHTMLProp} />
-        {slashMenu}
-      </div>
-    );
-  }
+      )}
 
-  if (numberMatch) {
-    const num = numberMatch[1];
-    return (
-      <div
-        style={{
-          position: "relative",
-          display: "flex",
-          gap: 10,
-          alignItems: "flex-start",
-          width: "100%",
-          paddingLeft: 8,
-        }}
-      >
-        <span
-          style={{
-            color: "var(--text-secondary)",
-            userSelect: "none",
-            minWidth: 20,
-          }}
-        >
-          {num}.
-        </span>
-        <div {...commonProps} {...innerHTMLProp} />
-        {slashMenu}
-      </div>
-    );
-  }
-
-  return (
-    <div style={{ position: "relative", width: "100%" }}>
       <div
         {...commonProps}
+        style={{
+          ...commonProps.style,
+          color: checked ? "var(--text-secondary)" : "var(--text-primary)",
+          textDecoration: checked ? "line-through" : "none",
+        }}
         data-placeholder="Start typing…"
         {...innerHTMLProp}
       />

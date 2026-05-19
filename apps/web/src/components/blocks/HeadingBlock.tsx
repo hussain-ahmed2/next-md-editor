@@ -18,13 +18,14 @@ const LEVEL_STYLES: Record<
     borderBottom?: string;
     paddingBottom?: string;
     marginBottom?: string;
+    color?: string;
   }
 > = {
   1: {
     fontSize: "2em",
     fontWeight: 600,
     lineHeight: "1.25",
-    borderBottom: "1px solid #30363d",
+    borderBottom: "1px solid var(--border-subtle)",
     paddingBottom: "0.3em",
     marginBottom: "8px",
   },
@@ -32,20 +33,25 @@ const LEVEL_STYLES: Record<
     fontSize: "1.5em",
     fontWeight: 600,
     lineHeight: "1.25",
-    borderBottom: "1px solid #30363d",
+    borderBottom: "1px solid var(--border-subtle)",
     paddingBottom: "0.3em",
     marginBottom: "8px",
   },
   3: { fontSize: "1.25em", fontWeight: 600, lineHeight: "1.25" },
+  4: { fontSize: "1.1em", fontWeight: 600, lineHeight: "1.25" },
+  5: { fontSize: "1em", fontWeight: 600, lineHeight: "1.25" },
+  6: { fontSize: "0.85em", fontWeight: 600, lineHeight: "1.25", color: "var(--text-muted)" },
 };
 
 export function HeadingBlock({ block }: { block: Block }) {
   const blocks = useEditorStore((s) => s.blocks);
   const addBlock = useEditorStore((s) => s.addBlock);
-  const removeBlock = useEditorStore((s) => s.removeBlock);
+  const removeBlocks = useEditorStore((s) => s.removeBlocks);
   const updateBlock = useEditorStore((s) => s.updateBlock);
   const selectBlock = useEditorStore((s) => s.selectBlock);
-  const selectedBlockId = useEditorStore((s) => s.selectedBlockId);
+  const selectedBlockIds = useEditorStore((s) => s.selectedBlockIds);
+  const indentBlocks = useEditorStore((s) => s.indentBlocks);
+  const outdentBlocks = useEditorStore((s) => s.outdentBlocks);
 
   const level = (block.props.level as number) ?? 1;
   const text = (block.props.text as string) ?? "";
@@ -55,14 +61,11 @@ export function HeadingBlock({ block }: { block: Block }) {
 
   // Auto-focus synchronization when block is selected
   useEffect(() => {
-    if (
-      selectedBlockId === block.id &&
-      ref.current &&
-      document.activeElement !== ref.current
-    ) {
+    const isSelected = selectedBlockIds[selectedBlockIds.length - 1] === block.id;
+    if (isSelected && ref.current && document.activeElement !== ref.current) {
       ref.current.focus();
     }
-  }, [selectedBlockId, block.id, ref]);
+  }, [selectedBlockIds, block.id, ref]);
 
   // Sync state changes from store to DOM when they differ (e.g. on undo/redo)
   useEffect(() => {
@@ -114,7 +117,7 @@ export function HeadingBlock({ block }: { block: Block }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
       <div style={{ display: "flex", gap: 6, marginBottom: 2 }}>
-        {[1, 2, 3].map((l) => (
+        {[1, 2, 3, 4, 5, 6].map((l) => (
           <button
             key={l}
             onClick={(e) => {
@@ -150,10 +153,13 @@ export function HeadingBlock({ block }: { block: Block }) {
             e,
             block,
             blocks,
+            selectedBlockIds,
             addBlock,
-            removeBlock,
+            removeBlocks,
             updateBlock,
             selectBlock,
+            indentBlocks,
+            outdentBlocks,
           )
         }
         style={{
