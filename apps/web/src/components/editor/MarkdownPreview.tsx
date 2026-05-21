@@ -15,11 +15,16 @@ import {
   OctagonX,
   FileText,
 } from "lucide-react";
+import { useUIStore } from "@/store/uiStore";
 
-export function MarkdownPreview({ width = 360 }: { width?: number }) {
+export function MarkdownPreview() {
   const blocks = useEditorStore((s) => s.blocks);
   const markdown = serializeToMarkdown(blocks);
   const [activeTab, setActiveTab] = useState<"preview" | "raw">("preview");
+
+  const isMobile = useUIStore((s) => s.isMobile);
+  const previewWidth = useUIStore((s) => s.previewWidth);
+  const width = isMobile ? undefined : (previewWidth ?? 360);
 
   return (
     <aside

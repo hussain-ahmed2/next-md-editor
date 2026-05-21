@@ -223,16 +223,41 @@ export function parseMarkdown(markdown: string): Block[] {
       continue;
     }
 
-    // 5. Blockquotes (> quote)
+    // 5. GFM Callout Alerts (> [!NOTE]) — must run BEFORE generic blockquote check
+    //    because both start with ">" and the blockquote handler would consume callouts first.
+    const calloutHeaderMatch = trimmed.match(/^>\s*\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]$/i);
+    if (calloutHeaderMatch) {
+      const type = calloutHeaderMatch[1].toLowerCase();
+      const bodyLines: string[] = [];
+      i++; // Skip the header line
+
+      while (i < lines.length && lines[i].trim().startsWith(">")) {
+        const rawBodyLine = lines[i].trim().slice(1);
+        bodyLines.push(rawBodyLine.startsWith(" ") ? rawBodyLine.slice(1) : rawBodyLine);
+        i++;
+      }
+
+      blocks.push({
+        id: uuidv4(),
+        type: "callout",
+        props: {
+          type,
+          text: bodyLines.join("\n"),
+        },
+      });
+      continue;
+    }
+
+    // 6. Blockquotes (> quote)
     if (trimmed.startsWith(">")) {
       const quoteLines: string[] = [];
-      
+
       while (i < lines.length && lines[i].trim().startsWith(">")) {
         const content = lines[i].trim().slice(1);
         quoteLines.push(content.startsWith(" ") ? content.slice(1) : content);
         i++;
       }
-      
+
       blocks.push({
         id: uuidv4(),
         type: "quote",
@@ -243,7 +268,7 @@ export function parseMarkdown(markdown: string): Block[] {
       continue;
     }
 
-    // 6. GFM Images (![alt](url))
+    // 7. GFM Images (![alt](url))
     const imageMatch = trimmed.match(/^!\[(.*?)\]\((.*?)\)$/);
     if (imageMatch) {
       blocks.push({
@@ -255,30 +280,6 @@ export function parseMarkdown(markdown: string): Block[] {
         },
       });
       i++;
-      continue;
-    }
-
-    // 7. GFM Callout Alerts (> [!NOTE])
-    const calloutHeaderMatch = trimmed.match(/^>\s*\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]$/i);
-    if (calloutHeaderMatch) {
-      const type = calloutHeaderMatch[1].toLowerCase();
-      const bodyLines: string[] = [];
-      i++; // Skip the header line
-      
-      while (i < lines.length && lines[i].trim().startsWith(">")) {
-        const rawBodyLine = lines[i].trim().slice(1);
-        bodyLines.push(rawBodyLine.startsWith(" ") ? rawBodyLine.slice(1) : rawBodyLine);
-        i++;
-      }
-      
-      blocks.push({
-        id: uuidv4(),
-        type: "callout",
-        props: {
-          type,
-          text: bodyLines.join("\n"),
-        },
-      });
       continue;
     }
 

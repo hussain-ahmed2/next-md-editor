@@ -4,441 +4,59 @@ import { EditorToolbar } from "@/components/editor/EditorToolbar";
 import { EditorSidebar } from "@/components/editor/EditorSidebar";
 import { EditorCanvas } from "@/components/editor/EditorCanvas";
 import { MarkdownPreview } from "@/components/editor/MarkdownPreview";
-import { useEditorStore } from "@next-md-editor/editor-core";
-import { useEffect, useState, useCallback, useMemo, useRef } from "react";
-import { initRegistry } from "@/registry";
-import { parseMarkdown } from "@/features/markdown/serializer";
-import { GripVertical, LayoutGrid, Edit3, Eye } from "lucide-react";
-import {
-  DndContext,
-  DragEndEvent,
-  DragStartEvent,
-  DragOverEvent,
-  PointerSensor,
-  TouchSensor,
-  closestCenter,
-  useSensor,
-  useSensors,
-  DragOverlay,
-  pointerWithin,
-  rectIntersection,
-  CollisionDetection,
-} from "@dnd-kit/core";
-import { v4 as uuidv4 } from "uuid";
-import { BlockRegistry } from "@next-md-editor/editor-core";
-import { BlockRenderer } from "@/components/editor/BlockRenderer";
-import { CANVAS_ROOT_ID } from "@/components/editor/EditorCanvas";
+import { useEffect, useState } from "react";
+import { DragDropProvider, DragOverlay, useDragOperation } from "@dnd-kit/react";
+import { useUIStore } from "@/store/uiStore";
+
+// Custom hooks
+import { useEditorPersistence } from "@/hooks/useEditorPersistence";
+import { useDragAndDrop } from "@/hooks/useDragAndDrop";
+
+// Extracted components
+import { ResizeBar } from "@/components/editor/ResizeBar";
+import { MobileBottomBar } from "@/components/editor/MobileBottomBar";
+import { DragOverlayContent } from "@/components/editor/DragOverlayContent";
+
+// Wrapper that uses useDragOperation() (must be inside DragDropProvider) to
+// dynamically set dropAnimation — null disables it for sidebar drops so the
+// overlay pill doesn't animate back to the sidebar on drop.
+function ActiveDragOverlay() {
+  const { source } = useDragOperation();
+  const isSidebarItem = source?.data?.isSidebarItem === true;
+
+  return (
+    <DragOverlay dropAnimation={isSidebarItem ? null : undefined}>
+      <DragOverlayContent />
+    </DragOverlay>
+  );
+}
 
 export default function EditorPage() {
-  const [previewOpen, setPreviewOpen] = useState(true);
-  const [sidebarWidth, setSidebarWidth] = useState(220);
-  const [previewWidth, setPreviewWidth] = useState(360);
-  const [isResizingSidebar, setIsResizingSidebar] = useState(false);
-  const [isResizingPreview, setIsResizingPreview] = useState(false);
-
-  const [isMobile, setIsMobile] = useState(false);
-  const [mobileTab, setMobileTab] = useState<"blocks" | "editor" | "preview">("editor");
-
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
-  }, []);
-
-  const blocks = useEditorStore((s) => s.blocks);
-  const setBlocks = useEditorStore((s) => s.setBlocks);
-  const undo = useEditorStore((s) => s.undo);
-  const redo = useEditorStore((s) => s.redo);
-  const moveBlocks = useEditorStore((s) => s.moveBlocks);
-  const addBlock = useEditorStore((s) => s.addBlock);
-  const selectedBlockIds = useEditorStore((s) => s.selectedBlockIds);
-
-  const [saveStatus, setSaveStatus] = useState<"saving" | "saved" | "idle">(
-    "idle",
-  );
-  const [isLoaded, setIsLoaded] = useState(false);
   const [mounted, setMounted] = useState(false);
+  
+  const isMobile = useUIStore((s) => s.isMobile);
+  const setIsMobile = useUIStore((s) => s.setIsMobile);
+  const mobileTab = useUIStore((s) => s.mobileTab);
+  const previewOpen = useUIStore((s) => s.previewOpen);
+  const isResizingSidebar = useUIStore((s) => s.isResizingSidebar);
+  const isResizingPreview = useUIStore((s) => s.isResizingPreview);
+
+  // Initialize and run persistence side effects
+  useEditorPersistence();
+
+  // Only two things needed from the hook now
+  const { sensors, handleDragEnd } = useDragAndDrop();
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Drag and Drop state
-  const [activeId, setActiveId] = useState<string | null>(null);
-  const [activeSidebarItem, setActiveSidebarItem] = useState<{
-    type: string;
-    label: string;
-  } | null>(null);
-  const [insertIndex, setInsertIndex] = useState<number | null>(null);
-  const lastDeltaY = useRef<number | null>(null);
-  const mouseClientY = useRef<number>(0);
-
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      mouseClientY.current = e.clientY;
-    };
-    window.addEventListener("mousemove", handleMouseMove);
-    return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, []);
-
-  const pointerSensor = useSensor(
-    PointerSensor,
-    useMemo(() => ({ activationConstraint: { distance: 6 } }), [])
-  );
-  const touchSensor = useSensor(
-    TouchSensor,
-    useMemo(() => ({
-      activationConstraint: {
-        delay: 250,
-        tolerance: 5,
-      },
-    }), [])
-  );
-  const sensors = useSensors(pointerSensor, touchSensor);
-
-  const handleDragStart = useCallback((event: DragStartEvent) => {
-    const { active } = event;
-    const isSidebarDrag =
-      active.data.current?.isSidebarItem ||
-      (active.id && active.id.toString().startsWith("sidebar-"));
-    if (isSidebarDrag) {
-      const type =
-        active.data.current?.type ||
-        active.id.toString().replace("sidebar-", "");
-      setActiveSidebarItem({
-        type,
-        label:
-          active.data.current?.label ||
-          type.charAt(0).toUpperCase() + type.slice(1),
-      });
-      setInsertIndex(blocks.length);
-      lastDeltaY.current = null;
-    } else {
-      setActiveId(active.id as string);
-    }
-  }, [blocks.length]);
-
-  const handleDragOver = useCallback((event: DragOverEvent) => {
-    const { active, over, delta } = event;
-    const isSidebarDrag =
-      active.data.current?.isSidebarItem ||
-      (active.id && active.id.toString().startsWith("sidebar-"));
-    if (isSidebarDrag) {
-      if (!over) {
-        console.log("[DragOver] over is null!");
-        return; // Keep last known insertIndex to prevent flickering or disappearing placeholder
-      }
-
-      const overId = over.id as string;
-      console.log("[DragOver] overId:", overId);
-
-      if (overId === CANVAS_ROOT_ID) {
-        if (blocks.length === 0) {
-          setInsertIndex(0);
-        } else {
-          let isTop = false;
-          const firstBlockEl = document.getElementById(blocks[0].id);
-          if (firstBlockEl) {
-            const rect = firstBlockEl.getBoundingClientRect();
-            if (mouseClientY.current < rect.top + rect.height / 2) {
-              isTop = true;
-            }
-          } else if (over.rect) {
-            const canvasCenterY = over.rect.top + over.rect.height / 2;
-            isTop = mouseClientY.current < canvasCenterY;
-          }
-          setInsertIndex(isTop ? 0 : blocks.length);
-        }
-        lastDeltaY.current = delta.y;
-      } else if (overId === active.id || overId.startsWith("placeholder-")) {
-        // Keep current insertIndex to prevent flickering / infinite loops
-      } else {
-        const idx = blocks.findIndex((b) => b.id === overId);
-        console.log("[DragOver] idx of block:", idx);
-        if (idx !== -1) {
-          // Calculate if we are hovering over the upper or lower 50% of the block
-          let targetIndex = idx;
-          
-          if (over.rect) {
-            const overCenterY = over.rect.top + over.rect.height / 2;
-            if (mouseClientY.current > overCenterY) {
-              targetIndex = idx + 1;
-            }
-          }
-
-          console.log("[DragOver] targetIndex computed:", targetIndex, "current insertIndex:", insertIndex);
-
-          if (targetIndex !== insertIndex) {
-            if (lastDeltaY.current !== null) {
-              const diffY = Math.abs(delta.y - lastDeltaY.current);
-              if (diffY < 20) {
-                console.log("[DragOver] Ignored due to low delta:", diffY);
-                // Ignore layout shift updates when mouse is stationary!
-                return;
-              }
-            }
-            setInsertIndex(targetIndex);
-            lastDeltaY.current = delta.y;
-          }
-        }
-      }
-    }
-  }, [blocks, insertIndex]);
-
-  const handleDragEnd = useCallback((event: DragEndEvent) => {
-    const { active, over } = event;
-    setActiveId(null);
-    const finalInsertIndex = insertIndex;
-    setInsertIndex(null);
-    lastDeltaY.current = null;
-
-    const isSidebarDrag =
-      active.data.current?.isSidebarItem ||
-      (active.id && active.id.toString().startsWith("sidebar-"));
-
-    if (isSidebarDrag) {
-      const type =
-        active.data.current?.type ||
-        active.id.toString().replace("sidebar-", "");
-      const def = BlockRegistry.get(type);
-      const newBlock = {
-        id: uuidv4(),
-        type,
-        props: { ...(def?.defaultProps ?? {}) },
-      };
-
-      console.log(
-        "[DragEnd] Sidebar item dropped:",
-        type,
-        "at index:",
-        finalInsertIndex,
-      );
-
-      const isSuccessfulDrop = !!over;
-      if (isSuccessfulDrop) {
-        if (typeof finalInsertIndex === "number") {
-          addBlock(newBlock, finalInsertIndex);
-        } else {
-          addBlock(newBlock);
-        }
-        // Delay resetting the active sidebar item slightly to let the dropAnimation prop (activeSidebarItem ? null : undefined) evaluate to null and instantly hide the overlay
-        setTimeout(() => {
-          setActiveSidebarItem(null);
-        }, 0);
-      } else {
-        setActiveSidebarItem(null);
-      }
-      return;
-    }
-
-    setActiveSidebarItem(null);
-    if (!over) return;
-
-    // Standard canvas reordering
-    if (active.id === over.id) return;
-    
-    let toIndex = -1;
-    if (over.id === CANVAS_ROOT_ID) {
-      if (blocks.length > 0) {
-        let isTop = false;
-        const firstBlockEl = document.getElementById(blocks[0].id);
-        if (firstBlockEl) {
-          const rect = firstBlockEl.getBoundingClientRect();
-          if (mouseClientY.current < rect.top + rect.height / 2) {
-            isTop = true;
-          }
-        } else if (over.rect) {
-          const canvasCenterY = over.rect.top + over.rect.height / 2;
-          isTop = mouseClientY.current < canvasCenterY;
-        }
-        toIndex = isTop ? 0 : blocks.length;
-      } else {
-        toIndex = 0;
-      }
-    } else {
-      const sortableIndex = over.data.current?.sortable?.index;
-      if (typeof sortableIndex === "number") {
-        toIndex = sortableIndex;
-      } else {
-        toIndex = blocks.findIndex((b) => b.id === over.id);
-      }
-    }
-
-    if (toIndex !== -1) {
-      if (selectedBlockIds.includes(active.id as string) && selectedBlockIds.length > 1) {
-        moveBlocks(selectedBlockIds, toIndex);
-      } else {
-        moveBlocks([active.id as string], toIndex);
-      }
-    }
-  }, [insertIndex, blocks, addBlock, moveBlocks, selectedBlockIds]);
-
-  // Initial load
-  useEffect(() => {
-    initRegistry();
-    const saved = localStorage.getItem("next-md-editor-blocks");
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setBlocks(parsed);
-          setIsLoaded(true);
-          setSaveStatus("saved");
-          return;
-        }
-      } catch (e) {
-        console.error("Failed to parse saved blocks:", e);
-      }
-    }
-
-    // Default fallback demo markdown
-    const DEMO_MARKDOWN = `# ⚡ Next MD Editor - Ultimate Demo
-
-Welcome to your next-generation, block-based markdown editor workspace. Designed for ultimate speed, visual excellence, and complete GFM compatibility.
-
----
-
-> [!TIP] Pro Tip
-> Use the left handle to drag and drop elements. Try selecting multiple blocks by holding **Shift** to perform bulk moves or bulk deletes!
-
----
-
-### 🚀 Key Editor Features
-
-* **Slash Commands Palette:** Press \`/\` inside a paragraph to trigger inline transformation controls.
-* **Smart Keyboard Indentation:** Use \`Tab\` to indent lists or \`Shift+Tab\` to outdent them instantly.
-* **Interactive Resizable Layouts:** Click and drag the left palette border or right preview border to resize sidebars to your liking.
-
----
-
-### 🔢 List Formatting & Cycling Markers
-
-1. Decimal list marker for root elements (e.g. \`1.\`, \`2.\`)
-   1. Roman numeral marker for level 1 indentation (e.g. \`i.\`, \`ii.\`)
-      1. Alphabetical marker for level 2 indentation (e.g. \`a.\`, \`b.\`)
-
----
-
-### 🛠️ Developer Code Editor
-
-\`\`\`ts
-// High-performance tokenization pipeline
-export function highlightCode(code: string, lang: string): string {
-  const safe = escapeHtml(code);
-  const stashed = stashComments(safe);
-  return restoreTokens(applyRegex(stashed, lang));
-}
-\`\`\`
-
----
-
-### 🌟 Design Grid Assets
-_A showcase of visual abstract card grids inside a responsive 3-column container._
-
-| | | |
-|---|---|---|
-| ![Fluid abstract shapes](https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=600&auto=format&fit=crop) | ![Glossy 3D composition](https://images.unsplash.com/photo-1634017839464-5c339ebe3cb4?q=80&w=600&auto=format&fit=crop) | ![Architectural patterns](https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=600&auto=format&fit=crop) |
-`;
-
-    const parsedBlocks = parseMarkdown(DEMO_MARKDOWN);
-    setBlocks(parsedBlocks);
-    setIsLoaded(true);
-    setSaveStatus("saved");
-  }, [setBlocks]);
-
-  // Persist to localStorage with 600ms debounce
-  useEffect(() => {
-    if (!isLoaded || blocks.length === 0) return;
-
-    setSaveStatus("saving");
-    const timer = setTimeout(() => {
-      localStorage.setItem("next-md-editor-blocks", JSON.stringify(blocks));
-      setSaveStatus("saved");
-    }, 600);
-
-    return () => clearTimeout(timer);
-  }, [blocks, isLoaded]);
-
-  // Global Undo / Redo keyboard shortcuts
-  useEffect(() => {
-    const handleGlobalKeyDown = (e: KeyboardEvent) => {
-      // Skip global undo/redo when the user is actively typing inside a
-      // contentEditable element (paragraph, heading, table cell, etc.)
-      // This lets the browser handle per-keystroke native text undo instead.
-      const activeEl = document.activeElement as HTMLElement | null;
-      if (activeEl && activeEl.contentEditable === "true") {
-        return;
-      }
-
-      const isMeta = e.ctrlKey || e.metaKey;
-      if (isMeta && e.key.toLowerCase() === "z") {
-        e.preventDefault();
-        if (e.shiftKey) {
-          redo();
-        } else {
-          undo();
-        }
-      } else if (isMeta && e.key.toLowerCase() === "y") {
-        e.preventDefault();
-        redo();
-      }
-    };
-
-    window.addEventListener("keydown", handleGlobalKeyDown);
-    return () => window.removeEventListener("keydown", handleGlobalKeyDown);
-  }, [undo, redo]);
-
-  const startResizeSidebar = (mouseDownEvent: React.MouseEvent) => {
-    mouseDownEvent.preventDefault();
-    setIsResizingSidebar(true);
-    const startX = mouseDownEvent.clientX;
-    const startWidth = sidebarWidth;
-
-    const doResize = (mouseMoveEvent: MouseEvent) => {
-      const deltaX = mouseMoveEvent.clientX - startX;
-      const newWidth = Math.max(120, Math.min(480, startWidth + deltaX));
-      setSidebarWidth(newWidth);
-    };
-
-    const stopResize = () => {
-      setIsResizingSidebar(false);
-      document.removeEventListener("mousemove", doResize);
-      document.removeEventListener("mouseup", stopResize);
-    };
-
-    document.addEventListener("mousemove", doResize);
-    document.addEventListener("mouseup", stopResize);
-  };
-
-  const startResizePreview = (mouseDownEvent: React.MouseEvent) => {
-    mouseDownEvent.preventDefault();
-    setIsResizingPreview(true);
-    const startX = mouseDownEvent.clientX;
-    const startWidth = previewWidth;
-
-    const doResize = (mouseMoveEvent: MouseEvent) => {
-      const deltaX = mouseMoveEvent.clientX - startX;
-      const newWidth = Math.max(200, Math.min(1000, startWidth - deltaX));
-      setPreviewWidth(newWidth);
-    };
-
-    const stopResize = () => {
-      setIsResizingPreview(false);
-      document.removeEventListener("mousemove", doResize);
-      document.removeEventListener("mouseup", stopResize);
-    };
-
-    document.addEventListener("mousemove", doResize);
-    document.addEventListener("mouseup", stopResize);
-  };
-
-  const customCollisionDetection: CollisionDetection = useCallback((args) => {
-    // Use closestCenter for all dragging to guarantee robust block-level target resolution
-    return closestCenter(args);
-  }, []);
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, [setIsMobile]);
 
   if (!mounted) {
     return (
@@ -461,7 +79,7 @@ _A showcase of visual abstract card grids inside a responsive 3-column container
         <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
           <div
             style={{
-              width: sidebarWidth,
+              width: 220,
               background: "var(--bg-elevated)",
               borderRight: "1px solid var(--border)",
             }}
@@ -483,310 +101,43 @@ _A showcase of visual abstract card grids inside a responsive 3-column container
         userSelect: isResizingSidebar || isResizingPreview ? "none" : "auto",
       }}
     >
-      <EditorToolbar
-        previewOpen={isMobile ? mobileTab === "preview" : previewOpen}
-        onTogglePreview={() => {
-          if (isMobile) {
-            setMobileTab((curr) => (curr === "preview" ? "editor" : "preview"));
-          } else {
-            setPreviewOpen((v) => !v);
-          }
-        }}
-        saveStatus={saveStatus}
-      />
-      <DndContext
-        sensors={sensors}
-        collisionDetection={customCollisionDetection}
-        onDragStart={handleDragStart}
-        onDragOver={handleDragOver}
-        onDragEnd={handleDragEnd}
-      >
-        <div style={{ display: "flex", flex: 1, overflow: "hidden", position: "relative" }}>
+      <EditorToolbar />
+
+      <DragDropProvider sensors={sensors} onDragEnd={handleDragEnd}>
+        <div
+          style={{
+            display: "flex",
+            flex: 1,
+            overflow: "hidden",
+            position: "relative",
+          }}
+        >
           {isMobile ? (
             <>
-              {mobileTab === "blocks" && (
-                <EditorSidebar
-                  width={undefined}
-                  onBlockAdded={() => setMobileTab("editor")}
-                />
-              )}
-              {mobileTab === "editor" && (
-                <EditorCanvas
-                  activeSidebarItem={activeSidebarItem}
-                  insertIndex={insertIndex}
-                />
-              )}
-              {mobileTab === "preview" && <MarkdownPreview width={undefined} />}
+              {mobileTab === "blocks" && <EditorSidebar />}
+              {mobileTab === "editor" && <EditorCanvas />}
+              {mobileTab === "preview" && <MarkdownPreview />}
             </>
           ) : (
             <>
-              <EditorSidebar width={sidebarWidth ?? 220} />
-
-              {/* Sidebar Resize Bar */}
-              <div
-                onMouseDown={startResizeSidebar}
-                style={{
-                  width: 8,
-                  cursor: "col-resize",
-                  background: isResizingSidebar
-                    ? "var(--accent-muted)"
-                    : "transparent",
-                  zIndex: 10,
-                  transition: "background-color 0.15s ease",
-                  alignSelf: "stretch",
-                  marginLeft: -4,
-                  marginRight: -4,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-                onMouseEnter={(e) => {
-                  if (!isResizingSidebar)
-                    e.currentTarget.style.background = "var(--bg-hover)";
-                }}
-                onMouseLeave={(e) => {
-                  if (!isResizingSidebar)
-                    e.currentTarget.style.background = "transparent";
-                }}
-              >
-                <div
-                  style={{
-                    color: "var(--text-muted)",
-                    opacity: isResizingSidebar ? 1 : 0.5,
-                    pointerEvents: "none",
-                  }}
-                >
-                  <GripVertical size={12} />
-                </div>
-              </div>
-
-              <EditorCanvas
-                activeSidebarItem={activeSidebarItem}
-                insertIndex={insertIndex}
-              />
-
+              <EditorSidebar />
+              <ResizeBar pane="sidebar" />
+              <EditorCanvas />
               {previewOpen && (
                 <>
-                  {/* Preview Resize Bar */}
-                  <div
-                    onMouseDown={startResizePreview}
-                    style={{
-                      width: 8,
-                      cursor: "col-resize",
-                      background: isResizingPreview
-                        ? "var(--accent-muted)"
-                        : "transparent",
-                      zIndex: 10,
-                      transition: "background-color 0.15s ease",
-                      alignSelf: "stretch",
-                      marginLeft: -4,
-                      marginRight: -4,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!isResizingPreview)
-                        e.currentTarget.style.background = "var(--bg-hover)";
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!isResizingPreview)
-                        e.currentTarget.style.background = "transparent";
-                    }}
-                  >
-                    <div
-                      style={{
-                        color: "var(--text-muted)",
-                        opacity: isResizingPreview ? 1 : 0.5,
-                        pointerEvents: "none",
-                      }}
-                    >
-                      <GripVertical size={12} />
-                    </div>
-                  </div>
-                  <MarkdownPreview width={previewWidth} />
+                  <ResizeBar pane="preview" />
+                  <MarkdownPreview />
                 </>
               )}
             </>
           )}
         </div>
 
-        <DragOverlay
-          adjustScale={false}
-          dropAnimation={activeSidebarItem ? null : undefined}
-        >
-          {activeId ? (
-            <div
-              style={{
-                borderRadius: "var(--radius-md)",
-                border: "1px solid var(--accent)",
-                background: "var(--bg-elevated)",
-                boxShadow: "var(--shadow-lg)",
-                padding: "8px 12px",
-                cursor: "grabbing",
-                opacity: 0.9,
-              }}
-            >
-              {(() => {
-                const activeBlock = blocks.find((b) => b.id === activeId);
-                const isMultiDrag = selectedBlockIds.includes(activeId as string) && selectedBlockIds.length > 1;
-                
-                return activeBlock ? (
-                  <div style={{ position: "relative" }}>
-                    <BlockRenderer block={activeBlock} />
-                    {isMultiDrag && (
-                      <div
-                        style={{
-                          position: "absolute",
-                          top: -10,
-                          right: -10,
-                          background: "var(--accent)",
-                          color: "white",
-                          fontSize: 12,
-                          fontWeight: "bold",
-                          width: 24,
-                          height: 24,
-                          borderRadius: "50%",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          boxShadow: "var(--shadow-sm)",
-                          zIndex: 10,
-                        }}
-                      >
-                        {selectedBlockIds.length}
-                      </div>
-                    )}
-                  </div>
-                ) : null;
-              })()}
-            </div>
-          ) : activeSidebarItem ? (
-            <div
-              style={{
-                padding: "8px 16px",
-                background: "var(--accent)",
-                color: "white",
-                borderRadius: "var(--radius-md)",
-                fontSize: 13,
-                fontWeight: 600,
-                boxShadow: "var(--shadow-lg)",
-                cursor: "grabbing",
-                pointerEvents: "none",
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-              }}
-            >
-              Adding {activeSidebarItem.label}...
-            </div>
-          ) : null}
-        </DragOverlay>
-      </DndContext>
- 
-      {isMobile && (
-        <div
-          style={{
-            width: "100%",
-            height: 42,
-            background: "var(--bg-surface)",
-            borderTop: "1px solid var(--border-subtle)",
-            display: "flex",
-            justifyContent: "space-around",
-            alignItems: "center",
-            boxShadow: "0 -2px 10px rgba(0, 0, 0, 0.05)",
-            zIndex: 9999,
-            flexShrink: 0,
-          }}
-        >
-          {/* Blocks Tab */}
-          <button
-            onClick={() => setMobileTab("blocks")}
-            style={{
-              flex: 1,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 2,
-              border: "none",
-              background: "transparent",
-              color: mobileTab === "blocks" ? "var(--accent)" : "var(--text-secondary)",
-              cursor: "pointer",
-              transition: "all 0.2s ease",
-              padding: "2px 0",
-              height: "100%",
-            }}
-          >
-            <LayoutGrid 
-              size={14} 
-              style={{
-                transform: mobileTab === "blocks" ? "scale(1.08)" : "scale(1)",
-                transition: "transform 0.2s ease",
-              }} 
-            />
-            <span style={{ fontSize: 9.5, fontWeight: 600, letterSpacing: "0.01em" }}>Blocks</span>
-          </button>
-  
-          {/* Canvas Tab */}
-          <button
-            onClick={() => setMobileTab("editor")}
-            style={{
-              flex: 1,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 2,
-              border: "none",
-              background: "transparent",
-              color: mobileTab === "editor" ? "var(--accent)" : "var(--text-secondary)",
-              cursor: "pointer",
-              transition: "all 0.2s ease",
-              padding: "2px 0",
-              height: "100%",
-            }}
-          >
-            <Edit3 
-              size={14} 
-              style={{
-                transform: mobileTab === "editor" ? "scale(1.08)" : "scale(1)",
-                transition: "transform 0.2s ease",
-              }} 
-            />
-            <span style={{ fontSize: 9.5, fontWeight: 600, letterSpacing: "0.01em" }}>Canvas</span>
-          </button>
-  
-          {/* Preview Tab */}
-          <button
-            onClick={() => setMobileTab("preview")}
-            style={{
-              flex: 1,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 2,
-              border: "none",
-              background: "transparent",
-              color: mobileTab === "preview" ? "var(--accent)" : "var(--text-secondary)",
-              cursor: "pointer",
-              transition: "all 0.2s ease",
-              padding: "2px 0",
-              height: "100%",
-            }}
-          >
-            <Eye 
-              size={14} 
-              style={{
-                transform: mobileTab === "preview" ? "scale(1.08)" : "scale(1)",
-                transition: "transform 0.2s ease",
-              }} 
-            />
-            <span style={{ fontSize: 9.5, fontWeight: 600, letterSpacing: "0.01em" }}>Preview</span>
-          </button>
-        </div>
-      )}
+        {/* ActiveDragOverlay must be inside DragDropProvider to use useDragOperation() */}
+        <ActiveDragOverlay />
+      </DragDropProvider>
+
+      {isMobile && <MobileBottomBar />}
     </div>
   );
 }
