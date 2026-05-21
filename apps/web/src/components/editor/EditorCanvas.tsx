@@ -2,57 +2,116 @@
 
 import { useEditorStore } from "@next-md-editor/editor-core";
 import { BlockRenderer } from "./BlockRenderer";
-import {
-  SortableContext,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
-import { useDroppable } from "@dnd-kit/core";
+import { useDroppable, useDragOperation, useDragDropMonitor, useDragDropManager } from "@dnd-kit/react";
+import type { DragOverEvent, DragEndEvent } from "@dnd-kit/react";
 import { SortableBlock } from "./SortableBlock";
 import { BlockRegistry } from "@next-md-editor/editor-core";
-import { useMemo } from "react";
+import { useState, useRef, useMemo } from "react";
 
 export const CANVAS_ROOT_ID = "canvas-root";
-export const SIDEBAR_PLACEHOLDER_ID = "sidebar-placeholder";
 
-interface EditorCanvasProps {
-  activeSidebarItem: { type: string; label: string } | null;
-  insertIndex: number | null;
-}
-
-export function EditorCanvas({ activeSidebarItem, insertIndex }: EditorCanvasProps) {
+export function EditorCanvas() {
   const blocks = useEditorStore((s) => s.blocks);
-  
-  const { setNodeRef } = useDroppable({
-    id: CANVAS_ROOT_ID,
-  });
+  const manager = useDragDropManager();
 
-  const isDraggingSidebarItem = !!activeSidebarItem;
+  // Keep a stable ref so the memoized monitor handlers always see current blocks
+  // without needing to be re-created (which would cause re-subscription churn)
+  const blocksRef = useRef(blocks);
+  blocksRef.current = blocks;
 
+  // Droppable canvas root — the whole canvas is a valid drop target
+  const { ref } = useDroppable({ id: CANVAS_ROOT_ID });
+
+  // ── Reactive drag state from library (no manual state needed) ─────────────
+  const { source } = useDragOperation();
+  const isSidebarDrag = source?.data?.isSidebarItem === true;
+  const activeSidebarItem = isSidebarDrag
+    ? (source!.data as { type: string; label: string })
+    : null;
+
+  // Local state for the visual insert indicator — computed by the monitor below
+  const [insertIndex, setInsertIndex] = useState<number | null>(null);
+
+  // Remount nonce to resolve React/DOM reconciliation desync caused by DndKit's OptimisticSortingPlugin
+  const [dragNonce, setDragNonce] = useState(0);
+
+  // ── useDragDropMonitor: react to drag events without prop drilling ─────────
+  // handlers is memoized with [manager] deps so it stays stable.
+  // blocksRef provides always-fresh blocks data inside the stable closures.
+  const monitorHandlers = useMemo(
+    () => ({
+      onDragOver({ operation }: DragOverEvent) {
+        const s = operation.source;
+        const t = operation.target;
+        if (!s?.data?.isSidebarItem || !t || !manager) return;
+
+        const currentBlocks = blocksRef.current;
+        const targetId = t.id as string;
+        const cursorY = operation.position.current.y;
+
+        if (targetId === CANVAS_ROOT_ID) {
+          if (currentBlocks.length === 0) {
+            setInsertIndex(0);
+          } else {
+            const firstDroppable = manager.registry.droppables.get(currentBlocks[0].id);
+            const rect =
+              firstDroppable?.shape?.boundingRectangle ??
+              firstDroppable?.element?.getBoundingClientRect();
+            if (rect) {
+              setInsertIndex(
+                cursorY < rect.top + rect.height / 2
+                  ? 0
+                  : currentBlocks.length,
+              );
+            } else {
+              setInsertIndex(currentBlocks.length);
+            }
+          }
+        } else if (!targetId.startsWith("placeholder-")) {
+          const idx = currentBlocks.findIndex((b) => b.id === targetId);
+          if (idx !== -1) {
+            let newIdx = idx;
+            const rect = t.shape?.boundingRectangle ?? t.element?.getBoundingClientRect();
+            if (rect) {
+              if (cursorY > rect.top + rect.height / 2) newIdx++;
+            }
+            setInsertIndex(newIdx);
+          }
+        }
+        // If hovering over own placeholder → keep current insertIndex (no flicker)
+      },
+
+      onDragEnd(_event: DragEndEvent) {
+        setInsertIndex(null);
+        setDragNonce((prev) => prev + 1);
+      },
+    }),
+    [manager],
+  );
+
+  useDragDropMonitor(monitorHandlers);
+
+  // ── Build display list — splice placeholder at insert position ─────────────
   const displayBlocks = useMemo(() => {
-    if (isDraggingSidebarItem && insertIndex !== null && activeSidebarItem) {
+    if (isSidebarDrag && insertIndex !== null && activeSidebarItem) {
       const type = activeSidebarItem.type;
       const def = BlockRegistry.get(type);
-      const placeholderBlock = {
+      const placeholder = {
         id: `placeholder-${type}`,
         type,
-        props: { ...(def?.defaultProps ?? {}) }
+        props: { ...(def?.defaultProps ?? {}) },
       };
-      
-      const newBlocks = [...blocks];
-      const safeIndex = Math.max(0, Math.min(insertIndex, blocks.length));
-      newBlocks.splice(safeIndex, 0, placeholderBlock);
-      return newBlocks;
+      const next = [...blocks];
+      const safeIdx = Math.max(0, Math.min(insertIndex, blocks.length));
+      next.splice(safeIdx, 0, placeholder);
+      return next;
     }
     return blocks;
-  }, [blocks, isDraggingSidebarItem, insertIndex, activeSidebarItem]);
-
-  const sortableItems = useMemo(() => {
-    return displayBlocks.map(b => b.id);
-  }, [displayBlocks]);
+  }, [blocks, isSidebarDrag, insertIndex, activeSidebarItem]);
 
   return (
     <main
-      ref={setNodeRef}
+      ref={ref}
       className="editor-canvas-container"
       style={{
         flex: 1,
@@ -60,33 +119,32 @@ export function EditorCanvas({ activeSidebarItem, insertIndex }: EditorCanvasPro
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        padding: "40px 24px",
+        padding: "60px 48px",
         background: "var(--bg-base)",
       }}
     >
-      <div style={{ width: "100%", maxWidth: 720, minHeight: "100%" }}>
-        {blocks.length === 0 && !isDraggingSidebarItem && <EmptyState />}
-        
-        <SortableContext
-          items={sortableItems}
-          strategy={verticalListSortingStrategy}
-        >
-          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            {displayBlocks.map((block) => {
-              const isPlaceholder = isDraggingSidebarItem && block.id === `placeholder-${block.type}`;
-              return (
-                <SortableBlock 
-                  key={block.id} 
-                  id={block.id}
-                  block={block}
-                  isPlaceholder={isPlaceholder}
-                >
-                  <BlockRenderer block={block} />
-                </SortableBlock>
-              );
-            })}
-          </div>
-        </SortableContext>
+      {/* paddingBottom mirrors the top 60px so the last block has identical breathing room */}
+      <div style={{ width: "100%", maxWidth: 720, paddingBottom: 60 }}>
+        {blocks.length === 0 && !isSidebarDrag && <EmptyState />}
+
+        {/* No SortableContext — each useSortable registers with the manager directly */}
+        <div key={dragNonce} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {displayBlocks.map((block, blockIdx) => {
+            const isPlaceholder =
+              isSidebarDrag && block.id === `placeholder-${block.type}`;
+            return (
+              <SortableBlock
+                key={block.id}
+                id={block.id}
+                block={block}
+                isPlaceholder={isPlaceholder}
+                index={blockIdx}
+              >
+                <BlockRenderer block={block} />
+              </SortableBlock>
+            );
+          })}
+        </div>
       </div>
     </main>
   );

@@ -1,7 +1,6 @@
 "use client";
 
-import { useSortable, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
+import { useSortable } from "@dnd-kit/react/sortable";
 import { useEditorStore, BlockRegistry } from "@next-md-editor/editor-core";
 import type { Block } from "@next-md-editor/types";
 import { GripVertical, X } from "lucide-react";
@@ -14,20 +13,22 @@ export function SortableBlock({
   block,
   children,
   isPlaceholder,
+  index,
+  group,
 }: {
   id: string;
   block?: Block;
   children: React.ReactNode;
   isPlaceholder?: boolean;
+  /** Position of this item within its sortable list — required by new API */
+  index: number;
+  /** Optional group ID to scope sorting (use parent block ID for nested lists) */
+  group?: string;
 }) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id });
+  // New API: ref → element node, handleRef → drag handle node.
+  // No transform/transition — OptimisticSortingPlugin handles visual reordering.
+  const { ref, handleRef, isDragging } = useSortable({ id, index, group });
+
   const removeBlocks = useEditorStore((s) => s.removeBlocks);
   const selectBlock = useEditorStore((s) => s.selectBlock);
   const selectedBlockIds = useEditorStore((s) => s.selectedBlockIds);
@@ -36,20 +37,14 @@ export function SortableBlock({
 
   const isSelected = selectedBlockIds.includes(id);
 
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isPlaceholder ? 1 : isDragging ? 0.3 : 1,
-    pointerEvents: (isPlaceholder ? "none" : "auto") as "none" | "auto",
-  };
-
+  // ── Placeholder rendering (sidebar drag insert indicator) ──────────────────
   if (isPlaceholder) {
     return (
       <div
-        ref={setNodeRef}
+        ref={ref}
         id={id}
         style={{
-          ...style,
+          pointerEvents: "none",
           position: "relative",
           width: "100%",
           padding: "6px 0",
@@ -64,7 +59,7 @@ export function SortableBlock({
             width: "100%",
           }}
         >
-          {/* Circular anchor dot on the left side */}
+          {/* Circular anchor dot */}
           <div
             style={{
               position: "absolute",
@@ -86,16 +81,16 @@ export function SortableBlock({
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
       <div
-        ref={setNodeRef}
+        ref={ref}
         id={id}
         style={{
-          ...style,
+          opacity: isDragging ? 0.3 : 1,
           position: "relative",
           borderRadius: "var(--radius-md)",
-          border: (isDragging || isPlaceholder)
+          border: isDragging
             ? "1.5px dashed var(--accent)"
             : `1px solid ${isSelected ? "var(--accent)" : hovered ? "var(--border)" : "transparent"}`,
-          background: (isDragging || isPlaceholder)
+          background: isDragging
             ? "var(--accent-muted)"
             : isSelected
               ? "var(--accent-muted)"
@@ -109,7 +104,7 @@ export function SortableBlock({
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
       >
-        {/* Drag handle wrapper */}
+        {/* Drag handle — handleRef registers this element as the activation handle */}
         <div
           style={{
             position: "absolute",
@@ -123,8 +118,7 @@ export function SortableBlock({
           }}
         >
           <div
-            {...attributes}
-            {...listeners}
+            ref={handleRef}
             className="drag-handle-grip"
             title="Drag to reorder"
             style={{
@@ -134,22 +128,26 @@ export function SortableBlock({
               alignItems: "center",
               justifyContent: "center",
               cursor: "grab",
-              color: hovered || isSelected ? "var(--text-muted)" : "transparent",
+              color:
+                hovered || isSelected ? "var(--text-muted)" : "transparent",
               transition: "color 0.15s",
               borderRadius: 4,
               userSelect: "none",
               touchAction: "none",
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = "var(--accent)")}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.color = "var(--accent)")
+            }
             onMouseLeave={(e) =>
-              (e.currentTarget.style.color = hovered || isSelected ? "var(--text-muted)" : "transparent")
+              (e.currentTarget.style.color =
+                hovered || isSelected ? "var(--text-muted)" : "transparent")
             }
           >
             <GripVertical size={16} />
           </div>
         </div>
 
-        {/* Delete button wrapper */}
+        {/* Delete button */}
         {(hovered || isSelected) && (
           <div
             style={{
@@ -166,7 +164,10 @@ export function SortableBlock({
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                if (selectedBlockIds.includes(id) && selectedBlockIds.length > 1) {
+                if (
+                  selectedBlockIds.includes(id) &&
+                  selectedBlockIds.length > 1
+                ) {
                   removeBlocks(selectedBlockIds);
                 } else {
                   removeBlocks([id]);
@@ -186,7 +187,9 @@ export function SortableBlock({
                 borderRadius: 4,
                 padding: 0,
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = "var(--danger)")}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.color = "var(--danger)")
+              }
               onMouseLeave={(e) =>
                 (e.currentTarget.style.color = "var(--text-muted)")
               }
@@ -199,27 +202,34 @@ export function SortableBlock({
         <div style={{ padding: "6px 12px" }}>{children}</div>
       </div>
 
-      {/* Render nested children in an indented SortableContext */}
+      {/* Nested children — scoped to this block via group={id} */}
       {hasChildren && (
-        <div style={{ paddingLeft: 28, borderLeft: "2px solid var(--border-subtle)", marginLeft: 16 }}>
+        <div
+          style={{
+            paddingLeft: 28,
+            borderLeft: "2px solid var(--border-subtle)",
+            marginLeft: 16,
+          }}
+        >
           <BlockDepthContext.Provider value={depth + 1}>
-            <SortableContext
-              items={block!.children!.map((c) => c.id)}
-              strategy={verticalListSortingStrategy}
-            >
-              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                {block!.children!.map((childBlock) => {
-                  const def = BlockRegistry.get(childBlock.type);
-                  if (!def) return null;
-                  const Component = def.component;
-                  return (
-                    <SortableBlock key={childBlock.id} id={childBlock.id} block={childBlock}>
-                      <Component block={childBlock} />
-                    </SortableBlock>
-                  );
-                })}
-              </div>
-            </SortableContext>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              {block!.children!.map((childBlock, childIdx) => {
+                const def = BlockRegistry.get(childBlock.type);
+                if (!def) return null;
+                const Component = def.component;
+                return (
+                  <SortableBlock
+                    key={childBlock.id}
+                    id={childBlock.id}
+                    block={childBlock}
+                    index={childIdx}
+                    group={id}
+                  >
+                    <Component block={childBlock} />
+                  </SortableBlock>
+                );
+              })}
+            </div>
           </BlockDepthContext.Provider>
         </div>
       )}

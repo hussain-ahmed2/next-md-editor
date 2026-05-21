@@ -48,7 +48,7 @@ function markdownListToHtml(lines: string[], isNumbered: boolean): string {
   lines.forEach((line) => {
     const spaces = line.match(/^(\s*)/)?.[1].length ?? 0;
     const depth = spaces >= 4 ? Math.floor(spaces / 4) : Math.floor(spaces / 2);
-    const content = line.replace(/^\s*([-*]|[a-zA-Z0-9]+)\.\s+/, "");
+    const content = line.replace(/^\s*(?:([-*])\s+|([a-zA-Z0-9]+)\.\s+)/, "");
 
     while (depth > currentDepth) {
       const tag = isNumbered ? "ol" : "ul";
@@ -223,16 +223,41 @@ export function parseMarkdown(markdown: string): Block[] {
       continue;
     }
 
-    // 5. Blockquotes (> quote)
+    // 5. GFM Callout Alerts (> [!NOTE]) — must run BEFORE generic blockquote check
+    //    because both start with ">" and the blockquote handler would consume callouts first.
+    const calloutHeaderMatch = trimmed.match(/^>\s*\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]$/i);
+    if (calloutHeaderMatch) {
+      const type = calloutHeaderMatch[1].toLowerCase();
+      const bodyLines: string[] = [];
+      i++; // Skip the header line
+
+      while (i < lines.length && lines[i].trim().startsWith(">")) {
+        const rawBodyLine = lines[i].trim().slice(1);
+        bodyLines.push(rawBodyLine.startsWith(" ") ? rawBodyLine.slice(1) : rawBodyLine);
+        i++;
+      }
+
+      blocks.push({
+        id: uuidv4(),
+        type: "callout",
+        props: {
+          type,
+          text: bodyLines.join("\n"),
+        },
+      });
+      continue;
+    }
+
+    // 6. Blockquotes (> quote)
     if (trimmed.startsWith(">")) {
       const quoteLines: string[] = [];
-      
+
       while (i < lines.length && lines[i].trim().startsWith(">")) {
         const content = lines[i].trim().slice(1);
         quoteLines.push(content.startsWith(" ") ? content.slice(1) : content);
         i++;
       }
-      
+
       blocks.push({
         id: uuidv4(),
         type: "quote",
@@ -243,7 +268,7 @@ export function parseMarkdown(markdown: string): Block[] {
       continue;
     }
 
-    // 6. GFM Images (![alt](url))
+    // 7. GFM Images (![alt](url))
     const imageMatch = trimmed.match(/^!\[(.*?)\]\((.*?)\)$/);
     if (imageMatch) {
       blocks.push({
@@ -255,30 +280,6 @@ export function parseMarkdown(markdown: string): Block[] {
         },
       });
       i++;
-      continue;
-    }
-
-    // 7. GFM Callout Alerts (> [!NOTE])
-    const calloutHeaderMatch = trimmed.match(/^>\s*\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]$/i);
-    if (calloutHeaderMatch) {
-      const type = calloutHeaderMatch[1].toLowerCase();
-      const bodyLines: string[] = [];
-      i++; // Skip the header line
-      
-      while (i < lines.length && lines[i].trim().startsWith(">")) {
-        const rawBodyLine = lines[i].trim().slice(1);
-        bodyLines.push(rawBodyLine.startsWith(" ") ? rawBodyLine.slice(1) : rawBodyLine);
-        i++;
-      }
-      
-      blocks.push({
-        id: uuidv4(),
-        type: "callout",
-        props: {
-          type,
-          text: bodyLines.join("\n"),
-        },
-      });
       continue;
     }
 
@@ -318,11 +319,22 @@ export function parseMarkdown(markdown: string): Block[] {
               continue;
             }
             const imgMatch = cleanCell.match(/^!\[(.*?)\]\((.*?)\)$/);
+            const htmlImgMatch = cleanCell.match(/<img\s+[^>]*src="([^"]+)"[^>]*>/i);
+            
             if (imgMatch) {
               gridImages.push({
                 id: Math.random().toString(36).substring(7),
                 alt: imgMatch[1],
                 url: imgMatch[2],
+              });
+            } else if (htmlImgMatch) {
+              const src = htmlImgMatch[1];
+              const altMatch = cleanCell.match(/alt="([^"]*)"/i);
+              const alt = altMatch ? altMatch[1] : "";
+              gridImages.push({
+                id: Math.random().toString(36).substring(7),
+                alt,
+                url: src,
               });
             } else {
               isImageGrid = false;
@@ -490,7 +502,7 @@ function serializeBlock(block: Block, indentLevel: number = 0): string {
       const rows: string[][] = [];
       let currentRow: string[] = [];
       images.forEach((img) => {
-        currentRow.push(`![${img.alt || "Image"}](${img.url})`);
+        currentRow.push(`<img src="${img.url}" alt="${img.alt || "Image"}" height="200" width="100%" style="object-fit: cover;" />`);
         if (currentRow.length === cols) {
           rows.push(currentRow);
           currentRow = [];

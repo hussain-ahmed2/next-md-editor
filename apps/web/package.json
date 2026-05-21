@@ -14,16 +14,21 @@
     },
     "dependencies": {
         "@dnd-kit/core": "^6.3.1",
+        "@dnd-kit/react": "^0.4.0",
         "@dnd-kit/sortable": "^10.0.0",
         "@dnd-kit/utilities": "^3.2.2",
         "@next-md-editor/editor-core": "*",
         "@next-md-editor/markdown": "*",
         "@next-md-editor/types": "*",
         "@types/uuid": "^10.0.0",
+        "highlight.js": "^11.11.1",
         "lucide-react": "^1.16.0",
+        "marked": "^18.0.4",
         "next": "16.2.6",
         "react": "19.2.4",
         "react-dom": "19.2.4",
+        "react-markdown": "^10.1.0",
+        "remark-gfm": "^4.0.1",
         "uuid": "^14.0.0"
     },
     "devDependencies": {

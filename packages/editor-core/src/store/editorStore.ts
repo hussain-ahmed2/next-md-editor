@@ -36,6 +36,21 @@ function findBlockContext(blocks: Block[], id: string, parent: Block | null = nu
   return null;
 }
 
+function hasAncestorInSet(blocks: Block[], id: string, idsSet: Set<string>): boolean {
+  let currentId: string | null = id;
+  while (currentId) {
+    const ctx = findBlockContext(blocks, currentId);
+    if (!ctx || !ctx.parent) {
+      break;
+    }
+    if (idsSet.has(ctx.parent.id)) {
+      return true;
+    }
+    currentId = ctx.parent.id;
+  }
+  return false;
+}
+
 /**
  * Renumbers consecutive numbered-list paragraph blocks within a list.
  * Resets the counter when a non-numbered block is encountered.
@@ -152,9 +167,18 @@ export const useEditorStore = create<EditorState & HistoryState>((set, get) => (
   moveBlocks: (ids: string[], toIndex: number, toParentId?: string | null) => {
     const state = get();
     const [nextState, patches, inversePatches] = produceWithPatches(state.blocks, draft => {
-      const idsSet = new Set(ids);
+      const originalIdsSet = new Set(ids);
+      const filteredIds = ids.filter(id => !hasAncestorInSet(draft, id, originalIdsSet));
+      const idsSet = new Set(filteredIds);
       const blocksToMove: any[] = [];
       
+      // Guard: check if toParentId is or is inside any block being moved
+      if (toParentId) {
+        if (idsSet.has(toParentId) || hasAncestorInSet(draft, toParentId, idsSet)) {
+          return;
+        }
+      }
+
       function extractRecursive(list: Block[]) {
         for (let i = 0; i < list.length; i++) {
           if (idsSet.has(list[i].id)) {

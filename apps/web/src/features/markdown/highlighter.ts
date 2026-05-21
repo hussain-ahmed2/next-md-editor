@@ -1,118 +1,55 @@
+import { marked } from "marked";
+import hljs from "highlight.js";
+
+// ── marked: custom renderer overrides ─────────────────────────────────────────
+// Apply GitHub Dark styling to links and inline code produced by parseInline().
+marked.use({
+  renderer: {
+    link({ href, text }: { href: string; text: string }) {
+      return `<a href="${href}" target="_blank" rel="noopener noreferrer" style="color:#58a6ff;text-decoration:none;font-weight:500;">${text}</a>`;
+    },
+    codespan({ text }: { text: string }) {
+      return `<code style="background:rgba(110,118,129,0.3);padding:2px 4px;border-radius:4px;font-family:ui-monospace,SFMono-Regular,SF Mono,Menlo,Consolas,monospace;font-size:85%;color:#e6edf3;">${text}</code>`;
+    },
+  },
+});
+
+// Map short language aliases used in the editor to highlight.js language ids.
+const LANG_ALIASES: Record<string, string> = {
+  ts: "typescript",
+  tsx: "typescript",
+  js: "javascript",
+  jsx: "javascript",
+};
+
 /**
- * Lightweight, high-performance regex-based syntax highlighter
- * for Javascript, TypeScript, JSON, Bash, Python, HTML, CSS, etc.
- * Emulates GitHub Dark Theme color tokens exactly.
- * 
- * Uses safe late-binding tokens with pure-alphabet indexing to prevent
- * subsequent regexes from matching text/numbers inside HTML style tags.
+ * Syntax-highlights `code` using highlight.js and returns an HTML string.
+ * The resulting spans use hljs CSS classes that are styled by the global
+ * "highlight.js/styles/github-dark.css" import in globals.css.
  */
-
-// Helper to convert indices to alphabetical characters (preventing number-regex matches)
-function toLetters(num: number): string {
-  let r = "";
-  let n = num;
-  while (n >= 0) {
-    r = String.fromCharCode((n % 26) + 97) + r;
-    n = Math.floor(n / 26) - 1;
-  }
-  return r;
-}
-
 export function highlightCodeHtml(code: string, lang: string = "ts"): string {
   if (!code) return "";
-
-  // Escape HTML tags to prevent XSS / broken UI
-  let html = code
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-
-  // 1. Stash Comments with purely alphabetical placeholders
-  const comments: string[] = [];
-  html = html.replace(/(\/\/[^\n]*|\/\*[\s\S]*?\*\/|#[^\n]*)/g, (match) => {
-    comments.push(match);
-    const key = toLetters(comments.length - 1);
-    return `__COMMENTPLACEHOLDER${key}__`;
-  });
-
-  // 2. Stash Strings with purely alphabetical placeholders
-  const strings: string[] = [];
-  html = html.replace(/(["'`])(.*?)\1/g, (match) => {
-    strings.push(match);
-    const key = toLetters(strings.length - 1);
-    return `__STRINGPLACEHOLDER${key}__`;
-  });
-
-  // 3. Mark Keywords
-  const keywords = /\b(const|let|var|function|return|export|import|from|default|if|else|for|while|do|switch|case|break|continue|class|extends|new|this|typeof|instanceof|async|await|try|catch|finally|throw|interface|type|public|private|protected|readonly|any|string|number|boolean|void|null|undefined|as|implements|package|in|of)\b/g;
-  html = html.replace(keywords, "__KW_START__$1__KW_END__");
-
-  // 4. Mark Built-in Objects and Methods
-  html = html.replace(/\b(console|log|warn|error|info|window|document|process|global|require|module|exports|JSON|Math|Object|Array|Promise|Set|Map|String|Number|Boolean|Function|Date|RegExp)\b/g, "__BI_START__$1__BI_END__");
-
-  // 5. Mark Numbers
-  html = html.replace(/\b(\d+)\b/g, "__NUM_START__$1__NUM_END__");
-
-  // 6. Mark Functions / Method execution
-  html = html.replace(/\b([a-zA-Z_][a-zA-Z0-9_]*)(?=\()/g, "__FUNC_START__$1__FUNC_END__");
-
-  // 7. Restore Strings wrapped in styled spans
-  strings.forEach((str, idx) => {
-    const key = toLetters(idx);
-    html = html.replace(`__STRINGPLACEHOLDER${key}__`, `__STR_START__${str}__STR_END__`);
-  });
-
-  // 8. Restore Comments wrapped in styled spans
-  comments.forEach((comment, idx) => {
-    const key = toLetters(idx);
-    html = html.replace(`__COMMENTPLACEHOLDER${key}__`, `__COM_START__${comment}__COM_END__`);
-  });
-
-  // 9. Late-bind all marked tokens to safe HTML tags
-  html = html
-    .replace(/__KW_START__/g, '<span style="color: #ff7b72; font-weight: 500;">')
-    .replace(/__KW_END__/g, "</span>")
-    
-    .replace(/__BI_START__/g, '<span style="color: #79c0ff;">')
-    .replace(/__BI_END__/g, "</span>")
-    
-    .replace(/__NUM_START__/g, '<span style="color: #79c0ff;">')
-    .replace(/__NUM_END__/g, "</span>")
-    
-    .replace(/__FUNC_START__/g, '<span style="color: #d2a8ff;">')
-    .replace(/__FUNC_END__/g, "</span>")
-    
-    .replace(/__STR_START__/g, '<span style="color: #a5d6ff;">')
-    .replace(/__STR_END__/g, "</span>")
-    
-    .replace(/__COM_START__/g, '<span style="color: #8b949e; font-style: italic;">')
-    .replace(/__COM_END__/g, "</span>");
-
-  return html;
+  const resolvedLang = LANG_ALIASES[lang] ?? lang;
+  try {
+    if (hljs.getLanguage(resolvedLang)) {
+      return hljs.highlight(code, { language: resolvedLang }).value;
+    }
+    return hljs.highlightAuto(code).value;
+  } catch {
+    // Fallback: return escaped plain text
+    return code
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+  }
 }
 
+/**
+ * Renders inline markdown (bold, italic, code, links) to an HTML string
+ * using `marked.parseInline()`.
+ */
 export function renderInlineMarkdown(text: string): string {
   if (!text) return "";
-
-  // Escape HTML tags to prevent XSS / broken UI
-  let html = text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-
-  // 1. Bold (**text** or __text__)
-  html = html.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
-  html = html.replace(/__(.*?)__/g, "<strong>$1</strong>");
-
-  // 2. Italics (*text* or _text_)
-  html = html.replace(/\*(.*?)\*/g, "<em>$1</em>");
-  html = html.replace(/_(.*?)_/g, "<em>$1</em>");
-
-  // 3. Inline code (`code`)
-  html = html.replace(/`(.*?)`/g, '<code style="background: rgba(110,118,129,0.3); padding: 2px 4px; border-radius: 4px; font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, monospace; font-size: 85%; color: #e6edf3;">$1</code>');
-
-  // 4. Links ([text](url))
-  html = html.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" style="color: #58a6ff; text-decoration: none; font-weight: 500;">$1</a>');
-
-  return html;
+  // parseInline is synchronous by default (no async renderer configured).
+  return marked.parseInline(text) as string;
 }
