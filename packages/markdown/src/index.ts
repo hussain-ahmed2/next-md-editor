@@ -48,7 +48,7 @@ function markdownListToHtml(lines: string[], isNumbered: boolean): string {
   lines.forEach((line) => {
     const spaces = line.match(/^(\s*)/)?.[1].length ?? 0;
     const depth = spaces >= 4 ? Math.floor(spaces / 4) : Math.floor(spaces / 2);
-    const content = line.replace(/^\s*([-*]|[a-zA-Z0-9]+)\.\s+/, "");
+    const content = line.replace(/^\s*(?:([-*])\s+|([a-zA-Z0-9]+)\.\s+)/, "");
 
     while (depth > currentDepth) {
       const tag = isNumbered ? "ol" : "ul";
@@ -319,11 +319,22 @@ export function parseMarkdown(markdown: string): Block[] {
               continue;
             }
             const imgMatch = cleanCell.match(/^!\[(.*?)\]\((.*?)\)$/);
+            const htmlImgMatch = cleanCell.match(/<img\s+[^>]*src="([^"]+)"[^>]*>/i);
+            
             if (imgMatch) {
               gridImages.push({
                 id: Math.random().toString(36).substring(7),
                 alt: imgMatch[1],
                 url: imgMatch[2],
+              });
+            } else if (htmlImgMatch) {
+              const src = htmlImgMatch[1];
+              const altMatch = cleanCell.match(/alt="([^"]*)"/i);
+              const alt = altMatch ? altMatch[1] : "";
+              gridImages.push({
+                id: Math.random().toString(36).substring(7),
+                alt,
+                url: src,
               });
             } else {
               isImageGrid = false;
@@ -491,7 +502,7 @@ function serializeBlock(block: Block, indentLevel: number = 0): string {
       const rows: string[][] = [];
       let currentRow: string[] = [];
       images.forEach((img) => {
-        currentRow.push(`![${img.alt || "Image"}](${img.url})`);
+        currentRow.push(`<img src="${img.url}" alt="${img.alt || "Image"}" height="200" width="100%" style="object-fit: cover;" />`);
         if (currentRow.length === cols) {
           rows.push(currentRow);
           currentRow = [];

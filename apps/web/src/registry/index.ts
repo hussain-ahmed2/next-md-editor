@@ -137,7 +137,7 @@ export function initRegistry() {
       const rows: string[][] = [];
       let currentRow: string[] = [];
       images.forEach((img) => {
-        currentRow.push(`![${img.alt || "Image"}](${img.url})`);
+        currentRow.push(`<img src="${img.url}" alt="${img.alt || "Image"}" height="200" width="100%" style="object-fit: cover;" />`);
         if (currentRow.length === cols) {
           rows.push(currentRow);
           currentRow = [];
