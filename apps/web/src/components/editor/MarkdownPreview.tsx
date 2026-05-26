@@ -54,6 +54,15 @@ function extractText(node: React.ReactNode): string {
 	return "";
 }
 
+function hasImage(node: React.ReactNode): boolean {
+	if (React.isValidElement(node)) {
+		if (node.type === "img") return true;
+		if ((node.props as any)?.children) return hasImage((node.props as any).children);
+	}
+	if (Array.isArray(node)) return node.some(hasImage);
+	return false;
+}
+
 function processTableImage(children: React.ReactNode): React.ReactNode {
 	const text = extractText(children).trim();
 	const htmlImgMatch = text.match(/<img\s+[^>]*src="([^"]+)"[^>]*>/i);
@@ -355,8 +364,7 @@ const MD_COMPONENTS: Components = {
 				const rowKids = React.Children.toArray((row as React.ReactElement<any>).props.children);
 				return rowKids.length > 0 && rowKids.every((cell) => {
 					if (!React.isValidElement(cell)) return false;
-					const text = extractText((cell as React.ReactElement<any>).props.children).trim();
-					return text.includes("![") || text.includes("<img");
+					return hasImage((cell as React.ReactElement<any>).props.children);
 				});
 			});
 
