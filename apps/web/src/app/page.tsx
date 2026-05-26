@@ -3,6 +3,7 @@
 import { EditorToolbar } from "@/components/editor/EditorToolbar";
 import { EditorSidebar } from "@/components/editor/EditorSidebar";
 import { EditorCanvas } from "@/components/editor/EditorCanvas";
+import { SourceEditor } from "@/components/editor/SourceEditor";
 import { MarkdownPreview } from "@/components/editor/MarkdownPreview";
 import { useEffect, useState } from "react";
 import { DragDropProvider, DragOverlay, useDragOperation } from "@dnd-kit/react";
@@ -38,6 +39,7 @@ export default function EditorPage() {
   const setIsMobile = useUIStore((s) => s.setIsMobile);
   const mobileTab = useUIStore((s) => s.mobileTab);
   const previewOpen = useUIStore((s) => s.previewOpen);
+  const editorMode = useUIStore((s) => s.editorMode);
   const isResizingSidebar = useUIStore((s) => s.isResizingSidebar);
   const isResizingPreview = useUIStore((s) => s.isResizingPreview);
 
@@ -103,7 +105,7 @@ export default function EditorPage() {
     >
       <EditorToolbar />
 
-      <DragDropProvider sensors={sensors} onDragEnd={handleDragEnd}>
+      {editorMode === "source" ? (
         <div
           style={{
             display: "flex",
@@ -112,30 +114,49 @@ export default function EditorPage() {
             position: "relative",
           }}
         >
-          {isMobile ? (
+          <SourceEditor />
+          {previewOpen && (
             <>
-              {mobileTab === "blocks" && <EditorSidebar />}
-              {mobileTab === "editor" && <EditorCanvas />}
-              {mobileTab === "preview" && <MarkdownPreview />}
-            </>
-          ) : (
-            <>
-              <EditorSidebar />
-              <ResizeBar pane="sidebar" />
-              <EditorCanvas />
-              {previewOpen && (
-                <>
-                  <ResizeBar pane="preview" />
-                  <MarkdownPreview />
-                </>
-              )}
+              <ResizeBar pane="preview" />
+              <MarkdownPreview />
             </>
           )}
         </div>
+      ) : (
+        <DragDropProvider sensors={sensors} onDragEnd={handleDragEnd}>
+          <div
+            style={{
+              display: "flex",
+              flex: 1,
+              overflow: "hidden",
+              position: "relative",
+            }}
+          >
+            {isMobile ? (
+              <>
+                {mobileTab === "blocks" && <EditorSidebar />}
+                {mobileTab === "editor" && <EditorCanvas />}
+                {mobileTab === "preview" && <MarkdownPreview />}
+              </>
+            ) : (
+              <>
+                <EditorSidebar />
+                <ResizeBar pane="sidebar" />
+                <EditorCanvas />
+                {previewOpen && (
+                  <>
+                    <ResizeBar pane="preview" />
+                    <MarkdownPreview />
+                  </>
+                )}
+              </>
+            )}
+          </div>
 
-        {/* ActiveDragOverlay must be inside DragDropProvider to use useDragOperation() */}
-        <ActiveDragOverlay />
-      </DragDropProvider>
+          {/* ActiveDragOverlay must be inside DragDropProvider to use useDragOperation() */}
+          <ActiveDragOverlay />
+        </DragDropProvider>
+      )}
 
       {isMobile && <MobileBottomBar />}
     </div>
