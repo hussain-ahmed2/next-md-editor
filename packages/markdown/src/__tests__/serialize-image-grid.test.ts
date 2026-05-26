@@ -52,15 +52,15 @@ describe("serializeMarkdown — image grid", () => {
       makeGrid({ title: "My Gallery", description: "Beautiful art" }),
     ]);
 
-    expect(md).toContain("#### My Gallery");
-    expect(md).toContain("_Beautiful art_");
+    expect(md).toContain('title="My Gallery"');
+    expect(md).toContain('description="Beautiful art"');
   });
 
   it("does not output title/description when empty", () => {
     const md = serializeMarkdown([makeGrid({ title: "", description: "" })]);
 
-    expect(md).not.toContain("####");
-    expect(md).not.toMatch(/^_/m);
+    expect(md).not.toContain("title=");
+    expect(md).not.toContain("description=");
   });
 
   it("serializes a 2-col grid", () => {
