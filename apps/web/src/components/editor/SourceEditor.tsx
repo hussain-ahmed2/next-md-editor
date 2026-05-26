@@ -61,22 +61,6 @@ export function SourceEditor() {
               padding: "4px 12px",
               borderRadius: "var(--radius-sm)",
               border: "1px solid var(--accent)",
-              background: "transparent",
-              color: "var(--accent)",
-              fontSize: 12,
-              fontWeight: 600,
-              cursor: "pointer",
-              fontFamily: "var(--font-sans)",
-            }}
-          >
-            Apply
-          </button>
-          <button
-            onClick={handleApply}
-            style={{
-              padding: "4px 12px",
-              borderRadius: "var(--radius-sm)",
-              border: "1px solid var(--accent)",
               background: "var(--accent)",
               color: "#fff",
               fontSize: 12,
@@ -85,7 +69,7 @@ export function SourceEditor() {
               fontFamily: "var(--font-sans)",
             }}
           >
-            Canvas
+            Apply Changes
           </button>
         </div>
       </div>

@@ -8,8 +8,6 @@ import { SortableBlock } from "./SortableBlock";
 import { FloatingFormatToolbar } from "./FloatingFormatToolbar";
 import { BlockRegistry } from "@next-md-editor/editor-core";
 import { useState, useRef, useMemo, useEffect } from "react";
-import { useUIStore } from "@/store/uiStore";
-import { serializeToMarkdown } from "@/features/markdown/serializer";
 
 export const CANVAS_ROOT_ID = "canvas-root";
 
@@ -129,16 +127,6 @@ export function EditorCanvas() {
     return blocks;
   }, [blocks, isSidebarDrag, insertIndex, activeSidebarItem]);
 
-  const editorMode = useUIStore((s) => s.editorMode);
-  const setEditorMode = useUIStore((s) => s.setEditorMode);
-  const setSourceText = useUIStore((s) => s.setSourceText);
-
-  const handleSwitchToSource = () => {
-    const md = serializeToMarkdown(blocks);
-    setSourceText(md);
-    setEditorMode("source");
-  };
-
   return (
     <main
       ref={ref}
@@ -155,35 +143,6 @@ export function EditorCanvas() {
     >
       {/* paddingBottom mirrors the top 60px so the last block has identical breathing room */}
       <div style={{ width: "100%", maxWidth: 720, paddingBottom: 60 }}>
-        {/* Mode toggle at top of canvas */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "flex-end",
-            marginBottom: 16,
-          }}
-        >
-          <button
-            onClick={handleSwitchToSource}
-            style={{
-              padding: "4px 12px",
-              borderRadius: "var(--radius-sm)",
-              border: "1px solid var(--border)",
-              background: "transparent",
-              color: "var(--text-secondary)",
-              fontSize: 11,
-              fontWeight: 600,
-              cursor: "pointer",
-              fontFamily: "var(--font-sans)",
-              transition: "all 0.15s ease",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "var(--bg-surface)")}
-            onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-          >
-            Source
-          </button>
-        </div>
-
         {blocks.length === 0 && !isSidebarDrag && <EmptyState />}
 
         {/* No SortableContext — each useSortable registers with the manager directly */}
