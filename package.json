@@ -18,5 +18,8 @@
   },
   "devDependencies": {
     "turbo": "latest"
+  },
+  "dependencies": {
+    "rehype-raw": "^7.0.0"
   }
 }

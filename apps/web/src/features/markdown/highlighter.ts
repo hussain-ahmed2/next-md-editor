@@ -53,3 +53,7 @@ export function renderInlineMarkdown(text: string): string {
   // parseInline is synchronous by default (no async renderer configured).
   return marked.parseInline(text) as string;
 }
+
+export function getHighlightLanguages(): string[] {
+  return hljs.listLanguages();
+}

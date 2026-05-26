@@ -1,21 +1,8 @@
 import { create } from "zustand";
-import { v4 as uuidv4 } from "uuid";
+import { temporal } from "zundo";
+import type { StoreApi } from "zustand/vanilla";
+import type { TemporalState } from "zundo";
 import type { Block, EditorState } from "@next-md-editor/types";
-import { enablePatches, produceWithPatches, applyPatches, Patch } from "immer";
-
-enablePatches();
-
-interface PatchState {
-  patches: Patch[];
-  inversePatches: Patch[];
-}
-
-// Extend internally to support history stacks
-interface HistoryState {
-  past: PatchState[];
-  future: PatchState[];
-  isInitialLoadDone?: boolean;
-}
 
 interface BlockContext {
   list: Block[];
@@ -25,9 +12,7 @@ interface BlockContext {
 
 function findBlockContext(blocks: Block[], id: string, parent: Block | null = null): BlockContext | null {
   for (let i = 0; i < blocks.length; i++) {
-    if (blocks[i].id === id) {
-      return { list: blocks, index: i, parent };
-    }
+    if (blocks[i].id === id) return { list: blocks, index: i, parent };
     if (blocks[i].children) {
       const result = findBlockContext(blocks[i].children!, id, blocks[i]);
       if (result) return result;
@@ -40,21 +25,13 @@ function hasAncestorInSet(blocks: Block[], id: string, idsSet: Set<string>): boo
   let currentId: string | null = id;
   while (currentId) {
     const ctx = findBlockContext(blocks, currentId);
-    if (!ctx || !ctx.parent) {
-      break;
-    }
-    if (idsSet.has(ctx.parent.id)) {
-      return true;
-    }
+    if (!ctx || !ctx.parent) break;
+    if (idsSet.has(ctx.parent.id)) return true;
     currentId = ctx.parent.id;
   }
   return false;
 }
 
-/**
- * Renumbers consecutive numbered-list paragraph blocks within a list.
- * Resets the counter when a non-numbered block is encountered.
- */
 function renumberList(list: Block[]) {
   let count = 1;
   for (const b of list) {
@@ -71,304 +48,192 @@ function renumberList(list: Block[]) {
   }
 }
 
-export const useEditorStore = create<EditorState & HistoryState>((set, get) => ({
-  blocks: [],
-  selectedBlockIds: [],
-  past: [],
-  future: [],
-  isInitialLoadDone: false,
+let temporalStore: StoreApi<TemporalState<Pick<EditorState, "blocks" | "selectedBlockIds">>> | null = null;
 
-  addBlock: (block: Block, index?: number, parentId?: string | null) => {
-    const state = get();
-    const [nextState, patches, inversePatches] = produceWithPatches(state.blocks, draft => {
-      let targetList = draft;
-      if (parentId) {
-        const ctx = findBlockContext(draft, parentId);
-        if (ctx) {
-          if (!ctx.list[ctx.index].children) {
-            ctx.list[ctx.index].children = [];
-          }
-          targetList = ctx.list[ctx.index].children!;
-        }
-      }
+export const useEditorStore = create<EditorState>()(
+  temporal(
+    (set, get) => ({
+      blocks: [],
+      selectedBlockIds: [],
 
-      if (index !== undefined && index >= 0 && index <= targetList.length) {
-        targetList.splice(index, 0, block);
-      } else {
-        targetList.push(block);
-      }
-    });
+      undo: () => temporalStore?.getState().undo(),
+      redo: () => temporalStore?.getState().redo(),
 
-    set({
-      blocks: nextState,
-      selectedBlockIds: [block.id],
-      past: [...state.past, { patches, inversePatches }].slice(-100),
-      future: []
-    });
-  },
-
-  updateBlock: (id: string, props: Record<string, unknown>) => {
-    const state = get();
-    const [nextState, patches, inversePatches] = produceWithPatches(state.blocks, draft => {
-      const ctx = findBlockContext(draft, id);
-      if (ctx) {
-        ctx.list[ctx.index].props = { ...ctx.list[ctx.index].props, ...props };
-      }
-    });
-
-    set({
-      blocks: nextState,
-      past: [...state.past, { patches, inversePatches }].slice(-100),
-      future: []
-    });
-  },
-
-  replaceBlock: (id: string, newBlock: Omit<Block, "id">) => {
-    const state = get();
-    const [nextState, patches, inversePatches] = produceWithPatches(state.blocks, draft => {
-      const ctx = findBlockContext(draft, id);
-      if (ctx) {
-        const children = ctx.list[ctx.index].children;
-        ctx.list[ctx.index] = { id, ...newBlock, children } as Block;
-      }
-    });
-
-    set({
-      blocks: nextState,
-      past: [...state.past, { patches, inversePatches }].slice(-100),
-      future: []
-    });
-  },
-
-  removeBlocks: (ids: string[]) => {
-    const state = get();
-    const [nextState, patches, inversePatches] = produceWithPatches(state.blocks, draft => {
-      const idsSet = new Set(ids);
-      function removeRecursive(list: Block[]) {
-        for (let i = list.length - 1; i >= 0; i--) {
-          if (idsSet.has(list[i].id)) {
-            list.splice(i, 1);
-          } else if (list[i].children) {
-            removeRecursive(list[i].children!);
-          }
-        }
-      }
-      removeRecursive(draft);
-    });
-
-    set({
-      blocks: nextState,
-      past: [...state.past, { patches, inversePatches }].slice(-100),
-      future: [],
-      selectedBlockIds: state.selectedBlockIds.filter(id => !ids.includes(id))
-    });
-  },
-
-  moveBlocks: (ids: string[], toIndex: number, toParentId?: string | null) => {
-    const state = get();
-    const [nextState, patches, inversePatches] = produceWithPatches(state.blocks, draft => {
-      const originalIdsSet = new Set(ids);
-      const filteredIds = ids.filter(id => !hasAncestorInSet(draft, id, originalIdsSet));
-      const idsSet = new Set(filteredIds);
-      const blocksToMove: any[] = [];
-      
-      // Guard: check if toParentId is or is inside any block being moved
-      if (toParentId) {
-        if (idsSet.has(toParentId) || hasAncestorInSet(draft, toParentId, idsSet)) {
-          return;
-        }
-      }
-
-      function extractRecursive(list: Block[]) {
-        for (let i = 0; i < list.length; i++) {
-          if (idsSet.has(list[i].id)) {
-            blocksToMove.push(list[i]);
-          }
-          if (list[i].children) {
-            extractRecursive(list[i].children!);
-          }
-        }
-      }
-      extractRecursive(draft);
-      
-      if (blocksToMove.length === 0) return;
-
-      function removeRecursive(list: Block[]) {
-        for (let i = list.length - 1; i >= 0; i--) {
-          if (idsSet.has(list[i].id)) {
-            list.splice(i, 1);
-          } else if (list[i].children) {
-            removeRecursive(list[i].children!);
-          }
-        }
-      }
-      removeRecursive(draft);
-
-      let targetList = draft;
-      if (toParentId) {
-        const ctx = findBlockContext(draft, toParentId);
-        if (ctx) {
-          if (!ctx.list[ctx.index].children) {
-            ctx.list[ctx.index].children = [];
-          }
-          targetList = ctx.list[ctx.index].children!;
-        }
-      }
-
-      const safeIndex = Math.max(0, Math.min(toIndex, targetList.length));
-      targetList.splice(safeIndex, 0, ...blocksToMove);
-    });
-
-    set({
-      blocks: nextState,
-      past: [...state.past, { patches, inversePatches }].slice(-100),
-      future: []
-    });
-  },
-
-  indentBlocks: (ids: string[]) => {
-    const state = get();
-    const [nextState, patches, inversePatches] = produceWithPatches(state.blocks, draft => {
-      const idsSet = new Set(ids);
-      function indentRecursive(list: Block[]) {
-        for (let i = 1; i < list.length; i++) {
-          if (idsSet.has(list[i].id)) {
-            const previousSibling = list[i - 1];
-            if (!previousSibling.children) {
-              previousSibling.children = [];
+      addBlock: (block, index, parentId) =>
+        set((state) => {
+          const newBlocks = structuredClone(state.blocks);
+          let target = newBlocks;
+          if (parentId) {
+            const ctx = findBlockContext(newBlocks, parentId);
+            if (ctx) {
+              if (!ctx.list[ctx.index].children) ctx.list[ctx.index].children = [];
+              target = ctx.list[ctx.index].children!;
             }
-            const [block] = list.splice(i, 1);
-            previousSibling.children.push(block);
-            i--; // Adjust index
-          } else if (list[i].children) {
-            indentRecursive(list[i].children!);
           }
-        }
-        if (list.length > 0 && list[0].children) {
-           indentRecursive(list[0].children);
-        }
-      }
-      indentRecursive(draft);
-      renumberList(draft);
-    });
-
-    set({
-      blocks: nextState,
-      past: [...state.past, { patches, inversePatches }].slice(-100),
-      future: []
-    });
-  },
-
-  outdentBlocks: (ids: string[]) => {
-    const state = get();
-    const [nextState, patches, inversePatches] = produceWithPatches(state.blocks, draft => {
-      const idsSet = new Set(ids);
-      function outdentRecursive(list: Block[], parentList: Block[] | null, parentIndex: number) {
-        let insertOffset = 1;
-        for (let i = 0; i < list.length; i++) {
-          if (list[i].children) {
-            outdentRecursive(list[i].children!, list, i);
+          if (index !== undefined && index >= 0 && index <= target.length) {
+            target.splice(index, 0, block);
+          } else {
+            target.push(block);
           }
-          if (idsSet.has(list[i].id) && parentList) {
-            const [block] = list.splice(i, 1);
-            parentList.splice(parentIndex + insertOffset, 0, block);
-            insertOffset++;
-            i--; // adjust index
+          return { blocks: newBlocks, selectedBlockIds: [block.id] };
+        }),
+
+      updateBlock: (id, props) =>
+        set((state) => {
+          const newBlocks = structuredClone(state.blocks);
+          const ctx = findBlockContext(newBlocks, id);
+          if (ctx) {
+            ctx.list[ctx.index] = {
+              ...ctx.list[ctx.index],
+              props: { ...ctx.list[ctx.index].props, ...props },
+            };
           }
-        }
-      }
-      for (let i = 0; i < draft.length; i++) {
-        if (draft[i].children) {
-          outdentRecursive(draft[i].children!, draft, i);
-        }
-      }
-      renumberList(draft);
-    });
+          return { blocks: newBlocks };
+        }),
 
-    set({
-      blocks: nextState,
-      past: [...state.past, { patches, inversePatches }].slice(-100),
-      future: []
-    });
-  },
+      replaceBlock: (id, newBlock) =>
+        set((state) => {
+          const newBlocks = structuredClone(state.blocks);
+          const ctx = findBlockContext(newBlocks, id);
+          if (ctx) {
+            const children = ctx.list[ctx.index].children;
+            ctx.list[ctx.index] = { ...newBlock, id, children } as Block;
+          }
+          return { blocks: newBlocks };
+        }),
 
-  selectBlock: (id: string | null, extend?: boolean) => {
-    const state = get();
-    if (!id) {
-      set({ selectedBlockIds: [] });
-      return;
+      removeBlocks: (ids) =>
+        set((state) => {
+          const newBlocks = structuredClone(state.blocks);
+          const idsSet = new Set(ids);
+          function removeRecursive(list: Block[]) {
+            for (let i = list.length - 1; i >= 0; i--) {
+              if (idsSet.has(list[i].id)) list.splice(i, 1);
+              else if (list[i].children) removeRecursive(list[i].children!);
+            }
+          }
+          removeRecursive(newBlocks);
+          return {
+            blocks: newBlocks,
+            selectedBlockIds: state.selectedBlockIds.filter((id) => !idsSet.has(id)),
+          };
+        }),
+
+      moveBlocks: (ids, toIndex, toParentId) =>
+        set((state) => {
+          const newBlocks = structuredClone(state.blocks);
+          const originalIdsSet = new Set(ids);
+          const filteredIds = ids.filter((id) => !hasAncestorInSet(newBlocks, id, originalIdsSet));
+          const idsSet = new Set(filteredIds);
+
+          if (toParentId) {
+            if (idsSet.has(toParentId) || hasAncestorInSet(newBlocks, toParentId, idsSet)) {
+              return state;
+            }
+          }
+
+          const blocksToMove: Block[] = [];
+          function extractRecursive(list: Block[]) {
+            for (let i = 0; i < list.length; i++) {
+              if (idsSet.has(list[i].id)) blocksToMove.push(list[i]);
+              if (list[i].children) extractRecursive(list[i].children!);
+            }
+          }
+          extractRecursive(newBlocks);
+          if (blocksToMove.length === 0) return state;
+
+          function removeRecursive(list: Block[]) {
+            for (let i = list.length - 1; i >= 0; i--) {
+              if (idsSet.has(list[i].id)) list.splice(i, 1);
+              else if (list[i].children) removeRecursive(list[i].children!);
+            }
+          }
+          removeRecursive(newBlocks);
+
+          let target = newBlocks;
+          if (toParentId) {
+            const ctx = findBlockContext(newBlocks, toParentId);
+            if (ctx) {
+              if (!ctx.list[ctx.index].children) ctx.list[ctx.index].children = [];
+              target = ctx.list[ctx.index].children!;
+            }
+          }
+          target.splice(Math.max(0, Math.min(toIndex, target.length)), 0, ...blocksToMove);
+          return { blocks: newBlocks };
+        }),
+
+      indentBlocks: (ids) =>
+        set((state) => {
+          const newBlocks = structuredClone(state.blocks);
+          const idsSet = new Set(ids);
+          function indentRecursive(list: Block[]) {
+            for (let i = 1; i < list.length; i++) {
+              if (idsSet.has(list[i].id)) {
+                const prev = list[i - 1];
+                if (!prev.children) prev.children = [];
+                prev.children.push(list.splice(i, 1)[0]);
+                i--;
+              } else if (list[i].children) {
+                indentRecursive(list[i].children!);
+              }
+            }
+            if (list.length > 0 && list[0].children) indentRecursive(list[0].children);
+          }
+          indentRecursive(newBlocks);
+          renumberList(newBlocks);
+          return { blocks: newBlocks };
+        }),
+
+      outdentBlocks: (ids) =>
+        set((state) => {
+          const newBlocks = structuredClone(state.blocks);
+          const idsSet = new Set(ids);
+          function outdentRecursive(list: Block[], parentList: Block[] | null, parentIndex: number) {
+            let offset = 1;
+            for (let i = 0; i < list.length; i++) {
+              if (list[i].children) outdentRecursive(list[i].children!, list, i);
+              if (idsSet.has(list[i].id) && parentList) {
+                parentList.splice(parentIndex + offset, 0, list.splice(i, 1)[0]);
+                offset++;
+                i--;
+              }
+            }
+          }
+          for (let i = 0; i < newBlocks.length; i++) {
+            if (newBlocks[i].children) outdentRecursive(newBlocks[i].children!, newBlocks, i);
+          }
+          renumberList(newBlocks);
+          return { blocks: newBlocks };
+        }),
+
+      selectBlock: (id, extend) =>
+        set((state) => {
+          if (!id) return { selectedBlockIds: [] };
+          if (extend && state.selectedBlockIds.length > 0) {
+            const lastId = state.selectedBlockIds[state.selectedBlockIds.length - 1];
+            const startIdx = state.blocks.findIndex((b) => b.id === lastId);
+            const endIdx = state.blocks.findIndex((b) => b.id === id);
+            if (startIdx !== -1 && endIdx !== -1) {
+              const [start, end] = [Math.min(startIdx, endIdx), Math.max(startIdx, endIdx)];
+              const range = state.blocks.slice(start, end + 1).map((b) => b.id);
+              return { selectedBlockIds: [...new Set([...state.selectedBlockIds, ...range])] };
+            }
+          }
+          return { selectedBlockIds: [id] };
+        }),
+
+      setBlocks: (blocks) =>
+        set(() => ({ blocks, selectedBlockIds: [] })),
+    }),
+    {
+      partialize: (state) => ({
+        blocks: state.blocks,
+        selectedBlockIds: state.selectedBlockIds,
+      }),
+      limit: 100,
+      equality: (a, b) => a.blocks === b.blocks && a.selectedBlockIds === b.selectedBlockIds,
     }
+  )
+);
 
-    if (extend && state.selectedBlockIds.length > 0) {
-      const blocks = state.blocks;
-      const lastSelectedId = state.selectedBlockIds[state.selectedBlockIds.length - 1];
-      const startIndex = blocks.findIndex(b => b.id === lastSelectedId);
-      const endIndex = blocks.findIndex(b => b.id === id);
-      
-      if (startIndex !== -1 && endIndex !== -1) {
-        const start = Math.min(startIndex, endIndex);
-        const end = Math.max(startIndex, endIndex);
-        const newSelection = blocks.slice(start, end + 1).map(b => b.id);
-        
-        const merged = new Set([...state.selectedBlockIds, ...newSelection]);
-        set({ selectedBlockIds: Array.from(merged) });
-        return;
-      }
-    }
-
-    set({ selectedBlockIds: [id] });
-  },
-
-  setBlocks: (blocks: Block[]) => {
-    const state = get();
-    if (state.isInitialLoadDone) {
-      const [nextState, patches, inversePatches] = produceWithPatches(state.blocks, draft => {
-        return blocks;
-      });
-      set({
-        blocks: nextState,
-        past: [...state.past, { patches, inversePatches }].slice(-100),
-        future: [],
-        selectedBlockIds: []
-      });
-    } else {
-      set({
-        blocks,
-        selectedBlockIds: [],
-        isInitialLoadDone: true
-      });
-    }
-  },
-
-  undo: () => {
-    const state = get();
-    if (state.past.length === 0) return;
-
-    const patchState = state.past[state.past.length - 1];
-    const newPast = state.past.slice(0, -1);
-    
-    const nextBlocks = applyPatches(state.blocks, patchState.inversePatches);
-
-    set({
-      past: newPast,
-      future: [patchState, ...state.future],
-      blocks: nextBlocks
-    });
-  },
-
-  redo: () => {
-    const state = get();
-    if (state.future.length === 0) return;
-
-    const patchState = state.future[0];
-    const newFuture = state.future.slice(1);
-
-    const nextBlocks = applyPatches(state.blocks, patchState.patches);
-
-    set({
-      past: [...state.past, patchState],
-      future: newFuture,
-      blocks: nextBlocks
-    });
-  },
-}));
+temporalStore = useEditorStore.temporal;
