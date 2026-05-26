@@ -14,8 +14,6 @@ import {
   Download,
   CheckCheck,
   Loader2,
-  FileCode2,
-  FileText,
 } from "lucide-react";
 import { useUIStore } from "@/store/uiStore";
 import { DEMO_MARKDOWN } from "@/constants/editor";
@@ -30,23 +28,6 @@ export function EditorToolbar() {
   const undo = useEditorStore((s) => s.undo);
   const redo = useEditorStore((s) => s.redo);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const editorMode = useUIStore((s) => s.editorMode);
-  const setEditorMode = useUIStore((s) => s.setEditorMode);
-  const sourceText = useUIStore((s) => s.sourceText);
-  const setSourceText = useUIStore((s) => s.setSourceText);
-
-  const handleToggleMode = () => {
-    if (editorMode === "canvas") {
-      const md = serializeToMarkdown(blocks);
-      setSourceText(md);
-      setEditorMode("source");
-    } else {
-      const parsed = parseMarkdown(sourceText);
-      setBlocks(parsed);
-      setEditorMode("canvas");
-    }
-  };
 
   const handleCopy = async () => {
     const md = serializeToMarkdown(blocks);
@@ -174,10 +155,6 @@ export function EditorToolbar() {
         <ToolbarButton onClick={onTogglePreview} active={previewOpen} id="btn-toggle-preview" tooltip="Toggle preview pane">
           {previewOpen ? <EyeOff size={14} /> : <Eye size={14} />}
           <span className="btn-label">{previewOpen ? "Hide Preview" : "Preview"}</span>
-        </ToolbarButton>
-        <ToolbarButton onClick={handleToggleMode} active={editorMode === "source"} id="btn-toggle-mode" tooltip="Switch between visual canvas and raw markdown">
-          {editorMode === "source" ? <FileText size={14} /> : <FileCode2 size={14} />}
-          <span className="btn-label">{editorMode === "source" ? "Canvas" : "Source"}</span>
         </ToolbarButton>
         <ToolbarButton onClick={handleCopy} id="btn-copy-md" tooltip="Copy as Markdown">
           <Copy size={14} />
