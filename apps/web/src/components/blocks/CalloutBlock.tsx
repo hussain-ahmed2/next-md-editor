@@ -1,16 +1,10 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useEditorStore } from "@next-md-editor/editor-core";
-import type { Block, RichText } from "@next-md-editor/types";
-import {
-  richTextToHtml,
-  htmlToRichText,
-  richTextLength,
-  restoreDomRange,
-  getDomTextOffset,
-  markdownToRichText,
-} from "@next-md-editor/markdown";
+import type { Block } from "@next-md-editor/types";
+import { htmlToMarkdown } from "@/utils/editorShortcuts";
+import { renderInlineMarkdown } from "@/features/markdown/highlighter";
 import { Info, Lightbulb, Megaphone, TriangleAlert, OctagonX } from "lucide-react";
 
 const CALLOUT_TYPES = {
@@ -55,74 +49,59 @@ type CalloutKey = keyof typeof CALLOUT_TYPES;
 
 export function CalloutBlock({ block }: { block: Block }) {
   const updateBlock = useEditorStore((s) => s.updateBlock);
-  const content: RichText = Array.isArray(block.props.content)
-    ? (block.props.content as RichText)
-    : typeof block.props.text === "string"
-      ? markdownToRichText(block.props.text as string)
-      : [];
-
+  const text = (block.props.text as string) ?? "";
   const type = ((block.props.type as string) ?? "note").toLowerCase() as CalloutKey;
   const config = CALLOUT_TYPES[type] ?? CALLOUT_TYPES.note;
 
   const [isFocused, setIsFocused] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  // Sync store changes to DOM — preserves caret position
+  // Sync state changes from store to DOM when they differ (e.g. on undo/redo)
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
+    if (ref.current) {
+      const currentMarkdown = htmlToMarkdown(ref.current.innerHTML);
+      if (currentMarkdown !== text) {
+        ref.current.innerHTML = renderInlineMarkdown(text);
 
-    const newHtml = richTextToHtml(content);
-    if (el.innerHTML === newHtml) return;
-
-    const isFocusedNow = document.activeElement === el;
-    let savedStart = -1;
-    let savedEnd = -1;
-    if (isFocusedNow) {
-      const sel = window.getSelection();
-      if (sel && sel.rangeCount > 0 && sel.anchorNode && sel.focusNode && el.contains(sel.anchorNode) && el.contains(sel.focusNode)) {
-        savedStart = getDomTextOffset(el, sel.anchorNode, sel.anchorOffset);
-        savedEnd = getDomTextOffset(el, sel.focusNode, sel.focusOffset);
+        // Reset caret to the end if focused
+        if (document.activeElement === ref.current) {
+          const range = document.createRange();
+          range.selectNodeContents(ref.current);
+          range.collapse(false);
+          const selection = window.getSelection();
+          if (selection) {
+            selection.removeAllRanges();
+            selection.addRange(range);
+          }
+        }
       }
     }
+  }, [text]);
 
-    el.innerHTML = newHtml;
-
-    if (savedStart >= 0) {
-      const len = richTextLength(content);
-      restoreDomRange(el, Math.min(savedStart, len), Math.min(savedEnd, len));
-    }
-  }, [content, ref]);
-
-  // When entering focus, ensure content is rendered and caret at end
+  // When entering focus, snap caret and ensure text is populated
   useEffect(() => {
     if (isFocused && ref.current) {
-      const html = richTextToHtml(content);
-      if (ref.current.innerHTML !== html) {
-        ref.current.innerHTML = html;
+      ref.current.innerHTML = renderInlineMarkdown(text);
+      const range = document.createRange();
+      range.selectNodeContents(ref.current);
+      range.collapse(false);
+      const selection = window.getSelection();
+      if (selection) {
+        selection.removeAllRanges();
+        selection.addRange(range);
       }
-      const sel = window.getSelection();
-      if (sel && sel.rangeCount > 0 && ref.current.contains(sel.anchorNode)) return;
-      restoreDomRange(ref.current, richTextLength(content), richTextLength(content));
     }
-  }, [isFocused, content]);
+  }, [isFocused]);
 
-  const handleInput = useCallback(
-    (e: React.FormEvent<HTMLDivElement>) => {
-      const newContent = htmlToRichText(e.currentTarget.innerHTML);
-      updateBlock(block.id, { content: newContent });
-    },
-    [block.id, updateBlock],
-  );
+  const handleInput = (e: React.InputEvent<HTMLDivElement>) => {
+    const rawText = htmlToMarkdown(e.currentTarget.innerHTML);
+    updateBlock(block.id, { text: rawText });
+  };
 
-  const handleBlur = useCallback(
-    (e: React.FocusEvent<HTMLDivElement>) => {
-      setIsFocused(false);
-      const newContent = htmlToRichText(e.currentTarget.innerHTML);
-      updateBlock(block.id, { content: newContent });
-    },
-    [block.id, updateBlock],
-  );
+  const handleBlur = (e: React.FocusEvent<HTMLDivElement>) => {
+    setIsFocused(false);
+    updateBlock(block.id, { text: htmlToMarkdown(e.currentTarget.innerHTML) });
+  };
 
   return (
     <div
@@ -172,7 +151,6 @@ export function CalloutBlock({ block }: { block: Block }) {
         ref={ref}
         contentEditable
         suppressContentEditableWarning
-        data-block-id={block.id}
         onFocus={() => setIsFocused(true)}
         onBlur={handleBlur}
         onInput={handleInput}
@@ -183,6 +161,13 @@ export function CalloutBlock({ block }: { block: Block }) {
           outline: "none",
           minHeight: "1.6em",
         }}
+        {...(!isFocused
+          ? {
+              dangerouslySetInnerHTML: {
+                __html: renderInlineMarkdown(text) || "",
+              },
+            }
+          : {})}
       />
     </div>
   );

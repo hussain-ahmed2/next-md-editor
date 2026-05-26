@@ -63,7 +63,7 @@ function nodeToBlock(node: any, markdown: string): Block | null {
       return {
         id: uuidv4(),
         type: "heading",
-        props: { level: node.depth, content: markdownToRichText(text) },
+        props: { level: node.depth, text },
       };
     }
 
@@ -101,7 +101,7 @@ function nodeToBlock(node: any, markdown: string): Block | null {
           return {
             id: uuidv4(),
             type: "callout",
-            props: { type: alertMatch[1].toLowerCase(), content: markdownToRichText(bodyParts.join("\n").trim()) },
+            props: { type: alertMatch[1].toLowerCase(), text: bodyParts.join("\n").trim() },
           };
         }
       }
@@ -109,7 +109,7 @@ function nodeToBlock(node: any, markdown: string): Block | null {
         .map((c: any) => extractRawText(c, markdown))
         .join("\n")
         .trim();
-      return { id: uuidv4(), type: "quote", props: { content: markdownToRichText(quoteText) } };
+      return { id: uuidv4(), type: "quote", props: { text: quoteText } };
     }
 
     case "list": {
@@ -295,17 +295,14 @@ function serializeBlock(block: Block, indentLevel: number = 0): string {
   switch (block.type) {
     case "heading": {
       const level = (block.props.level as number) ?? 1;
-      const content = block.props.content as RichText | undefined;
-      const headingText = content ? richTextToMarkdown(content) : ((block.props.text as string) ?? "");
-      text = `${"#".repeat(level)} ${headingText}`;
+      text = `${"#".repeat(level)} ${(block.props.text as string) ?? ""}`;
       break;
     }
     case "paragraph":
       text = richTextToMarkdown((block.props.content as RichText) ?? []);
       break;
     case "quote": {
-      const content = block.props.content as RichText | undefined;
-      const t = content ? richTextToMarkdown(content) : ((block.props.text as string) ?? "");
+      const t = (block.props.text as string) ?? "";
       text = t.split("\n").map((l) => `> ${l}`).join("\n");
       break;
     }
@@ -325,8 +322,7 @@ function serializeBlock(block: Block, indentLevel: number = 0): string {
       break;
     }
     case "callout": {
-      const content = block.props.content as RichText | undefined;
-      const t = content ? richTextToMarkdown(content) : ((block.props.text as string) ?? "");
+      const t = (block.props.text as string) ?? "";
       const type = ((block.props.type as string) ?? "note").toUpperCase();
       text = `> [!${type}]\n${t.split("\n").map((l) => `> ${l}`).join("\n")}`;
       break;
