@@ -364,7 +364,7 @@ function serializeBlock(block: Block, indentLevel: number = 0): string {
       const imageRows: string[][] = [];
       let cur: string[] = [];
       for (const img of images) {
-        cur.push(`![${img.alt || "Image"}](${img.url})`);
+        cur.push(`<img src="${img.url}" alt="${img.alt || "Image"}" />`);
         if (cur.length === cols) { imageRows.push(cur); cur = []; }
       }
       if (cur.length) {

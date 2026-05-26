@@ -61,15 +61,6 @@ function findImgInNode(node: React.ReactNode): React.ReactElement | null {
 	return kids ? findImgInNode(kids) : null;
 }
 
-function hasImageInNode(node: React.ReactNode): boolean {
-	if (React.isValidElement(node)) {
-		if (node.type === "img") return true;
-		if ((node.props as any)?.children) return hasImageInNode((node.props as any).children);
-	}
-	if (Array.isArray(node)) return node.some(hasImageInNode);
-	return false;
-}
-
 const FONT_SANS = '-apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif';
 const FONT_MONO = "ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace";
 
@@ -362,25 +353,18 @@ export function MarkdownPreview() {
 					);
 				}
 
-				const bodyRows = React.Children.toArray(tbody.props.children);
-				if (!bodyRows.length || !bodyRows.every((row) => {
-					if (!React.isValidElement(row)) return false;
-					const rowKids = React.Children.toArray((row as React.ReactElement<any>).props.children);
-					return rowKids.length > 0 && rowKids.every((cell) => {
-						if (!React.isValidElement(cell)) return false;
-						return hasImageInNode((cell as React.ReactElement<any>).props.children);
-					});
-				})) {
-					return (
-						<div style={{ overflowX: "auto", margin: "12px 0" }}>
-							<table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14, textAlign: "left", border: "1px solid #30363d" }}>
-								{children}
-							</table>
-						</div>
-					);
-				}
+		const bodyRows = React.Children.toArray(tbody.props.children);
+			if (!bodyRows.length) {
+				return (
+					<div style={{ overflowX: "auto", margin: "12px 0" }}>
+						<table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14, textAlign: "left", border: "1px solid #30363d" }}>
+							{children}
+						</table>
+					</div>
+				);
+			}
 
-				const cols = Math.max(...bodyRows.map((r: any) =>
+			const cols = Math.max(...bodyRows.map((r: any) =>
 					React.Children.count(r.props.children)
 				), 2);
 

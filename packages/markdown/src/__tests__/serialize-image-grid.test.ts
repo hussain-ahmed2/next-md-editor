@@ -34,9 +34,9 @@ describe("serializeMarkdown — image grid", () => {
 
     expect(hasImageGridMarker(md)).toBe(true);
     expect(md).not.toContain("<!-- captions:hidden -->");
-    expect(md).toContain("![Fluid abstract shapes](" + FLUID + ")");
-    expect(md).toContain("![Glossy 3D composition](" + GLOSSY + ")");
-    expect(md).toContain("![Architectural patterns](" + ARCH + ")");
+    expect(md).toContain('<img src="' + FLUID + '" alt="Fluid abstract shapes" />');
+    expect(md).toContain('<img src="' + GLOSSY + '" alt="Glossy 3D composition" />');
+    expect(md).toContain('<img src="' + ARCH + '" alt="Architectural patterns" />');
     expect(md).toContain("| &nbsp; | &nbsp; | &nbsp; |");
     expect(md).toContain("| --- | --- | --- |");
   });
@@ -76,7 +76,7 @@ describe("serializeMarkdown — image grid", () => {
 
     expect(md).toContain("| &nbsp; | &nbsp; |");
     expect(md).toContain("| --- | --- |");
-    expect(md).toContain("![A](" + FLUID + ") | ![B](" + GLOSSY + ")");
+    expect(md).toContain('<img src="' + FLUID + '" alt="A" /> | <img src="' + GLOSSY + '" alt="B" />');
   });
 
   it("serializes a 1-col grid", () => {
@@ -88,8 +88,8 @@ describe("serializeMarkdown — image grid", () => {
     ]);
 
     const lines = md.split("\n");
-    const dataRow = lines.find((l) => l.includes("![Solo]"));
-    expect(dataRow).toContain("![Solo](" + FLUID + ")");
+    const dataRow = lines.find((l) => l.includes("Solo"));
+    expect(dataRow).toContain('<img src="' + FLUID + '" alt="Solo" />');
   });
 
   it("handles partial last row (5 images in 3 cols)", () => {
@@ -106,13 +106,13 @@ describe("serializeMarkdown — image grid", () => {
       }),
     ]);
 
-    const lines = md.split("\n").filter((l) => l.includes("!["));
+    const lines = md.split("\n").filter((l) => l.includes("<img"));
     expect(lines).toHaveLength(2);
-    expect(lines[0]).toContain("![a]");
-    expect(lines[0]).toContain("![b]");
-    expect(lines[0]).toContain("![c]");
-    expect(lines[1]).toContain("![d]");
-    expect(lines[1]).toContain("![e]");
+    expect(lines[0]).toContain('alt="a"');
+    expect(lines[0]).toContain('alt="b"');
+    expect(lines[0]).toContain('alt="c"');
+    expect(lines[1]).toContain('alt="d"');
+    expect(lines[1]).toContain('alt="e"');
     expect(lines[1]).toMatch(/\|\s*$/);
   });
 
