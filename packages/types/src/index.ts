@@ -1,5 +1,23 @@
 import type { ReactNode } from "react";
 
+// ── Rich text model ────────────────────────────────────────────────────────────
+
+export interface FormatFlags {
+  bold?: boolean;
+  italic?: boolean;
+  code?: boolean;
+  strikethrough?: boolean;
+  link?: string;
+}
+
+export interface RichTextSpan extends FormatFlags {
+  text: string;
+}
+
+export type RichText = RichTextSpan[];
+
+// ── Block types ────────────────────────────────────────────────────────────────
+
 export type BlockType = 
   | "heading" 
   | "paragraph" 
@@ -9,6 +27,9 @@ export type BlockType =
   | "divider"
   | "bullet-list"
   | "numbered-list"
+  | "callout"
+  | "table"
+  | "image-grid"
   | string;
 
 export interface Block {

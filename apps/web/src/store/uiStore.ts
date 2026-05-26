@@ -11,6 +11,8 @@ interface UIState {
   previewOpen: boolean;
   isMobile: boolean;
   saveStatus: "saving" | "saved" | "idle";
+  editorMode: "canvas" | "source";
+  sourceText: string;
 
   setSidebarWidth: (width: number) => void;
   setPreviewWidth: (width: number) => void;
@@ -23,6 +25,8 @@ interface UIState {
   togglePreview: () => void;
   startResizeSidebar: (mouseDownEvent: React.MouseEvent) => void;
   startResizePreview: (mouseDownEvent: React.MouseEvent) => void;
+  setEditorMode: (mode: "canvas" | "source") => void;
+  setSourceText: (text: string) => void;
 }
 
 export const useUIStore = create<UIState>((set, get) => ({
@@ -34,6 +38,8 @@ export const useUIStore = create<UIState>((set, get) => ({
   previewOpen: true,
   isMobile: false,
   saveStatus: "idle",
+  editorMode: "canvas",
+  sourceText: "",
 
   setSidebarWidth: (width) => set({ sidebarWidth: width }),
   setPreviewWidth: (width) => set({ previewWidth: width }),
@@ -43,6 +49,8 @@ export const useUIStore = create<UIState>((set, get) => ({
   setPreviewOpen: (open) => set({ previewOpen: open }),
   setIsMobile: (isMobile) => set({ isMobile }),
   setSaveStatus: (status) => set({ saveStatus: status }),
+  setEditorMode: (mode) => set({ editorMode: mode }),
+  setSourceText: (text) => set({ sourceText: text }),
   togglePreview: () => {
     const { isMobile, mobileTab, previewOpen } = get();
     if (isMobile) {

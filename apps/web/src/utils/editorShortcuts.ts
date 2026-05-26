@@ -18,21 +18,24 @@ export function htmlToMarkdown(html: string): string {
   // 2. Convert italic structures
   text = text.replace(/<(em|i)>(.*?)<\/\1>/gi, "*$2*");
 
-  // 3. Convert inline code blocks
+  // 3. Convert strikethrough
+  text = text.replace(/<(del|s|strike)>(.*?)<\/\1>/gi, "~~$2~~");
+
+  // 4. Convert inline code blocks
   text = text.replace(/<code[^>]*>(.*?)<\/code>/gi, "`$1`");
 
-  // 4. Convert hyperlink structures
+  // 5. Convert hyperlink structures
   text = text.replace(/<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/gi, "[$2]($1)");
 
-  // 5. Clean up standard editor container wrappers & breaks
+  // 6. Clean up standard editor container wrappers & breaks
   text = text.replace(/<br\s*\/?>/gi, "\n");
   text = text.replace(/<div[^>]*>(.*?)<\/div>/gi, "\n$1");
   text = text.replace(/<p[^>]*>(.*?)<\/p>/gi, "\n$1");
 
-  // 6. Strip all other browser-injected HTML markup
+  // 7. Strip all other browser-injected HTML markup
   text = text.replace(/<[^>]*>/g, "");
 
-  // 7. Decode HTML entities cleanly
+  // 8. Decode HTML entities cleanly
   text = text
     .replace(/&amp;/g, "&")
     .replace(/&lt;/g, "<")

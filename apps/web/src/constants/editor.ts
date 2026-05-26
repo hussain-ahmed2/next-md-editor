@@ -20,8 +20,8 @@ Welcome to your next-generation, block-based markdown editor workspace. Designed
 ### 🔢 List Formatting & Cycling Markers
 
 1. Decimal list marker for root elements (e.g. \`1.\`, \`2.\`)
-   1. Roman numeral marker for level 1 indentation (e.g. \`i.\`, \`ii.\`)
-      1. Alphabetical marker for level 2 indentation (e.g. \`a.\`, \`b.\`)
+    1. Roman numeral marker for level 1 indentation (e.g. \`i.\`, \`ii.\`)
+        1. Alphabetical marker for level 2 indentation (e.g. \`a.\`, \`b.\`)
 
 ---
 

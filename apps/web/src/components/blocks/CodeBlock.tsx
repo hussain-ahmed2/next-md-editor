@@ -3,9 +3,9 @@
 import { useEditorStore } from "@next-md-editor/editor-core";
 import type { Block } from "@next-md-editor/types";
 import { useState } from "react";
-import { highlightCodeHtml } from "@/features/markdown/highlighter";
+import { highlightCodeHtml, getHighlightLanguages } from "@/features/markdown/highlighter";
 
-const LANGUAGES = ["ts", "tsx", "js", "jsx", "bash", "json", "css", "html", "python", "rust"];
+const ALL_LANGUAGES = getHighlightLanguages();
 
 export function CodeBlock({ block }: { block: Block }) {
   const updateBlock = useEditorStore((s) => s.updateBlock);
@@ -34,7 +34,8 @@ export function CodeBlock({ block }: { block: Block }) {
           <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#fbbf24", display: "inline-block" }} />
           <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#4ade80", display: "inline-block" }} />
         </div>
-        <select
+        <input
+          list="code-langs"
           value={lang}
           onChange={(e) => { e.stopPropagation(); updateBlock(block.id, { language: e.target.value }); }}
           style={{
@@ -43,12 +44,14 @@ export function CodeBlock({ block }: { block: Block }) {
             color: "var(--text-muted)",
             fontSize: 11,
             fontFamily: "var(--font-mono)",
-            cursor: "pointer",
             outline: "none",
+            width: 120,
+            textAlign: "right",
           }}
-        >
-          {LANGUAGES.map((l) => <option key={l} value={l}>{l}</option>)}
-        </select>
+        />
+        <datalist id="code-langs">
+          {ALL_LANGUAGES.map((l) => <option key={l} value={l} />)}
+        </datalist>
       </div>
       
       {/* Code area - Stacked transparent textarea over syntax-highlighted text */}

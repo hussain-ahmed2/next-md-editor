@@ -5,8 +5,9 @@ import { BlockRenderer } from "./BlockRenderer";
 import { useDroppable, useDragOperation, useDragDropMonitor, useDragDropManager } from "@dnd-kit/react";
 import type { DragOverEvent, DragEndEvent } from "@dnd-kit/react";
 import { SortableBlock } from "./SortableBlock";
+import { FloatingFormatToolbar } from "./FloatingFormatToolbar";
 import { BlockRegistry } from "@next-md-editor/editor-core";
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useMemo, useEffect } from "react";
 
 export const CANVAS_ROOT_ID = "canvas-root";
 
@@ -91,6 +92,23 @@ export function EditorCanvas() {
 
   useDragDropMonitor(monitorHandlers);
 
+  // ── Global undo/redo keyboard shortcuts ────────────────────────────────────
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      const hasMeta = e.ctrlKey || e.metaKey;
+      if (!hasMeta) return;
+      if (e.key === "z" && !e.shiftKey) {
+        e.preventDefault();
+        useEditorStore.getState().undo();
+      } else if ((e.key === "z" && e.shiftKey) || (e.key === "Z")) {
+        e.preventDefault();
+        useEditorStore.getState().redo();
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
   // ── Build display list — splice placeholder at insert position ─────────────
   const displayBlocks = useMemo(() => {
     if (isSidebarDrag && insertIndex !== null && activeSidebarItem) {
@@ -146,6 +164,7 @@ export function EditorCanvas() {
           })}
         </div>
       </div>
+      <FloatingFormatToolbar />
     </main>
   );
 }

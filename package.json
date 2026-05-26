@@ -14,9 +14,13 @@
     "build": "turbo run build",
     "dev": "turbo run dev",
     "lint": "turbo run lint",
-    "clean": "turbo run clean"
+    "clean": "turbo run clean",
+    "test": "turbo run test"
   },
   "devDependencies": {
     "turbo": "latest"
+  },
+  "dependencies": {
+    "rehype-raw": "^7.0.0"
   }
 }
