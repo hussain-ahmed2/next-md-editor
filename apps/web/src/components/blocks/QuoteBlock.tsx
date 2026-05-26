@@ -1,13 +1,17 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { v4 as uuidv4 } from "uuid";
 import { useEditorStore } from "@next-md-editor/editor-core";
-import type { Block } from "@next-md-editor/types";
+import type { Block, RichText } from "@next-md-editor/types";
 import {
-  handleEditorKeyboardShortcuts,
-  htmlToMarkdown,
-} from "@/utils/editorShortcuts";
-import { renderInlineMarkdown } from "@/features/markdown/highlighter";
+  richTextToHtml,
+  htmlToRichText,
+  richTextLength,
+  restoreDomRange,
+  getDomTextOffset,
+  markdownToRichText,
+} from "@next-md-editor/markdown";
 
 export function QuoteBlock({ block }: { block: Block }) {
   const blocks = useEditorStore((s) => s.blocks);
@@ -19,7 +23,12 @@ export function QuoteBlock({ block }: { block: Block }) {
   const indentBlocks = useEditorStore((s) => s.indentBlocks);
   const outdentBlocks = useEditorStore((s) => s.outdentBlocks);
 
-  const text = (block.props.text as string) ?? "";
+  const content: RichText = Array.isArray(block.props.content)
+    ? (block.props.content as RichText)
+    : typeof block.props.text === "string"
+      ? markdownToRichText(block.props.text as string)
+      : [];
+
   const [isFocused, setIsFocused] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -31,52 +40,106 @@ export function QuoteBlock({ block }: { block: Block }) {
     }
   }, [selectedBlockIds, block.id, ref]);
 
-  // Sync state changes from store to DOM when they differ (e.g. on undo/redo)
+  // Sync store changes to DOM — preserves caret position
   useEffect(() => {
-    if (ref.current) {
-      const currentMarkdown = htmlToMarkdown(ref.current.innerHTML);
-      if (currentMarkdown !== text) {
-        ref.current.innerHTML = renderInlineMarkdown(text);
+    const el = ref.current;
+    if (!el) return;
 
-        // Reset caret to the end if focused
-        if (document.activeElement === ref.current) {
-          const range = document.createRange();
-          range.selectNodeContents(ref.current);
-          range.collapse(false);
-          const selection = window.getSelection();
-          if (selection) {
-            selection.removeAllRanges();
-            selection.addRange(range);
-          }
-        }
+    const newHtml = richTextToHtml(content);
+    if (el.innerHTML === newHtml) return;
+
+    const isFocusedNow = document.activeElement === el;
+    let savedStart = -1;
+    let savedEnd = -1;
+    if (isFocusedNow) {
+      const sel = window.getSelection();
+      if (sel && sel.rangeCount > 0 && sel.anchorNode && sel.focusNode && el.contains(sel.anchorNode) && el.contains(sel.focusNode)) {
+        savedStart = getDomTextOffset(el, sel.anchorNode, sel.anchorOffset);
+        savedEnd = getDomTextOffset(el, sel.focusNode, sel.focusOffset);
       }
     }
-  }, [text]);
 
-  // When entering focus, snap caret and ensure text is populated
+    el.innerHTML = newHtml;
+
+    if (savedStart >= 0) {
+      const len = richTextLength(content);
+      restoreDomRange(el, Math.min(savedStart, len), Math.min(savedEnd, len));
+    }
+  }, [content, ref]);
+
+  // When entering focus, ensure content is rendered and caret at end
   useEffect(() => {
     if (isFocused && ref.current) {
-      ref.current.innerHTML = renderInlineMarkdown(text);
-      const range = document.createRange();
-      range.selectNodeContents(ref.current);
-      range.collapse(false);
-      const selection = window.getSelection();
-      if (selection) {
-        selection.removeAllRanges();
-        selection.addRange(range);
+      const html = richTextToHtml(content);
+      if (ref.current.innerHTML !== html) {
+        ref.current.innerHTML = html;
       }
+      const sel = window.getSelection();
+      if (sel && sel.rangeCount > 0 && ref.current.contains(sel.anchorNode)) return;
+      restoreDomRange(ref.current, richTextLength(content), richTextLength(content));
     }
-  }, [isFocused]);
+  }, [isFocused, content]);
 
-  const handleInput = (e: React.InputEvent<HTMLDivElement>) => {
-    const rawText = htmlToMarkdown(e.currentTarget.innerHTML);
-    updateBlock(block.id, { text: rawText });
-  };
+  const handleInput = useCallback(
+    (e: React.FormEvent<HTMLDivElement>) => {
+      const newContent = htmlToRichText(e.currentTarget.innerHTML);
+      updateBlock(block.id, { content: newContent });
+    },
+    [block.id, updateBlock],
+  );
 
-  const handleBlur = (e: React.FocusEvent<HTMLDivElement>) => {
-    setIsFocused(false);
-    updateBlock(block.id, { text: htmlToMarkdown(e.currentTarget.innerHTML) });
-  };
+  const handleBlur = useCallback(
+    (e: React.FocusEvent<HTMLDivElement>) => {
+      setIsFocused(false);
+      const newContent = htmlToRichText(e.currentTarget.innerHTML);
+      updateBlock(block.id, { content: newContent });
+    },
+    [block.id, updateBlock],
+  );
+
+  const onKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        const currentIndex = blocks.findIndex((b) => b.id === block.id);
+        if (currentIndex !== -1) {
+          addBlock(
+            {
+              id: uuidv4(),
+              type: "paragraph",
+              props: { content: [] },
+            },
+            currentIndex + 1,
+          );
+        }
+        return;
+      }
+
+      if (e.key === "Backspace") {
+        const text = content.reduce((acc: string, s: any) => acc + s.text, "");
+        if (text === "") {
+          e.preventDefault();
+          const currentIndex = blocks.findIndex((b) => b.id === block.id);
+          if (currentIndex > 0) {
+            selectBlock(blocks[currentIndex - 1].id);
+          }
+          removeBlocks([block.id]);
+          return;
+        }
+      }
+
+      if (e.key === "Tab") {
+        e.preventDefault();
+        if (e.shiftKey) {
+          outdentBlocks([block.id]);
+        } else {
+          indentBlocks([block.id]);
+        }
+        return;
+      }
+    },
+    [block.id, blocks, content, addBlock, removeBlocks, selectBlock, indentBlocks, outdentBlocks],
+  );
 
   return (
     <div
@@ -101,23 +164,11 @@ export function QuoteBlock({ block }: { block: Block }) {
         ref={ref}
         contentEditable
         suppressContentEditableWarning
+        data-block-id={block.id}
         onFocus={() => setIsFocused(true)}
         onBlur={handleBlur}
         onInput={handleInput}
-        onKeyDown={(e) =>
-          handleEditorKeyboardShortcuts(
-            e,
-            block,
-            blocks,
-            selectedBlockIds,
-            addBlock,
-            removeBlocks,
-            updateBlock,
-            selectBlock,
-            indentBlocks,
-            outdentBlocks,
-          )
-        }
+        onKeyDown={onKeyDown}
         style={{
           flex: 1,
           fontSize: "15px",
@@ -127,13 +178,6 @@ export function QuoteBlock({ block }: { block: Block }) {
           outline: "none",
           minHeight: "1.6em",
         }}
-        {...(!isFocused
-          ? {
-              dangerouslySetInnerHTML: {
-                __html: renderInlineMarkdown(text) || "",
-              },
-            }
-          : {})}
       />
     </div>
   );
