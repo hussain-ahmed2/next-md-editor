@@ -16,6 +16,14 @@ export interface RichTextSpan extends FormatFlags {
 
 export type RichText = RichTextSpan[];
 
+// ── List item model ────────────────────────────────────────────────────────────
+
+export interface ListItemData {
+  id: string;
+  content: RichText;
+  children?: ListItemData[];
+}
+
 // ── Block types ────────────────────────────────────────────────────────────────
 
 export type BlockType = 
@@ -60,7 +68,5 @@ export interface EditorState {
 export interface BlockDefinition {
   type: BlockType;
   component: (props: { block: Block }) => ReactNode;
-  serializer?: (block: Block) => string;
-  parser?: (markdown: string) => Partial<Block> | null;
   defaultProps?: Record<string, unknown>;
 }

@@ -7,8 +7,8 @@ import remarkStringify from "remark-stringify";
 import rehypeMinifyWhitespace from "rehype-minify-whitespace";
 import { v4 as uuidv4 } from "uuid";
 import type { Root, Heading, Paragraph, Code, ThematicBreak, List, ListItem, Table, Blockquote } from "mdast";
-import type { Block, RichText } from "@next-md-editor/types";
-import { markdownToRichText, richTextToMarkdown } from "./richText";
+import type { Block, RichText, ListItemData } from "@next-md-editor/types";
+import { markdownToRichText, richTextToMarkdown, htmlToRichText, richTextToHtml } from "./richText";
 
 // ── Unified pipeline for HTML → Markdown (SSR-safe) ──────────────────────────
 
@@ -114,11 +114,11 @@ function nodeToBlock(node: any, markdown: string): Block | null {
 
     case "list": {
       const ordered = node.ordered ?? false;
-      const html = listNodeToHtml(node, markdown);
+      const items = listNodeToItems(node, markdown);
       return {
         id: uuidv4(),
         type: ordered ? "numbered-list" : "bullet-list",
-        props: { style: ordered ? "numbered" : "bullet", html },
+        props: { style: ordered ? "numbered" : "bullet", items },
       };
     }
 
@@ -200,29 +200,46 @@ function inlineAstToHtml(children: any[]): string {
   return html;
 }
 
-// ── List AST → HTML (SSR-safe string building) ───────────────────────────────
+// ── List AST → ListItemData[] ──────────────────────────────────────────────────
 
-function listNodeToHtml(node: any, markdown: string): string {
-  const ordered = node.ordered ?? false;
-  const parts: string[] = [];
-  const tag = ordered ? "ol" : "ul";
-  parts.push(`<${tag}>`);
-  for (const item of node.children) {
-    parts.push("<li>");
-    for (const child of item.children) {
+function listNodeToItems(node: any, markdown: string): ListItemData[] {
+  const items: ListItemData[] = [];
+  for (const item of node.children || []) {
+    let contentText = "";
+    const subListItems: ListItemData[] = [];
+    for (const child of item.children || []) {
       if (child.type === "paragraph") {
-        parts.push(inlineAstToHtml(child.children));
+        contentText = inlineAstToHtml(child.children);
       } else if (child.type === "list") {
-        parts.push(listNodeToHtml(child, markdown));
-      } else {
-        const t = child.children ? inlineAstToHtml(child.children) : "";
-        if (t) parts.push(t);
+        subListItems.push(...listNodeToItems(child, markdown));
       }
     }
-    parts.push("</li>");
+    const content = htmlToRichText(contentText);
+    items.push({
+      id: uuidv4(),
+      content,
+      children: subListItems.length > 0 ? subListItems : undefined,
+    });
   }
-  parts.push(`</${tag}>`);
-  return parts.join("");
+  return items;
+}
+
+// ── ListItemData[] → markdown ──────────────────────────────────────────────────
+
+function itemsToMarkdown(items: ListItemData[], ordered: boolean, indent: number = 0): string {
+  const prefix = "  ".repeat(indent);
+  return items.map((item) => {
+    const bullet = ordered ? "1." : "-";
+    const text = richTextToMarkdown(item.content);
+    const lines = text.split("\n");
+    const firstLine = `${prefix}${bullet} ${lines[0]}`;
+    const restLines = lines.slice(1).map((l) => `${prefix}  ${l}`).join("\n");
+    let result = firstLine + (restLines ? "\n" + restLines : "");
+    if (item.children && item.children.length > 0) {
+      result += "\n" + itemsToMarkdown(item.children, ordered, indent + 1);
+    }
+    return result;
+  }).join("\n");
 }
 
 // ── Table AST → rows ─────────────────────────────────────────────────────────
@@ -343,8 +360,13 @@ function serializeBlock(block: Block, indentLevel: number = 0): string {
     }
     case "bullet-list":
     case "numbered-list": {
-      const html = (block.props.html as string) ?? "";
-      text = htmlToMarkdown(html);
+      const items = block.props.items as ListItemData[] | undefined;
+      if (items) {
+        text = itemsToMarkdown(items, block.type === "numbered-list");
+      } else {
+        const html = (block.props.html as string) ?? "";
+        text = htmlToMarkdown(html);
+      }
       break;
     }
     case "image-grid": {
