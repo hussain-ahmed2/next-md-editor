@@ -128,17 +128,25 @@ function nodeToBlock(node: any, markdown: string): Block | null {
 
       if (isImageGrid(parsedRows)) {
         let showCaptions = true;
+        let title = "";
+        let description = "";
         if (node.position) {
           const beforeTable = markdown.slice(Math.max(0, node.position.start.offset - 500), node.position.start.offset);
           if (beforeTable.includes("<!-- captions:hidden -->")) showCaptions = false;
+          const titleMatch = beforeTable.match(/^#### (.+)$/m);
+          if (titleMatch) title = titleMatch[1].trim();
+          const descMatch = beforeTable.match(/^_(.+)_$/m);
+          if (descMatch) description = descMatch[1].trim();
         }
         return {
           id: uuidv4(),
           type: "image-grid",
           props: {
-            cols: Math.max(...parsedRows.map((r: string[]) => r.length), 2),
+            cols: Math.max(1, ...parsedRows.map((r: string[]) => r.length)),
             images: extractGridImages(parsedRows),
             showCaptions,
+            title,
+            description,
           },
         };
       }
