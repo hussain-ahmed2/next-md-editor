@@ -383,21 +383,56 @@ const MD_COMPONENTS: Components = {
 					>
 						{bodyRows.flatMap((row: any) =>
 							React.Children.toArray(row.props.children).map((cell: any, ci: number) => {
-								const img = processTableImage(cell.props.children);
-								if (React.isValidElement(img) && img.type === "img") {
-									return React.cloneElement(img as React.ReactElement<any>, {
-										key: ci,
-										style: {
-											width: "100%",
-											aspectRatio: "16/10",
-											objectFit: "cover",
-											borderRadius: 6,
-											border: "1px solid #30363d",
-											display: "block",
-										},
-									});
+								const findImg = (node: React.ReactNode): React.ReactElement | null => {
+									if (!React.isValidElement(node)) return null;
+									if (node.type === "img") return node;
+									const kids = (node.props as any)?.children;
+									return kids ? findImg(kids) : null;
+								};
+								const imgEl = findImg(cell.props.children);
+								if (imgEl) {
+									const p = imgEl.props as any;
+									return (
+										<div
+											key={ci}
+											style={{
+												display: "flex",
+												flexDirection: "column",
+												borderRadius: 6,
+												border: "1px solid #30363d",
+												overflow: "hidden",
+											}}
+										>
+											<img
+												src={p.src}
+												alt={p.alt || "Image"}
+												style={{
+													width: "100%",
+													aspectRatio: "16/10",
+													objectFit: "cover",
+													display: "block",
+												}}
+											/>
+											<div
+												style={{
+													padding: "8px 10px",
+													fontSize: 11,
+													fontWeight: 600,
+													color: "#8b949e",
+													textAlign: "center",
+													whiteSpace: "nowrap",
+													overflow: "hidden",
+													textOverflow: "ellipsis",
+													background: "rgba(255,255,255,0.03)",
+													borderTop: "1px solid #30363d",
+												}}
+											>
+												{p.alt || "Untitled Image"}
+											</div>
+										</div>
+									);
 								}
-								return img;
+								return null;
 							})
 						)}
 					</div>
