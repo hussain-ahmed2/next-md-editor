@@ -54,64 +54,20 @@ function extractText(node: React.ReactNode): string {
 	return "";
 }
 
-function hasImage(node: React.ReactNode): boolean {
-	if (React.isValidElement(node)) {
-		if (node.type === "img") return true;
-		if ((node.props as any)?.children) return hasImage((node.props as any).children);
-	}
-	if (Array.isArray(node)) return node.some(hasImage);
-	return false;
+function findImgInNode(node: React.ReactNode): React.ReactElement | null {
+	if (!React.isValidElement(node)) return null;
+	if (node.type === "img") return node;
+	const kids = (node.props as any)?.children;
+	return kids ? findImgInNode(kids) : null;
 }
 
-function processTableImage(children: React.ReactNode): React.ReactNode {
-	const text = extractText(children).trim();
-	const htmlImgMatch = text.match(/<img\s+[^>]*src="([^"]+)"[^>]*>/i);
-	if (htmlImgMatch) {
-		const src = htmlImgMatch[1];
-		const altMatch = text.match(/alt="([^"]*)"/i);
-		return (
-			<img
-				src={src}
-				alt={altMatch?.[1] ?? "Image"}
-				style={{
-					width: "100%",
-					height: "200px",
-					objectFit: "cover",
-					borderRadius: 6,
-					border: "1px solid #30363d",
-					display: "block",
-				}}
-			/>
-		);
+function hasImageInNode(node: React.ReactNode): boolean {
+	if (React.isValidElement(node)) {
+		if (node.type === "img") return true;
+		if ((node.props as any)?.children) return hasImageInNode((node.props as any).children);
 	}
-	const styleImg = (node: React.ReactNode): React.ReactNode => {
-		if (!node) return node;
-		if (React.isValidElement(node)) {
-			if (node.type === "img") {
-				const p = node.props as any;
-				return (
-					<img
-						src={p.src}
-						alt={p.alt || "Image"}
-						style={{
-							width: "100%",
-							height: "200px",
-							objectFit: "cover",
-							borderRadius: 6,
-							border: "1px solid #30363d",
-							display: "block",
-						}}
-					/>
-				);
-			}
-			if ((node.props as any)?.children) {
-				return React.cloneElement(node, {}, React.Children.map((node.props as any).children, styleImg));
-			}
-		}
-		if (Array.isArray(node)) return node.map(styleImg);
-		return node;
-	};
-	return styleImg(children);
+	if (Array.isArray(node)) return node.some(hasImageInNode);
+	return false;
 }
 
 const FONT_SANS = '-apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif';
@@ -349,128 +305,6 @@ const MD_COMPONENTS: Components = {
 	strong: ({ children }) => <strong style={{ fontWeight: 600, color: "#f0f6fc" }}>{children}</strong>,
 	em: ({ children }) => <em style={{ fontStyle: "italic" }}>{children}</em>,
 	del: ({ children }) => <del style={{ color: "#8b949e" }}>{children}</del>,
-
-	table: ({ children }) => {
-		const kids = React.Children.toArray(children);
-		const tbody = kids.find(
-			(c): c is React.ReactElement<{ children: React.ReactNode }> =>
-				React.isValidElement(c) && c.type === "tbody"
-		);
-
-		if (tbody) {
-			const bodyRows = React.Children.toArray(tbody.props.children);
-			const allImages = bodyRows.length > 0 && bodyRows.every((row) => {
-				if (!React.isValidElement(row)) return false;
-				const rowKids = React.Children.toArray((row as React.ReactElement<any>).props.children);
-				return rowKids.length > 0 && rowKids.every((cell) => {
-					if (!React.isValidElement(cell)) return false;
-					return hasImage((cell as React.ReactElement<any>).props.children);
-				});
-			});
-
-			if (allImages) {
-				const cols = Math.max(...bodyRows.map((r: any) =>
-					React.Children.count(r.props.children)
-				), 2);
-				return (
-					<div
-						style={{
-							display: "grid",
-							gridTemplateColumns: `repeat(${cols}, 1fr)`,
-							gap: 12,
-							margin: "12px 0",
-						}}
-					>
-						{bodyRows.flatMap((row: any) =>
-							React.Children.toArray(row.props.children).map((cell: any, ci: number) => {
-								const findImg = (node: React.ReactNode): React.ReactElement | null => {
-									if (!React.isValidElement(node)) return null;
-									if (node.type === "img") return node;
-									const kids = (node.props as any)?.children;
-									return kids ? findImg(kids) : null;
-								};
-								const imgEl = findImg(cell.props.children);
-								if (imgEl) {
-									const p = imgEl.props as any;
-									return (
-										<div
-											key={ci}
-											style={{
-												display: "flex",
-												flexDirection: "column",
-												borderRadius: 6,
-												border: "1px solid #30363d",
-												overflow: "hidden",
-											}}
-										>
-											<img
-												src={p.src}
-												alt={p.alt || "Image"}
-												style={{
-													width: "100%",
-													aspectRatio: "16/10",
-													objectFit: "cover",
-													display: "block",
-												}}
-											/>
-											<div
-												style={{
-													padding: "8px 10px",
-													fontSize: 11,
-													fontWeight: 600,
-													color: "#8b949e",
-													textAlign: "center",
-													whiteSpace: "nowrap",
-													overflow: "hidden",
-													textOverflow: "ellipsis",
-													background: "rgba(255,255,255,0.03)",
-													borderTop: "1px solid #30363d",
-												}}
-											>
-												{p.alt || "Untitled Image"}
-											</div>
-										</div>
-									);
-								}
-								return null;
-							})
-						)}
-					</div>
-				);
-			}
-		}
-
-		return (
-			<div style={{ overflowX: "auto", margin: "12px 0" }}>
-				<table
-					style={{
-						width: "100%",
-						borderCollapse: "collapse",
-						fontSize: 14,
-						textAlign: "left",
-						border: "1px solid #30363d",
-					}}
-				>
-					{children}
-				</table>
-			</div>
-		);
-	},
-	thead: ({ children }) => (
-		<thead style={{ borderBottom: "2px solid #30363d", background: "#161b22" }}>{children}</thead>
-	),
-	tbody: ({ children }) => <tbody>{children}</tbody>,
-	tr: ({ children }) => <tr style={{ borderBottom: "1px solid #30363d" }}>{children}</tr>,
-	th: ({ children }) => (
-		<th style={{ padding: "8px 12px", fontWeight: 600, borderRight: "1px solid #30363d", color: "#f0f6fc" }}>
-			{processTableImage(children)}
-		</th>
-	),
-	td: ({ children }) => (
-		<td style={{ padding: "8px 12px", borderRight: "1px solid #30363d", color: "#c9d1d9" }}>
-			{processTableImage(children)}
-		</td>
-	),
 };
 
 export function MarkdownPreview() {
@@ -480,6 +314,113 @@ export function MarkdownPreview() {
 	const isMobile = useUIStore((s) => s.isMobile);
 	const previewWidth = useUIStore((s) => s.previewWidth);
 	const width = isMobile ? undefined : (previewWidth ?? 360);
+
+	const isImageGrid = markdown.includes("<!-- image-grid -->");
+	const hasHiddenCaptions = markdown.includes("<!-- captions:hidden -->");
+
+	const tableComponents = React.useMemo((): Components => {
+		if (!isImageGrid) {
+			return {
+				table: ({ children }) => (
+					<div style={{ overflowX: "auto", margin: "12px 0" }}>
+						<table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14, textAlign: "left", border: "1px solid #30363d" }}>
+							{children}
+						</table>
+					</div>
+				),
+				thead: ({ children }) => <thead style={{ borderBottom: "2px solid #30363d", background: "#161b22" }}>{children}</thead>,
+				tbody: ({ children }) => <tbody>{children}</tbody>,
+				tr: ({ children }) => <tr style={{ borderBottom: "1px solid #30363d" }}>{children}</tr>,
+				th: ({ children }) => (
+					<th style={{ padding: "8px 12px", fontWeight: 600, borderRight: "1px solid #30363d", color: "#f0f6fc" }}>
+						{children}
+					</th>
+				),
+				td: ({ children }) => (
+					<td style={{ padding: "8px 12px", borderRight: "1px solid #30363d", color: "#c9d1d9" }}>
+						{children}
+					</td>
+				),
+			};
+		}
+
+		return {
+			table: ({ children }) => {
+				const kids = React.Children.toArray(children);
+				const tbody = kids.find(
+					(c): c is React.ReactElement<{ children: React.ReactNode }> =>
+						React.isValidElement(c) && c.type === "tbody"
+				);
+
+				if (!tbody) {
+					return (
+						<div style={{ overflowX: "auto", margin: "12px 0" }}>
+							<table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14, textAlign: "left", border: "1px solid #30363d" }}>
+								{children}
+							</table>
+						</div>
+					);
+				}
+
+				const bodyRows = React.Children.toArray(tbody.props.children);
+				if (!bodyRows.length || !bodyRows.every((row) => {
+					if (!React.isValidElement(row)) return false;
+					const rowKids = React.Children.toArray((row as React.ReactElement<any>).props.children);
+					return rowKids.length > 0 && rowKids.every((cell) => {
+						if (!React.isValidElement(cell)) return false;
+						return hasImageInNode((cell as React.ReactElement<any>).props.children);
+					});
+				})) {
+					return (
+						<div style={{ overflowX: "auto", margin: "12px 0" }}>
+							<table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14, textAlign: "left", border: "1px solid #30363d" }}>
+								{children}
+							</table>
+						</div>
+					);
+				}
+
+				const cols = Math.max(...bodyRows.map((r: any) =>
+					React.Children.count(r.props.children)
+				), 2);
+
+				return (
+					<div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 12, margin: "12px 0" }}>
+						{bodyRows.flatMap((row: any) =>
+							React.Children.toArray(row.props.children).map((cell: any, ci: number) => {
+								const imgEl = findImgInNode(cell.props.children);
+								if (!imgEl) return null;
+								const p = imgEl.props as any;
+								return (
+									<div key={ci} style={{ display: "flex", flexDirection: "column", borderRadius: 6, border: "1px solid #30363d", overflow: "hidden" }}>
+										<img src={p.src} alt={p.alt || "Image"} style={{ width: "100%", aspectRatio: "16/10", objectFit: "cover", display: "block" }} />
+										{!hasHiddenCaptions && (
+											<div style={{ padding: "8px 10px", fontSize: 11, fontWeight: 600, color: "#8b949e", textAlign: "center", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", background: "rgba(255,255,255,0.03)", borderTop: "1px solid #30363d" }}>
+												{p.alt || "Untitled Image"}
+											</div>
+										)}
+									</div>
+								);
+							})
+						)}
+					</div>
+				);
+			},
+			thead: ({ children }) => <thead style={{ borderBottom: "2px solid #30363d", background: "#161b22" }}>{children}</thead>,
+			tbody: ({ children }) => <tbody>{children}</tbody>,
+			tr: ({ children }) => <tr style={{ borderBottom: "1px solid #30363d" }}>{children}</tr>,
+			th: ({ children }) => (
+				<th style={{ padding: "8px 12px", fontWeight: 600, borderRight: "1px solid #30363d", color: "#f0f6fc" }}>
+					{children}
+				</th>
+			),
+			td: ({ children }) => (
+				<td style={{ padding: "8px 12px", borderRight: "1px solid #30363d", color: "#c9d1d9" }}>
+					{children}
+				</td>
+			),
+		};
+	}, [isImageGrid, hasHiddenCaptions]);
 
 	return (
 		<aside
@@ -641,7 +582,7 @@ export function MarkdownPreview() {
 							<ReactMarkdown
 								remarkPlugins={[remarkGfm]}
 								rehypePlugins={[rehypeRaw]}
-								components={MD_COMPONENTS}
+								components={{ ...MD_COMPONENTS, ...tableComponents }}
 							>
 								{markdown}
 							</ReactMarkdown>
