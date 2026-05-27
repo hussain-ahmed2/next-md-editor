@@ -18,6 +18,8 @@ export function FloatingFormatToolbar() {
   const toolbarRef = useRef<HTMLDivElement>(null);
   const blockIdRef = useRef<string | null>(null);
   const rangeRef = useRef<{ start: number; end: number } | null>(null);
+  const elementRef = useRef<HTMLElement | null>(null);
+  const isRichTextRef = useRef(false);
 
   const update = useCallback(() => {
     const sel = window.getSelection();
@@ -50,24 +52,33 @@ export function FloatingFormatToolbar() {
       return;
     }
 
+    elementRef.current = contentEditable;
+    blockIdRef.current = bid;
+
     const blocks = useEditorStore.getState().blocks;
     const block = findBlockById(blocks, bid);
-    if (!block || !Array.isArray(block.props.content)) {
-      setVisible(false);
-      return;
-    }
 
-    const content = block.props.content as RichText;
-    const range = getSelectionRichRange(content, contentEditable);
-    if (!range || range.start >= range.end) {
-      setVisible(false);
-      return;
+    if (block && Array.isArray(block.props.content)) {
+      isRichTextRef.current = true;
+      const content = block.props.content as RichText;
+      const range = getSelectionRichRange(content, contentEditable);
+      if (!range || range.start >= range.end) {
+        setVisible(false);
+        return;
+      }
+      const formats = getActiveFormats(content, range.start);
+      setActiveFormats(formats);
+      rangeRef.current = range;
+    } else {
+      isRichTextRef.current = false;
+      rangeRef.current = null;
+      setActiveFormats({
+        bold: document.queryCommandState("bold"),
+        italic: document.queryCommandState("italic"),
+        strikethrough: document.queryCommandState("strikeThrough"),
+        code: isInsideCodeElement(contentEditable),
+      });
     }
-
-    const formats = getActiveFormats(content, range.start);
-    setActiveFormats(formats);
-    blockIdRef.current = bid;
-    rangeRef.current = range;
 
     const selRect = sel.getRangeAt(0).getBoundingClientRect();
     const h = toolbarRef.current?.offsetHeight ?? 40;
@@ -95,34 +106,80 @@ export function FloatingFormatToolbar() {
 
   const apply = useCallback((action: FormatAction) => {
     const bid = blockIdRef.current;
-    if (!bid || !rangeRef.current) return;
+    if (!bid) return;
 
-    const blocks = useEditorStore.getState().blocks;
-    const block = findBlockById(blocks, bid);
-    if (!block || !Array.isArray(block.props.content)) return;
+    if (isRichTextRef.current) {
+      if (!rangeRef.current) return;
+      const blocks = useEditorStore.getState().blocks;
+      const block = findBlockById(blocks, bid);
+      if (!block || !Array.isArray(block.props.content)) return;
+      const content = block.props.content as RichText;
+      const { start, end } = rangeRef.current;
 
-    const content = block.props.content as RichText;
-    const { start, end } = rangeRef.current;
+      let format: FormatFlags;
+      if (action === "link") {
+        const url = window.prompt("Enter URL:", "https://");
+        if (!url) return;
+        format = { link: url };
+      } else if (action === "code") {
+        format = { code: true };
+      } else if (action === "bold") {
+        format = { bold: true };
+      } else if (action === "italic") {
+        format = { italic: true };
+      } else if (action === "strikethrough") {
+        format = { strikethrough: true };
+      } else {
+        return;
+      }
 
-    let format: FormatFlags;
-    if (action === "link") {
-      const url = window.prompt("Enter URL:", "https://");
-      if (!url) return;
-      format = { link: url };
-    } else if (action === "code") {
-      format = { code: true };
-    } else if (action === "bold") {
-      format = { bold: true };
-    } else if (action === "italic") {
-      format = { italic: true };
-    } else if (action === "strikethrough") {
-      format = { strikethrough: true };
+      const newContent = toggleRichFormat(content, start, end, format);
+      useEditorStore.getState().updateBlock(bid, { content: newContent });
     } else {
-      return;
-    }
+      const el = elementRef.current;
+      if (!el) return;
+      el.focus();
 
-    const newContent = toggleRichFormat(content, start, end, format);
-    useEditorStore.getState().updateBlock(bid, { content: newContent });
+      if (action === "code") {
+        const sel = window.getSelection();
+        if (!sel || !sel.rangeCount) return;
+        const range = sel.getRangeAt(0);
+        const text = range.toString();
+        if (!text) return;
+
+        if (isInsideCodeElement(elementRef.current!)) {
+          const codeEl = findAncestorCodeElement(elementRef.current!, sel.anchorNode);
+          if (codeEl && codeEl.parentNode) {
+            const txt = document.createTextNode(codeEl.textContent || "");
+            codeEl.parentNode.replaceChild(txt, codeEl);
+            const newRange = document.createRange();
+            newRange.setStartAfter(txt);
+            newRange.collapse(true);
+            sel.removeAllRanges();
+            sel.addRange(newRange);
+          }
+        } else {
+          range.deleteContents();
+          const code = document.createElement("code");
+          code.textContent = text;
+          range.insertNode(code);
+          range.setStartAfter(code);
+          range.collapse(true);
+          sel.removeAllRanges();
+          sel.addRange(range);
+        }
+      } else if (action === "link") {
+        const url = window.prompt("Enter URL:", "https://");
+        if (!url) return;
+        document.execCommand("createLink", false, url);
+      } else if (action === "bold") {
+        document.execCommand("bold");
+      } else if (action === "italic") {
+        document.execCommand("italic");
+      } else if (action === "strikethrough") {
+        document.execCommand("strikeThrough");
+      }
+    }
   }, []);
 
   if (!visible) return null;
@@ -213,4 +270,23 @@ function findBlockById(blocks: any[], id: string): any {
     }
   }
   return null;
+}
+
+function findAncestorCodeElement(root: HTMLElement, node: Node | null): HTMLElement | null {
+  while (node && node !== root) {
+    if (node instanceof HTMLElement && node.tagName === "CODE") return node;
+    node = node.parentNode;
+  }
+  return null;
+}
+
+function isInsideCodeElement(root: HTMLElement): boolean {
+  const sel = window.getSelection();
+  if (!sel || !sel.rangeCount) return false;
+  let node: Node | null = sel.anchorNode;
+  while (node && node !== root) {
+    if (node instanceof HTMLElement && node.tagName === "CODE") return true;
+    node = node.parentNode;
+  }
+  return false;
 }

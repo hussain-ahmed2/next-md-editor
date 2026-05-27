@@ -151,6 +151,7 @@ export function CalloutBlock({ block }: { block: Block }) {
         ref={ref}
         contentEditable
         suppressContentEditableWarning
+        data-block-id={block.id}
         onFocus={() => setIsFocused(true)}
         onBlur={handleBlur}
         onInput={handleInput}

@@ -32,9 +32,14 @@ function renderListMarkdown(container: HTMLDivElement) {
 			}
 		});
 
-		li.innerHTML = renderInlineMarkdown(rawHtml);
+		li.innerHTML = hasHtmlTags(rawHtml) ? rawHtml : renderInlineMarkdown(rawHtml);
 		subLists.forEach((sl) => li.appendChild(sl));
 	});
+}
+
+/** Quick check: does the string contain any HTML tag? */
+function hasHtmlTags(s: string): boolean {
+	return /<[a-zA-Z\/][^>]*>/.test(s);
 }
 
 /**
@@ -233,6 +238,7 @@ export function ListBlock({ block }: { block: Block }) {
 				ref={ref}
 				contentEditable
 				suppressContentEditableWarning
+				data-block-id={block.id}
 				onFocus={() => setIsFocused(true)}
 				onBlur={handleBlur}
 				onInput={handleInput}

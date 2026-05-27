@@ -3,9 +3,16 @@
 import { useEditorStore } from "@next-md-editor/editor-core";
 import type { Block } from "@next-md-editor/types";
 import { useState } from "react";
-import { highlightCodeHtml, getHighlightLanguages } from "@/features/markdown/highlighter";
+import { highlightCodeHtml } from "@/features/markdown/highlighter";
 
-const ALL_LANGUAGES = getHighlightLanguages();
+const POPULAR_LANGUAGES = [
+  "javascript", "typescript", "jsx", "tsx", "python", "java", "cpp", "c",
+  "csharp", "go", "rust", "swift", "kotlin", "php", "ruby", "scala",
+  "bash", "shell", "powershell", "sql", "html", "css", "json", "yaml",
+  "markdown", "dockerfile", "graphql", "sass", "less", "lua", "perl",
+  "r", "dart", "elixir", "haskell", "clojure", "zig", "solidity",
+  "xml", "toml", "ini", "diff", "nginx",
+];
 
 export function CodeBlock({ block }: { block: Block }) {
   const updateBlock = useEditorStore((s) => s.updateBlock);
@@ -34,8 +41,7 @@ export function CodeBlock({ block }: { block: Block }) {
           <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#fbbf24", display: "inline-block" }} />
           <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#4ade80", display: "inline-block" }} />
         </div>
-        <input
-          list="code-langs"
+        <select
           value={lang}
           onChange={(e) => { e.stopPropagation(); updateBlock(block.id, { language: e.target.value }); }}
           style={{
@@ -47,11 +53,12 @@ export function CodeBlock({ block }: { block: Block }) {
             outline: "none",
             width: 120,
             textAlign: "right",
+            textAlignLast: "right",
+            cursor: "pointer",
           }}
-        />
-        <datalist id="code-langs">
-          {ALL_LANGUAGES.map((l) => <option key={l} value={l} />)}
-        </datalist>
+        >
+          {POPULAR_LANGUAGES.map((l) => <option key={l} value={l}>{l}</option>)}
+        </select>
       </div>
       
       {/* Code area - Stacked transparent textarea over syntax-highlighted text */}

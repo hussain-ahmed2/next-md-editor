@@ -55,19 +55,14 @@ function extractText(node: React.ReactNode): string {
 }
 
 function findImgInNode(node: React.ReactNode): React.ReactElement | null {
-	if (!React.isValidElement(node)) return null;
-	if (node.type === "img") return node;
-	const kids = (node.props as any)?.children;
-	return kids ? findImgInNode(kids) : null;
-}
-
-function hasImageInNode(node: React.ReactNode): boolean {
-	if (React.isValidElement(node)) {
-		if (node.type === "img") return true;
-		if ((node.props as any)?.children) return hasImageInNode((node.props as any).children);
+	const children = React.Children.toArray(node);
+	for (const child of children) {
+		if (!React.isValidElement(child)) continue;
+		if (child.type === "img") return child;
+		const found = findImgInNode((child.props as any)?.children);
+		if (found) return found;
 	}
-	if (Array.isArray(node)) return node.some(hasImageInNode);
-	return false;
+	return null;
 }
 
 const FONT_SANS = '-apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif';
@@ -352,7 +347,11 @@ export function MarkdownPreview() {
 						React.isValidElement(c) && c.type === "tbody"
 				);
 
-				if (!tbody) {
+				const bodyChildren = tbody
+					? React.Children.toArray((tbody as any).props.children)
+					: kids.filter((c): c is React.ReactElement => React.isValidElement(c) && c.type === "tr");
+
+				if (!bodyChildren.length) {
 					return (
 						<div style={{ overflowX: "auto", margin: "12px 0" }}>
 							<table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14, textAlign: "left", border: "1px solid #30363d" }}>
@@ -362,27 +361,20 @@ export function MarkdownPreview() {
 					);
 				}
 
-				const bodyRows = React.Children.toArray(tbody.props.children);
-				if (!bodyRows.length || !bodyRows.every((row) => {
-					if (!React.isValidElement(row)) return false;
-					const rowKids = React.Children.toArray((row as React.ReactElement<any>).props.children);
-					return rowKids.length > 0 && rowKids.every((cell) => {
-						if (!React.isValidElement(cell)) return false;
-						return hasImageInNode((cell as React.ReactElement<any>).props.children);
-					});
-				})) {
-					return (
-						<div style={{ overflowX: "auto", margin: "12px 0" }}>
-							<table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14, textAlign: "left", border: "1px solid #30363d" }}>
-								{children}
-							</table>
-						</div>
-					);
-				}
+		const bodyRows = bodyChildren;
+			if (!bodyRows.length) {
+				return (
+					<div style={{ overflowX: "auto", margin: "12px 0" }}>
+						<table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14, textAlign: "left", border: "1px solid #30363d" }}>
+							{children}
+						</table>
+					</div>
+				);
+			}
 
-				const cols = Math.max(...bodyRows.map((r: any) =>
+			const cols = Math.max(...bodyRows.map((r: any) =>
 					React.Children.count(r.props.children)
-				), 2);
+				), 1);
 
 				return (
 					<div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 12, margin: "12px 0" }}>

@@ -41,7 +41,13 @@ export function highlightCode(code: string, lang: string): string {
 ### 🌟 Design Grid Assets
 _A showcase of visual abstract card grids inside a responsive 3-column container._
 
-| | | |
-|---|---|---|
-| ![Fluid abstract shapes](https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=600&auto=format&fit=crop) | ![Glossy 3D composition](https://images.unsplash.com/photo-1634017839464-5c339ebe3cb4?q=80&w=600&auto=format&fit=crop) | ![Architectural patterns](https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=600&auto=format&fit=crop) |
+<!-- image-grid -->
+
+<table>
+<tr>
+<td><img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=600&auto=format&fit=crop" alt="Fluid abstract shapes" /></td>
+<td><img src="https://images.unsplash.com/photo-1634017839464-5c339ebe3cb4?q=80&w=600&auto=format&fit=crop" alt="Glossy 3D composition" /></td>
+<td><img src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=600&auto=format&fit=crop" alt="Architectural patterns" /></td>
+</tr>
+</table>
 `;
