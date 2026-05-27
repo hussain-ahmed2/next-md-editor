@@ -82,24 +82,6 @@ describe("image grid round-trip", () => {
     expect(grid.props.showCaptions).toBe(true);
   });
 
-  it("preserves title and description through round-trip", () => {
-    const original = `<!-- image-grid -->
-#### My Gallery
-_Beautiful abstract art_
-
-| &nbsp; | &nbsp; |
-| --- | --- |
-| ![A](${FLUID}) | ![B](${GLOSSY}) |`;
-
-    const blocks = parseMarkdown(original);
-    const serialized = serializeMarkdown(blocks);
-    const parsed = parseMarkdown(serialized);
-    const grid = parsed.find((b) => b.type === "image-grid");
-
-    expect(grid).toBeDefined();
-    expect(grid.props.title).toBe("My Gallery");
-    expect(grid.props.description).toBe("Beautiful abstract art");
-  });
 
   it("round-trips 5 images in 3 cols correctly", () => {
     const original = `<!-- image-grid -->

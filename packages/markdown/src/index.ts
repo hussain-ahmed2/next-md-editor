@@ -128,27 +128,9 @@ function nodeToBlock(node: any, markdown: string): Block | null {
 
       if (isImageGrid(parsedRows)) {
         let showCaptions = true;
-        let title = "";
-        let description = "";
         if (node.position) {
           const beforeTable = markdown.slice(Math.max(0, node.position.start.offset - 500), node.position.start.offset);
           if (beforeTable.includes("<!-- captions:hidden -->")) showCaptions = false;
-          const imgGridMatch = beforeTable.match(/<!-- image-grid\s+(.*?)-->/);
-          if (imgGridMatch) {
-            const attrStr = imgGridMatch[1];
-            const tMatch = attrStr.match(/title="([^"]*)"/);
-            if (tMatch) title = tMatch[1];
-            const dMatch = attrStr.match(/description="([^"]*)"/);
-            if (dMatch) description = dMatch[1];
-          }
-          if (!title) {
-            const titleMatch = beforeTable.match(/^#### (.+)$/m);
-            if (titleMatch) title = titleMatch[1].trim();
-          }
-          if (!description) {
-            const descMatch = beforeTable.match(/^_(.+)_$/m);
-            if (descMatch) description = descMatch[1].trim();
-          }
         }
         return {
           id: uuidv4(),
@@ -157,8 +139,6 @@ function nodeToBlock(node: any, markdown: string): Block | null {
             cols: Math.max(1, ...parsedRows.map((r: string[]) => r.length)),
             images: extractGridImages(parsedRows),
             showCaptions,
-            title,
-            description,
           },
         };
       }
@@ -362,14 +342,7 @@ function serializeBlock(block: Block, indentLevel: number = 0): string {
       const showCaptions = (block.props.showCaptions as boolean) ?? true;
 
       const parts: string[] = [];
-      const title = (block.props.title as string) ?? "";
-      const description = (block.props.description as string) ?? "";
-
-      const attrs: string[] = [];
-      if (title.trim()) attrs.push(`title="${title.trim().replace(/"/g, "&quot;")}"`);
-      if (description.trim()) attrs.push(`description="${description.trim().replace(/"/g, "&quot;")}"`);
-      const comment = attrs.length ? `<!-- image-grid ${attrs.join(" ")} -->` : "<!-- image-grid -->";
-      parts.push(comment);
+      parts.push("<!-- image-grid -->");
       if (!showCaptions) parts.push("<!-- captions:hidden -->");
 
       const emptyHeaders = Array.from({ length: cols }, () => "&nbsp;");

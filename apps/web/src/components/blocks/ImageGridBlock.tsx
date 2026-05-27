@@ -82,8 +82,6 @@ export function ImageGridBlock({ block }: { block: Block }) {
 
   const images = (block.props.images as GridImage[]) ?? DEFAULT_IMAGES;
   const cols = (block.props.cols as number) ?? 2;
-  const title = (block.props.title as string) ?? "";
-  const description = (block.props.description as string) ?? "";
   const showCaptions = (block.props.showCaptions as boolean) ?? true;
 
   const [editingImageId, setEditingImageId] = useState<string | null>(null);
@@ -103,8 +101,6 @@ export function ImageGridBlock({ block }: { block: Block }) {
     updateBlock(block.id, {
       cols: newCols,
       images,
-      title,
-      description,
       showCaptions,
     });
   };
@@ -118,8 +114,6 @@ export function ImageGridBlock({ block }: { block: Block }) {
     updateBlock(block.id, {
       cols,
       images: [...images, newImage],
-      title,
-      description,
       showCaptions,
     });
   };
@@ -130,8 +124,6 @@ export function ImageGridBlock({ block }: { block: Block }) {
     updateBlock(block.id, {
       cols,
       images: filtered.length ? filtered : DEFAULT_IMAGES,
-      title,
-      description,
       showCaptions,
     });
   };
@@ -152,8 +144,6 @@ export function ImageGridBlock({ block }: { block: Block }) {
     updateBlock(block.id, {
       cols,
       images: updated,
-      title,
-      description,
       showCaptions,
     });
     setEditingImageId(null);
@@ -248,8 +238,6 @@ export function ImageGridBlock({ block }: { block: Block }) {
                 updateBlock(block.id, {
                   cols,
                   images,
-                  title,
-                  description,
                   showCaptions: e.target.checked,
                 })
               }
@@ -351,92 +339,6 @@ export function ImageGridBlock({ block }: { block: Block }) {
             <Plus size={11} /> Add Image
           </button>
         </div>
-      </div>
-
-      {/* Grid Header Fields */}
-      <div
-        contentEditable={false}
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: 6,
-          padding: "4px 4px 8px 4px",
-          borderBottom: "1px dashed var(--border-subtle)",
-        }}
-      >
-        <input
-          type="text"
-          value={title}
-          onChange={(e) =>
-            updateBlock(block.id, {
-              cols,
-              images,
-              title: e.target.value,
-              description,
-              showCaptions,
-            })
-          }
-          onKeyDown={(e) => {
-            e.stopPropagation();
-            handleInputShortcuts(e, title, (val) => {
-              updateBlock(block.id, {
-                cols,
-                images,
-                title: val,
-                description,
-                showCaptions,
-              });
-            });
-          }}
-          onClick={(e) => e.stopPropagation()}
-          onMouseDown={(e) => e.stopPropagation()}
-          placeholder="Grid Title (optional)..."
-          style={{
-            fontSize: 16,
-            fontWeight: 700,
-            color: "var(--text-primary)",
-            background: "transparent",
-            border: "none",
-            outline: "none",
-            width: "100%",
-          }}
-        />
-        <input
-          type="text"
-          value={description}
-          onChange={(e) =>
-            updateBlock(block.id, {
-              cols,
-              images,
-              title,
-              description: e.target.value,
-              showCaptions,
-            })
-          }
-          onKeyDown={(e) => {
-            e.stopPropagation();
-            handleInputShortcuts(e, description, (val) => {
-              updateBlock(block.id, {
-                cols,
-                images,
-                title,
-                description: val,
-                showCaptions,
-              });
-            });
-          }}
-          onClick={(e) => e.stopPropagation()}
-          onMouseDown={(e) => e.stopPropagation()}
-          placeholder="Grid Description (optional)..."
-          style={{
-            fontSize: 12,
-            color: "var(--text-muted)",
-            background: "transparent",
-            border: "none",
-            outline: "none",
-            width: "100%",
-          }}
-        />
       </div>
 
       {/* Editor Modal for single Image properties */}

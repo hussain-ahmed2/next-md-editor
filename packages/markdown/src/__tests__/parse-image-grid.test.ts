@@ -117,24 +117,6 @@ describe("parseMarkdown — image grid", () => {
     expect(grid.props.images[0].alt).toBe("HTML img");
   });
 
-  it("parses image grid with title and description", () => {
-    const md = `<!-- image-grid -->
-#### My Gallery
-_Beautiful abstract art_
-
-| &nbsp; | &nbsp; |
-| --- | --- |
-| ![A](${FLUID}) | ![B](${GLOSSY}) |`;
-
-    const blocks = parseMarkdown(md);
-    const grid = findImageGrid(blocks);
-
-    expect(grid).toBeDefined();
-    expect(grid.props.title).toBe("My Gallery");
-    expect(grid.props.description).toBe("Beautiful abstract art");
-    expect(grid.props.images).toHaveLength(2);
-  });
-
   it("treats regular tables (no images) as table, not image-grid", () => {
     const md = `| Name | Age |
 | --- | --- |

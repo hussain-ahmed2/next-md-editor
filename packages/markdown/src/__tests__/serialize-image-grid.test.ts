@@ -21,8 +21,6 @@ function makeGrid(overrides: Partial<Block["props"]> = {}): Block {
         { id: "i3", url: ARCH, alt: "Architectural patterns" },
       ],
       showCaptions: true,
-      title: "",
-      description: "",
       ...overrides,
     },
   };
@@ -47,21 +45,6 @@ describe("serializeMarkdown — image grid", () => {
     expect(md).toContain("<!-- captions:hidden -->");
   });
 
-  it("serializes title and description", () => {
-    const md = serializeMarkdown([
-      makeGrid({ title: "My Gallery", description: "Beautiful art" }),
-    ]);
-
-    expect(md).toContain('title="My Gallery"');
-    expect(md).toContain('description="Beautiful art"');
-  });
-
-  it("does not output title/description when empty", () => {
-    const md = serializeMarkdown([makeGrid({ title: "", description: "" })]);
-
-    expect(md).not.toContain("title=");
-    expect(md).not.toContain("description=");
-  });
 
   it("serializes a 2-col grid", () => {
     const md = serializeMarkdown([
