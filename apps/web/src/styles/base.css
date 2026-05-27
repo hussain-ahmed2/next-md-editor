@@ -24,6 +24,15 @@ html, body {
 ::-webkit-scrollbar-thumb   { background: var(--border); border-radius: 99px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
+/* ── Inline code (backtick highlighting) ───────────── */
+code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+}
+
 /* ── Selection ──────────────────────────────────────── */
 ::selection {
   background: var(--accent-muted);
