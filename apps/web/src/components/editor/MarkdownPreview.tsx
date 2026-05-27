@@ -55,10 +55,14 @@ function extractText(node: React.ReactNode): string {
 }
 
 function findImgInNode(node: React.ReactNode): React.ReactElement | null {
-	if (!React.isValidElement(node)) return null;
-	if (node.type === "img") return node;
-	const kids = (node.props as any)?.children;
-	return kids ? findImgInNode(kids) : null;
+	const children = React.Children.toArray(node);
+	for (const child of children) {
+		if (!React.isValidElement(child)) continue;
+		if (child.type === "img") return child;
+		const found = findImgInNode((child.props as any)?.children);
+		if (found) return found;
+	}
+	return null;
 }
 
 const FONT_SANS = '-apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif';
@@ -343,7 +347,11 @@ export function MarkdownPreview() {
 						React.isValidElement(c) && c.type === "tbody"
 				);
 
-				if (!tbody) {
+				const bodyChildren = tbody
+					? React.Children.toArray((tbody as any).props.children)
+					: kids.filter((c): c is React.ReactElement => React.isValidElement(c) && c.type === "tr");
+
+				if (!bodyChildren.length) {
 					return (
 						<div style={{ overflowX: "auto", margin: "12px 0" }}>
 							<table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14, textAlign: "left", border: "1px solid #30363d" }}>
@@ -353,7 +361,7 @@ export function MarkdownPreview() {
 					);
 				}
 
-		const bodyRows = React.Children.toArray(tbody.props.children);
+		const bodyRows = bodyChildren;
 			if (!bodyRows.length) {
 				return (
 					<div style={{ overflowX: "auto", margin: "12px 0" }}>
@@ -366,7 +374,7 @@ export function MarkdownPreview() {
 
 			const cols = Math.max(...bodyRows.map((r: any) =>
 					React.Children.count(r.props.children)
-				), 2);
+				), 1);
 
 				return (
 					<div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 12, margin: "12px 0" }}>

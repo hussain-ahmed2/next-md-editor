@@ -46,7 +46,78 @@ export function parseMarkdown(markdown: string): Block[] {
     .parse(markdown) as Root;
 
   const blocks: Block[] = [];
-  for (const node of tree.children) {
+  let skipCount = 0;
+
+  for (let i = 0; i < tree.children.length; i++) {
+    if (skipCount > 0) { skipCount--; continue; }
+
+    const node = tree.children[i];
+
+    // Detect new-style raw HTML image grid: <!-- image-grid --> followed by <table> with <img>
+    if (node.type === "html") {
+      const val = ((node as any).value ?? "").trim();
+      if (val === "<!-- image-grid -->") {
+        let showCaptions = true;
+        const images: { id: string; url: string; alt: string }[] = [];
+        let consumed = 0;
+
+        for (let j = i + 1; j < tree.children.length; j++) {
+          const next = tree.children[j];
+          if (next.type !== "html") break;
+          const html = ((next as any).value ?? "").trim();
+
+          if (html === "<!-- captions:hidden -->") {
+            showCaptions = false;
+            consumed++;
+            continue;
+          }
+
+          const imgRegex = /<img\s+[^>]*src="([^"]+)"[^>]*\/?>/gi;
+          let match: RegExpExecArray | null;
+          let foundImg = false;
+          while ((match = imgRegex.exec(html)) !== null) {
+            foundImg = true;
+            const tag = match[0];
+            const altMatch = tag.match(/alt="([^"]*)"/i);
+            images.push({
+              id: Math.random().toString(36).substring(7),
+              url: match[1],
+              alt: altMatch?.[1] ?? "",
+            });
+          }
+          if (foundImg) {
+            consumed++;
+          } else {
+            break;
+          }
+        }
+
+        if (images.length > 0) {
+          // Determine cols from <td> count in first <tr> of the <table> HTML
+          let cols = Math.min(images.length, 3);
+          for (let j = i + 1; j < Math.min(i + consumed + 2, tree.children.length); j++) {
+            const html = ((tree.children[j] as any)?.value ?? "").trim();
+            const trMatch = html.match(/<tr[^>]*>([\s\S]*?)<\/tr>/i);
+            if (trMatch) {
+              const tdCount = (trMatch[1].match(/<td/gi) || []).length;
+              if (tdCount > 0) { cols = tdCount; break; }
+            }
+          }
+          blocks.push({
+            id: uuidv4(),
+            type: "image-grid",
+            props: {
+              cols,
+              images,
+              showCaptions,
+            },
+          });
+          skipCount = consumed;
+          continue;
+        }
+      }
+    }
+
     const block = nodeToBlock(node as any, markdown);
     if (block) blocks.push(block);
   }
@@ -345,13 +416,10 @@ function serializeBlock(block: Block, indentLevel: number = 0): string {
       parts.push("<!-- image-grid -->");
       if (!showCaptions) parts.push("<!-- captions:hidden -->");
 
-      const emptyHeaders = Array.from({ length: cols }, () => "&nbsp;");
-      const separator = Array.from({ length: cols }, () => "---");
-
       const imageRows: string[][] = [];
       let cur: string[] = [];
       for (const img of images) {
-        cur.push(`![${img.alt || "Image"}](${img.url})`);
+        cur.push(`<img src="${img.url}" alt="${img.alt || "Image"}" />`);
         if (cur.length === cols) { imageRows.push(cur); cur = []; }
       }
       if (cur.length) {
@@ -359,11 +427,10 @@ function serializeBlock(block: Block, indentLevel: number = 0): string {
         imageRows.push(cur);
       }
 
-      parts.push([
-        `| ${emptyHeaders.join(" | ")} |`,
-        `| ${separator.join(" | ")} |`,
-        ...imageRows.map((r) => `| ${r.join(" | ")} |`),
-      ].join("\n"));
+      const rows = imageRows
+        .map((r) => `<tr>${r.map((cell) => (cell ? `<td>${cell}</td>` : "<td></td>")).join("")}</tr>`)
+        .join("\n");
+      parts.push(`<table>\n${rows}\n</table>`);
       text = parts.join("\n\n");
       break;
     }

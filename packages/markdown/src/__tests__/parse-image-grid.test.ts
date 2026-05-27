@@ -163,4 +163,90 @@ describe("parseMarkdown — image grid", () => {
     expect(grid.props.cols).toBe(3);
     expect(grid.props.images).toHaveLength(5);
   });
+
+  it("parses new-style raw HTML table format", () => {
+    const md = `<!-- image-grid -->
+
+<table>
+<tr>
+<td><img src="${FLUID}" alt="Fluid abstract shapes" /></td>
+<td><img src="${GLOSSY}" alt="Glossy 3D composition" /></td>
+</tr>
+</table>`;
+
+    const blocks = parseMarkdown(md);
+    const grid = findImageGrid(blocks);
+
+    expect(grid).toBeDefined();
+    expect(grid.type).toBe("image-grid");
+    expect(grid.props.cols).toBe(2);
+    expect(grid.props.showCaptions).toBe(true);
+    expect(grid.props.images).toHaveLength(2);
+    expect(grid.props.images[0].url).toBe(FLUID);
+    expect(grid.props.images[0].alt).toBe("Fluid abstract shapes");
+    expect(grid.props.images[1].url).toBe(GLOSSY);
+    expect(grid.props.images[1].alt).toBe("Glossy 3D composition");
+  });
+
+  it("parses new-style format with captions hidden", () => {
+    const md = `<!-- image-grid -->
+<!-- captions:hidden -->
+
+<table>
+<tr>
+<td><img src="${FLUID}" alt="A" /></td>
+</tr>
+</table>`;
+
+    const blocks = parseMarkdown(md);
+    const grid = findImageGrid(blocks);
+
+    expect(grid).toBeDefined();
+    expect(grid.props.showCaptions).toBe(false);
+    expect(grid.props.images).toHaveLength(1);
+  });
+
+  it("parses new-style 5 images in 3 cols", () => {
+    const md = `<!-- image-grid -->
+
+<table>
+<tr>
+<td><img src="${FLUID}" alt="a" /></td>
+<td><img src="${GLOSSY}" alt="b" /></td>
+<td><img src="${ARCH}" alt="c" /></td>
+</tr>
+<tr>
+<td><img src="${FLUID}" alt="d" /></td>
+<td><img src="${GLOSSY}" alt="e" /></td>
+<td></td>
+</tr>
+</table>`;
+
+    const blocks = parseMarkdown(md);
+    const grid = findImageGrid(blocks);
+
+    expect(grid).toBeDefined();
+    expect(grid.props.cols).toBe(3);
+    expect(grid.props.images).toHaveLength(5);
+    expect(grid.props.images[0].alt).toBe("a");
+    expect(grid.props.images[4].alt).toBe("e");
+  });
+
+  it("parses new-style single image in 1 col", () => {
+    const md = `<!-- image-grid -->
+
+<table>
+<tr>
+<td><img src="${FLUID}" alt="Solo" /></td>
+</tr>
+</table>`;
+
+    const blocks = parseMarkdown(md);
+    const grid = findImageGrid(blocks);
+
+    expect(grid).toBeDefined();
+    expect(grid.props.cols).toBe(1);
+    expect(grid.props.images).toHaveLength(1);
+    expect(grid.props.images[0].alt).toBe("Solo");
+  });
 });
