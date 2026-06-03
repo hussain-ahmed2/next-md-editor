@@ -9,7 +9,9 @@ import { PlusCircle, MinusCircle, Columns2, Rows2 } from "lucide-react";
 
 export function TableBlock({ block }: { block: Block }) {
   const updateBlock = useEditorStore((s) => s.updateBlock);
-  const rows = (block.props.rows as string[][]) ?? [["Column 1", "Column 2"], ["Cell 1", "Cell 2"]];
+  const blocks = useEditorStore((s) => s.blocks);
+  const myBlock = blocks.find((b) => b.id === block.id) ?? block;
+  const rows = (myBlock.props.rows as string[][]) ?? [["Column 1", "Column 2"], ["Cell 1", "Cell 2"]];
   const [focusedCell, setFocusedCell] = useState<{ rIdx: number; cIdx: number } | null>(null);
 
   // A map of refs keyed by "rIdx-cIdx" for imperative DOM access

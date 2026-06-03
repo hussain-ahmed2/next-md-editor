@@ -85,9 +85,10 @@ export function ListBlock({ block }: { block: Block }) {
 	const selectBlock = useEditorStore((s) => s.selectBlock);
 	const selectedBlockIds = useEditorStore((s) => s.selectedBlockIds);
 
-	const styleType = (block.props.style as "bullet" | "numbered") ?? "bullet";
+	const myBlock = blocks.find((b) => b.id === block.id) ?? block;
+	const styleType = (myBlock.props.style as "bullet" | "numbered") ?? "bullet";
 	const html =
-		(block.props.html as string) ??
+		(myBlock.props.html as string) ??
 		(styleType === "bullet" ? "<ul><li>Item 1</li></ul>" : "<ol><li>Item 1</li></ol>");
 
 	const [isFocused, setIsFocused] = useState(false);
