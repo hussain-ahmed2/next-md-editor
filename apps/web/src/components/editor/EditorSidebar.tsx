@@ -16,6 +16,7 @@ import {
   List,
   ListOrdered,
   LayoutGrid,
+  Award,
 } from "lucide-react";
 
 interface SidebarBlock {
@@ -91,6 +92,12 @@ const BLOCK_PALETTE: SidebarBlock[] = [
     label: "Numbered List",
     icon: <ListOrdered size={14} />,
     description: "Rich text numbered list block",
+  },
+  {
+    type: "badge-group",
+    label: "Badge Group",
+    icon: <Award size={14} />,
+    description: "Tech stack badges with shields.io style",
   },
 ];
 

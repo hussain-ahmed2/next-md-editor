@@ -30,6 +30,7 @@ export type BlockType =
   | "callout"
   | "table"
   | "image-grid"
+  | "badge-group"
   | string;
 
 export interface Block {

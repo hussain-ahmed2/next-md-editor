@@ -9,6 +9,7 @@ import { TableBlock } from "@/components/blocks/TableBlock";
 import { CalloutBlock } from "@/components/blocks/CalloutBlock";
 import { ListBlock } from "@/components/blocks/ListBlock";
 import { ImageGridBlock } from "@/components/blocks/ImageGridBlock";
+import { BadgeGroupBlock } from "@/components/blocks/BadgeGroupBlock";
 
 export function initRegistry() {
   BlockRegistry.register({
@@ -159,6 +160,33 @@ export function initRegistry() {
       parts.push(tableMarkdown);
 
       return parts.join("\n\n");
+    },
+  });
+
+  BlockRegistry.register({
+    type: "badge-group",
+    component: BadgeGroupBlock,
+    defaultProps: {
+      badges: [
+        { id: "1", text: "Python", color: "3776AB", logo: "python" },
+        { id: "2", text: "React", color: "61DAFB", logo: "react" },
+        { id: "3", text: "TypeScript", color: "3178C6", logo: "typescript" },
+        { id: "4", text: "Flutter", color: "02569B", logo: "flutter" },
+        { id: "5", text: "Node.js", color: "339933", logo: "nodedotjs" },
+      ],
+      alignment: "left",
+    },
+    serializer: (b) => {
+      const badges = (b.props.badges as { id: string; text: string; color: string; logo: string }[]) ?? [];
+      if (badges.length === 0) return "";
+      const lines: string[] = [];
+      lines.push("<!-- badge-group -->");
+      for (const badge of badges) {
+        const color = badge.color.replace("#", "");
+        const logo = badge.logo ? `&logo=${encodeURIComponent(badge.logo)}&logoColor=white` : "";
+        lines.push(`![image](https://img.shields.io/badge/${encodeURIComponent(badge.text.replace(/-/g, "--"))}-${color}?style=for-the-badge${logo})`);
+      }
+      return lines.join("\n");
     },
   });
 }
