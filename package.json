@@ -21,6 +21,7 @@
     "turbo": "latest"
   },
   "dependencies": {
+    "@tailwindcss/postcss": "^4.3.0",
     "rehype-raw": "^7.0.0"
   }
 }
