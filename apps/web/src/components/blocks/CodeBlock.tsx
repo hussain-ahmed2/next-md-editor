@@ -2,7 +2,7 @@
 
 import { useEditorStore } from "@next-md-editor/editor-core";
 import type { Block } from "@next-md-editor/types";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { highlightCodeHtml } from "@/features/markdown/highlighter";
 
 const POPULAR_LANGUAGES = [
@@ -16,9 +16,21 @@ const POPULAR_LANGUAGES = [
 
 export function CodeBlock({ block }: { block: Block }) {
   const updateBlock = useEditorStore((s) => s.updateBlock);
-  const code = (block.props.code as string) ?? "";
-  const lang = (block.props.language as string) ?? "ts";
+  const blocks = useEditorStore((s) => s.blocks);
+  // Read own data directly from store to bypass prop chain issues
+  const myBlock = blocks.find((b) => b.id === block.id) ?? block;
+  const code = (myBlock.props.code as string) ?? "";
+  const lang = (myBlock.props.language as string) ?? "ts";
   const [isEditing, setIsEditing] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Sync textarea when blocks change externally (undo/redo)
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (el && el.value !== code) {
+      el.value = code;
+    }
+  }, [blocks, code]);
 
   return (
     <div style={{
@@ -90,8 +102,21 @@ export function CodeBlock({ block }: { block: Block }) {
 
         {/* Foreground layer: Invisible editable textarea */}
         <textarea
+          ref={textareaRef}
           value={code}
           onChange={(e) => updateBlock(block.id, { code: e.target.value })}
+          onKeyDown={(e) => {
+            const isMeta = e.ctrlKey || e.metaKey;
+            if (isMeta && (e.key.toLowerCase() === "z" || e.key.toLowerCase() === "y")) {
+              e.preventDefault();
+            }
+          }}
+          onBeforeInput={(e) => {
+            const ne = e.nativeEvent as { inputType?: string };
+            if (ne.inputType === "historyUndo" || ne.inputType === "historyRedo") {
+              e.preventDefault();
+            }
+          }}
           onFocus={() => setIsEditing(true)}
           onBlur={() => setIsEditing(false)}
           spellCheck={false}

@@ -116,6 +116,54 @@ export function parseMarkdown(markdown: string): Block[] {
           continue;
         }
       }
+
+      // Detect badge-group: <!-- badge-group --> followed by ![image](url) markdown
+      if (val === "<!-- badge-group -->") {
+        const badges: { id: string; text: string; color: string; logo: string }[] = [];
+        let consumed = 0;
+
+        for (let j = i + 1; j < tree.children.length; j++) {
+          const next = tree.children[j];
+          if (next.type !== "paragraph") break;
+
+          const images = (next as any).children?.filter(
+            (c: any) => c.type === "image" && typeof c.url === "string" && c.url.startsWith("https://img.shields.io/badge/"),
+          ) ?? [];
+          if (images.length === 0) break;
+
+          for (const img of images) {
+            const badgeUrl = img.url.replace("https://img.shields.io/badge/", "");
+            const [labelColorPart, queryString = ""] = badgeUrl.split("?");
+            const parts = labelColorPart.split("-");
+            const color = parts.pop() ?? "000000";
+            const text = decodeURIComponent(parts.join("-").replace(/--/g, " "));
+
+            const logoMatch = queryString.match(/logo=([^&]+)/i);
+            const logo = logoMatch ? decodeURIComponent(logoMatch[1]) : "";
+
+            badges.push({
+              id: Math.random().toString(36).substring(7),
+              text,
+              color,
+              logo,
+            });
+          }
+          consumed++;
+        }
+
+        if (badges.length > 0) {
+          blocks.push({
+            id: uuidv4(),
+            type: "badge-group",
+            props: {
+              badges,
+              alignment: "left",
+            },
+          });
+          skipCount = consumed;
+          continue;
+        }
+      }
     }
 
     const block = nodeToBlock(node as any, markdown);
@@ -431,6 +479,24 @@ function serializeBlock(block: Block, indentLevel: number = 0): string {
         .map((r) => `<tr>${r.map((cell) => (cell ? `<td>${cell}</td>` : "<td></td>")).join("")}</tr>`)
         .join("\n");
       parts.push(`<table>\n${rows}\n</table>`);
+      text = parts.join("\n\n");
+      break;
+    }
+    case "badge-group": {
+      const badges = (block.props.badges as { id: string; text: string; color: string; logo: string }[]) ?? [];
+      if (!badges.length) break;
+      const parts: string[] = [];
+      parts.push("<!-- badge-group -->");
+      const badgeLines = badges
+        .map(
+          (badge) => {
+            const color = badge.color.replace("#", "");
+            const logo = badge.logo ? `&logo=${encodeURIComponent(badge.logo)}&logoColor=white` : "";
+            return `![image](https://img.shields.io/badge/${encodeURIComponent(badge.text.replace(/-/g, "--"))}-${color}?style=for-the-badge${logo})`;
+          },
+        )
+        .join("\n");
+      parts.push(badgeLines);
       text = parts.join("\n\n");
       break;
     }

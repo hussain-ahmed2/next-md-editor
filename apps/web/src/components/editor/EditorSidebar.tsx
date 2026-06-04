@@ -16,6 +16,7 @@ import {
   List,
   ListOrdered,
   LayoutGrid,
+  Award,
 } from "lucide-react";
 
 interface SidebarBlock {
@@ -29,68 +30,74 @@ const BLOCK_PALETTE: SidebarBlock[] = [
   {
     type: "heading",
     label: "Heading",
-    icon: <Heading size={14} />,
+    icon: <Heading size={18} />,
     description: "Section title",
   },
   {
     type: "paragraph",
     label: "Paragraph",
-    icon: <Text size={14} />,
+    icon: <Text size={18} />,
     description: "Body text",
   },
   {
     type: "quote",
     label: "Quote",
-    icon: <Quote size={14} />,
+    icon: <Quote size={18} />,
     description: "Blockquote",
   },
   {
     type: "code",
     label: "Code",
-    icon: <Code2 size={14} />,
+    icon: <Code2 size={18} />,
     description: "Code block",
   },
   {
     type: "divider",
     label: "Divider",
-    icon: <Minus size={14} />,
+    icon: <Minus size={18} />,
     description: "Horizontal rule",
   },
   {
     type: "image",
     label: "Image",
-    icon: <Image size={14} />,
+    icon: <Image size={18} />,
     description: "Insert an image",
   },
   {
     type: "image-grid",
     label: "Image Grid",
-    icon: <LayoutGrid size={14} />,
+    icon: <LayoutGrid size={18} />,
     description: "Responsive grid table of images",
   },
   {
     type: "table",
     label: "Table",
-    icon: <Table size={14} />,
+    icon: <Table size={18} />,
     description: "Visual GFM grid table",
   },
   {
     type: "callout",
     label: "Callout",
-    icon: <Lightbulb size={14} />,
+    icon: <Lightbulb size={18} />,
     description: "Pastel alert callout box",
   },
   {
     type: "bullet-list",
     label: "Bullet List",
-    icon: <List size={14} />,
+    icon: <List size={18} />,
     description: "Rich text bullet list block",
   },
   {
     type: "numbered-list",
     label: "Numbered List",
-    icon: <ListOrdered size={14} />,
+    icon: <ListOrdered size={18} />,
     description: "Rich text numbered list block",
+  },
+  {
+    type: "badge-group",
+    label: "Badge Group",
+    icon: <Award size={18} />,
+    description: "Tech stack badges with shields.io style",
   },
 ];
 
@@ -101,9 +108,6 @@ function DraggableSidebarItem({
   b: SidebarBlock;
   handleAdd: (type: string) => void;
 }) {
-  // New API: useDraggable from @dnd-kit/react.
-  // ref → registers the element; no separate listeners/attributes needed.
-  // The PointerSensor bound on the DragDropProvider activates on pointer-down.
   const { ref, isDragging } = useDraggable({
     id: `sidebar-${b.type}`,
     data: {
@@ -128,18 +132,19 @@ function DraggableSidebarItem({
       tabIndex={0}
       style={{
         display: "flex",
+        flexDirection: "column",
         alignItems: "center",
-        gap: 10,
-        padding: "8px 10px",
-        borderRadius: "var(--radius-sm)",
+        gap: 4,
+        padding: "10px 6px",
+        borderRadius: "var(--radius-md)",
         border: "1px solid transparent",
         background: "transparent",
         color: "var(--text-secondary)",
         cursor: isDragging ? "grabbing" : "grab",
-        fontSize: 13,
-        fontWeight: 500,
+        fontSize: 10,
+        fontWeight: 600,
         transition: "all 0.15s ease",
-        textAlign: "left",
+        textAlign: "center",
         opacity: isDragging ? 0.5 : 1,
         outline: "none",
       }}
@@ -158,31 +163,19 @@ function DraggableSidebarItem({
     >
       <span
         style={{
-          width: 28,
-          height: 28,
+          width: 32,
+          height: 32,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           borderRadius: "var(--radius-sm)",
           background: "var(--accent-muted)",
           color: "var(--accent)",
-          flexShrink: 0,
         }}
       >
         {b.icon}
       </span>
-      <div>
-        <div style={{ lineHeight: 1.3 }}>{b.label}</div>
-        <div
-          style={{
-            fontSize: 11,
-            color: "var(--text-muted)",
-            lineHeight: 1.3,
-          }}
-        >
-          {b.description}
-        </div>
-      </div>
+      <span style={{ lineHeight: 1.2 }}>{b.label}</span>
     </div>
   );
 }
@@ -219,7 +212,7 @@ export function EditorSidebar() {
         display: "flex",
         flexDirection: "column",
         padding: "12px 8px",
-        gap: 4,
+        gap: 8,
         overflowY: "auto",
       }}
     >
@@ -230,14 +223,22 @@ export function EditorSidebar() {
           letterSpacing: "0.08em",
           textTransform: "uppercase",
           color: "var(--text-muted)",
-          padding: "4px 8px 8px",
+          padding: "4px 8px 0",
         }}
       >
         Blocks
       </div>
-      {BLOCK_PALETTE.map((b) => (
-        <DraggableSidebarItem key={b.type} b={b} handleAdd={handleAdd} />
-      ))}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(80px, 1fr))",
+          gap: 4,
+        }}
+      >
+        {BLOCK_PALETTE.map((b) => (
+          <DraggableSidebarItem key={b.type} b={b} handleAdd={handleAdd} />
+        ))}
+      </div>
     </aside>
   );
 }

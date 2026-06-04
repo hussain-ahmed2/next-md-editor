@@ -25,7 +25,7 @@ html, body {
 ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
 /* ── Inline code (backtick highlighting) ───────────── */
-code {
+:not(pre) > code {
   font-family: var(--font-mono);
   font-size: 0.85em;
   background: rgba(255, 255, 255, 0.06);

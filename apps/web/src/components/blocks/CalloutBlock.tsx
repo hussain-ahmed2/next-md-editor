@@ -49,8 +49,10 @@ type CalloutKey = keyof typeof CALLOUT_TYPES;
 
 export function CalloutBlock({ block }: { block: Block }) {
   const updateBlock = useEditorStore((s) => s.updateBlock);
-  const text = (block.props.text as string) ?? "";
-  const type = ((block.props.type as string) ?? "note").toLowerCase() as CalloutKey;
+  const blocks = useEditorStore((s) => s.blocks);
+  const myBlock = blocks.find((b) => b.id === block.id) ?? block;
+  const text = (myBlock.props.text as string) ?? "";
+  const type = ((myBlock.props.type as string) ?? "note").toLowerCase() as CalloutKey;
   const config = CALLOUT_TYPES[type] ?? CALLOUT_TYPES.note;
 
   const [isFocused, setIsFocused] = useState(false);

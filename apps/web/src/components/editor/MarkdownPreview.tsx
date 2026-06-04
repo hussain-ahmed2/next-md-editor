@@ -178,8 +178,9 @@ const MD_COMPONENTS: Components = {
 
 	code: ({ children, className }) => {
 		const lang = (className ?? "").replace("language-", "");
-		const codeStr = String(children).replace(/\n$/, "");
-		if (className || codeStr.includes("\n")) {
+		const rawStr = String(children);
+		const codeStr = rawStr.replace(/\n$/, "");
+		if (className || rawStr.includes("\n")) {
 			return (
 				<div
 					style={{
@@ -252,16 +253,29 @@ const MD_COMPONENTS: Components = {
 		</a>
 	),
 
-	img: ({ src, alt }) => (
-		<div style={{ display: "flex", justifyContent: "center", margin: "12px 0" }}>
-			{/* eslint-disable-next-line @next/next/no-img-element */}
-			<img
-				src={src}
-				alt={alt}
-				style={{ maxWidth: "100%", height: "auto", borderRadius: 6, border: "1px solid #30363d" }}
-			/>
-		</div>
-	),
+	img: ({ src, alt }) => {
+		const isShieldsBadge = typeof src === "string" && src.startsWith("https://img.shields.io/badge/");
+		if (isShieldsBadge) {
+			return (
+				/* eslint-disable-next-line @next/next/no-img-element */
+				<img
+					src={src}
+					alt={alt}
+					style={{ display: "inline-block", height: 28, margin: "2px 2px" }}
+				/>
+			);
+		}
+		return (
+			<div style={{ display: "flex", justifyContent: "center", margin: "12px 0" }}>
+				{/* eslint-disable-next-line @next/next/no-img-element */}
+				<img
+					src={src}
+					alt={alt}
+					style={{ maxWidth: "100%", height: "auto", borderRadius: 6, border: "1px solid #30363d" }}
+				/>
+			</div>
+		);
+	},
 
 	// ── Lists ─────────────────────────────────────────────────────────────────
 	// Do NOT spread ...props — react-markdown passes non-DOM props (node, ordered,
