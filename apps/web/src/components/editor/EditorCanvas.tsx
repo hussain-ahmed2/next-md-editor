@@ -8,6 +8,7 @@ import { SortableBlock } from "./SortableBlock";
 import { FloatingFormatToolbar } from "./FloatingFormatToolbar";
 import { BlockRegistry } from "@next-md-editor/editor-core";
 import { useState, useRef, useMemo } from "react";
+import { EmptyState } from "./EmptyState";
 
 export const CANVAS_ROOT_ID = "canvas-root";
 
@@ -32,9 +33,6 @@ export function EditorCanvas() {
 
   // Local state for the visual insert indicator — computed by the monitor below
   const [insertIndex, setInsertIndex] = useState<number | null>(null);
-
-  // Remount nonce to resolve React/DOM reconciliation desync caused by DndKit's OptimisticSortingPlugin
-  const [dragNonce, setDragNonce] = useState(0);
 
   // ── useDragDropMonitor: react to drag events without prop drilling ─────────
   // handlers is memoized with [manager] deps so it stays stable.
@@ -84,7 +82,6 @@ export function EditorCanvas() {
 
       onDragEnd(_event: DragEndEvent) {
         setInsertIndex(null);
-        setDragNonce((prev) => prev + 1);
       },
     }),
     [manager],
@@ -129,7 +126,7 @@ export function EditorCanvas() {
         {blocks.length === 0 && !isSidebarDrag && <EmptyState />}
 
         {/* No SortableContext — each useSortable registers with the manager directly */}
-        <div key={dragNonce} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           {displayBlocks.map((block, blockIdx) => {
             const isPlaceholder =
               isSidebarDrag && block.id === `placeholder-${block.type}`;
@@ -149,53 +146,5 @@ export function EditorCanvas() {
       </div>
       <FloatingFormatToolbar />
     </main>
-  );
-}
-
-function EmptyState() {
-  return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "80px 40px",
-        gap: 16,
-        textAlign: "center",
-      }}
-    >
-      <div
-        style={{
-          width: 64,
-          height: 64,
-          borderRadius: 20,
-          background: "var(--accent-muted)",
-          border: "1px solid rgba(108,126,255,0.2)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: 28,
-          marginBottom: 8,
-        }}
-      >
-        ✦
-      </div>
-      <div
-        style={{ fontSize: 18, fontWeight: 700, color: "var(--text-primary)" }}
-      >
-        Start writing
-      </div>
-      <div
-        style={{
-          fontSize: 14,
-          color: "var(--text-muted)",
-          maxWidth: 300,
-          lineHeight: 1.7,
-        }}
-      >
-        Pick a block from the sidebar to begin building your document.
-      </div>
-    </div>
   );
 }

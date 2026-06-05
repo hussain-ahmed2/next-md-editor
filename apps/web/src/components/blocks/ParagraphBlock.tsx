@@ -13,9 +13,13 @@ import {
   markdownToRichText,
   getDomTextOffset,
   restoreDomRange,
+  getSelectionRichRange,
+  toggleRichFormat,
+  applyRichFormat,
 } from "@next-md-editor/markdown";
 import { SlashCommandMenu } from "@/components/editor/SlashCommandMenu";
-import { BlockDepthContext } from "@/components/editor/SortableBlock";
+import { LinkDialog } from "@/components/editor/LinkDialog";
+import { useBlockFocus } from "@/hooks/useBlockFocus";
 
 export function ParagraphBlock({ block }: { block: Block }) {
   const blocks = useEditorStore((s) => s.blocks);
@@ -25,10 +29,6 @@ export function ParagraphBlock({ block }: { block: Block }) {
   const replaceBlock = useEditorStore((s) => s.replaceBlock);
   const selectBlock = useEditorStore((s) => s.selectBlock);
   const selectedBlockIds = useEditorStore((s) => s.selectedBlockIds);
-  const indentBlocks = useEditorStore((s) => s.indentBlocks);
-  const outdentBlocks = useEditorStore((s) => s.outdentBlocks);
-
-  const depth = useContext(BlockDepthContext);
 
   const content: RichText = Array.isArray(block.props.content)
     ? (block.props.content as RichText)
@@ -37,6 +37,10 @@ export function ParagraphBlock({ block }: { block: Block }) {
       : [];
 
   const [isFocused, setIsFocused] = useState(false);
+  const [linkDialog, setLinkDialog] = useState<{
+    url: string;
+    pos: { top: number; left: number };
+  } | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
   // Slash Command State
@@ -45,12 +49,7 @@ export function ParagraphBlock({ block }: { block: Block }) {
   const [slashSelectedIndex, setSlashSelectedIndex] = useState(0);
 
   // Auto-focus synchronization when block is selected
-  useEffect(() => {
-    const isSelected = selectedBlockIds[selectedBlockIds.length - 1] === block.id;
-    if (isSelected && ref.current && document.activeElement !== ref.current) {
-      ref.current.focus();
-    }
-  }, [selectedBlockIds, block.id, ref]);
+  useBlockFocus(ref, block.id, selectedBlockIds);
 
   // Sync store changes to DOM — preserves caret position
   useEffect(() => {
@@ -183,15 +182,7 @@ export function ParagraphBlock({ block }: { block: Block }) {
         }
       }
 
-      if (e.key === "Tab") {
-        e.preventDefault();
-        if (e.shiftKey) {
-          outdentBlocks([block.id]);
-        } else {
-          indentBlocks([block.id]);
-        }
-        return;
-      }
+
 
       // Ctrl+K / Cmd+K for link
       const hasMeta = e.ctrlKey || e.metaKey;
@@ -199,13 +190,12 @@ export function ParagraphBlock({ block }: { block: Block }) {
         e.preventDefault();
         const sel = window.getSelection();
         if (!sel || sel.isCollapsed || !sel.rangeCount) return;
-        const url = window.prompt("Enter URL:", "https://");
-        if (url) {
-          document.execCommand("createLink", false, url);
-          // Save after link insertion
-          const newContent = htmlToRichText(ref.current?.innerHTML ?? "");
-          updateBlock(block.id, { content: newContent });
-        }
+        const range = sel.getRangeAt(0);
+        const rect = range.getBoundingClientRect();
+        setLinkDialog({
+          url: "https://",
+          pos: { top: rect.top - 8, left: rect.left + rect.width / 2 },
+        });
         return;
       }
     },
@@ -220,8 +210,6 @@ export function ParagraphBlock({ block }: { block: Block }) {
       removeBlocks,
       replaceBlock,
       selectBlock,
-      indentBlocks,
-      outdentBlocks,
       updateBlock,
     ],
   );
@@ -261,6 +249,20 @@ export function ParagraphBlock({ block }: { block: Block }) {
         data-placeholder="Start typing…"
       />
       {slashMenu}
+      {linkDialog && (
+        <LinkDialog
+          initialUrl={linkDialog.url}
+          position={linkDialog.pos}
+          onApply={(url) => {
+            const range = getSelectionRichRange(content, ref.current!);
+            if (!range || range.start >= range.end) return;
+            const newContent = applyRichFormat(content, range.start, range.end, { link: url });
+            updateBlock(block.id, { content: newContent });
+            setLinkDialog(null);
+          }}
+          onCancel={() => setLinkDialog(null)}
+        />
+      )}
     </div>
   );
 }

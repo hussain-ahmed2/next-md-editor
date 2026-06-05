@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { useEditorStore } from "@next-md-editor/editor-core";
 import type { Block } from "@next-md-editor/types";
 import { handleEditorKeyboardShortcuts } from "@/utils/editorShortcuts";
+import { useBlockFocus } from "@/hooks/useBlockFocus";
 
 const DEFAULT_IMAGE = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=800&auto=format&fit=crop";
 
@@ -14,8 +15,7 @@ export function ImageBlock({ block }: { block: Block }) {
   const updateBlock = useEditorStore((s) => s.updateBlock);
   const selectBlock = useEditorStore((s) => s.selectBlock);
   const selectedBlockIds = useEditorStore((s) => s.selectedBlockIds);
-  const indentBlocks = useEditorStore((s) => s.indentBlocks);
-  const outdentBlocks = useEditorStore((s) => s.outdentBlocks);
+
 
   const url = (block.props.url as string) ?? "";
   const alt = (block.props.alt as string) ?? "";
@@ -25,13 +25,7 @@ export function ImageBlock({ block }: { block: Block }) {
   const [inputAlt, setInputAlt] = useState(alt);
   const ref = useRef<HTMLDivElement>(null);
 
-  // Sync focus when selected
-  useEffect(() => {
-    const isSelected = selectedBlockIds[selectedBlockIds.length - 1] === block.id;
-    if (isSelected && ref.current && document.activeElement !== ref.current) {
-      ref.current.focus();
-    }
-  }, [selectedBlockIds, block.id]);
+  useBlockFocus(ref, block.id, selectedBlockIds);
 
   const handleSave = () => {
     updateBlock(block.id, { url: inputUrl || DEFAULT_IMAGE, alt: inputAlt || "Image Description" });
@@ -48,7 +42,7 @@ export function ImageBlock({ block }: { block: Block }) {
           handleSave();
           return;
         }
-        handleEditorKeyboardShortcuts(e, block, blocks, selectedBlockIds, addBlock, removeBlocks, updateBlock, selectBlock, indentBlocks, outdentBlocks);
+        handleEditorKeyboardShortcuts(e, block, blocks, selectedBlockIds, addBlock, removeBlocks, updateBlock, selectBlock);
       }}
       style={{
         outline: "none",

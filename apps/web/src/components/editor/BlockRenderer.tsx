@@ -1,9 +1,10 @@
 "use client";
 
+import { memo } from "react";
 import { BlockRegistry } from "@next-md-editor/editor-core";
 import type { Block } from "@next-md-editor/types";
 
-export function BlockRenderer({ block }: { block: Block }) {
+export const BlockRenderer = memo(function BlockRenderer({ block }: { block: Block }) {
   const def = BlockRegistry.get(block.type);
 
   if (!def) {
@@ -26,4 +27,4 @@ export function BlockRenderer({ block }: { block: Block }) {
 
   const Component = def.component;
   return <Component block={block} />;
-}
+});

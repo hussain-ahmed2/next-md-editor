@@ -21,8 +21,6 @@ export function useDragAndDrop() {
   const addBlock = useEditorStore((s) => s.addBlock);
   const selectedBlockIds = useEditorStore((s) => s.selectedBlockIds);
 
-  // No handleDragStart — the library tracks source/target reactively via useDragOperation().
-  // No handleDragOver — EditorCanvas listens via useDragDropMonitor() for insert position.
   const handleDragEnd = useCallback(
     (event: DragEndEvent, manager?: DragDropManager) => {
       const { operation, canceled } = event;
@@ -61,7 +59,6 @@ export function useDragAndDrop() {
             insertIdx = 0;
           }
         } else if (targetId.startsWith("placeholder-") && isSortable(target)) {
-          // The placeholder's registered sortable index equals the insert position in blocks
           insertIdx = target.index;
         } else {
           const idx = blocks.findIndex((b) => b.id === targetId);
@@ -82,16 +79,15 @@ export function useDragAndDrop() {
       if (isSortable(source)) {
         const oldIndex = source.initialIndex;
         const toIndex = source.index;
-        const toParentId = source.group as string | undefined;
 
-        if (oldIndex !== toIndex || source.initialGroup !== source.group) {
+        if (oldIndex !== toIndex) {
           const idsToMove =
             selectedBlockIds.includes(source.id as string) &&
             selectedBlockIds.length > 1
               ? selectedBlockIds
               : [source.id as string];
 
-          moveBlocks(idsToMove, toIndex, toParentId);
+          moveBlocks(idsToMove, toIndex);
         }
       }
     },

@@ -6,7 +6,7 @@ import { EditorCanvas } from "@/components/editor/EditorCanvas";
 import { SourceEditor } from "@/components/editor/SourceEditor";
 import { MarkdownPreview } from "@/components/editor/MarkdownPreview";
 import { useEffect, useState } from "react";
-import { DragDropProvider, DragOverlay, useDragOperation } from "@dnd-kit/react";
+import { DragDropProvider, DragOverlay } from "@dnd-kit/react";
 import { useUIStore } from "@/store/uiStore";
 
 // Custom hooks
@@ -18,15 +18,12 @@ import { ResizeBar } from "@/components/editor/ResizeBar";
 import { MobileBottomBar } from "@/components/editor/MobileBottomBar";
 import { DragOverlayContent } from "@/components/editor/DragOverlayContent";
 
-// Wrapper that uses useDragOperation() (must be inside DragDropProvider) to
-// dynamically set dropAnimation — null disables it for sidebar drops so the
-// overlay pill doesn't animate back to the sidebar on drop.
+// Disable dropAnimation entirely — the default "snap back" animation causes
+// a brief flicker of the drag overlay at the original block position after
+// a canvas reorder. null = instant removal with no animation.
 function ActiveDragOverlay() {
-  const { source } = useDragOperation();
-  const isSidebarItem = source?.data?.isSidebarItem === true;
-
   return (
-    <DragOverlay dropAnimation={isSidebarItem ? null : undefined}>
+    <DragOverlay dropAnimation={null}>
       <DragOverlayContent />
     </DragOverlay>
   );

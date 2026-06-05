@@ -177,14 +177,18 @@ export function initRegistry() {
       alignment: "left",
     },
     serializer: (b) => {
-      const badges = (b.props.badges as { id: string; text: string; color: string; logo: string }[]) ?? [];
+      const badges = (b.props.badges as any[]) ?? [];
       if (badges.length === 0) return "";
       const lines: string[] = [];
       lines.push("<!-- badge-group -->");
       for (const badge of badges) {
-        const color = badge.color.replace("#", "");
-        const logo = badge.logo ? `&logo=${encodeURIComponent(badge.logo)}&logoColor=white` : "";
-        lines.push(`![image](https://img.shields.io/badge/${encodeURIComponent(badge.text.replace(/-/g, "--"))}-${color}?style=for-the-badge${logo})`);
+        if (badge.url) {
+          lines.push(`![image](${badge.url})`);
+        } else {
+          const color = badge.color.replace("#", "");
+          const logo = badge.logo ? `&logo=${encodeURIComponent(badge.logo)}&logoColor=white` : "";
+          lines.push(`![image](https://img.shields.io/badge/${encodeURIComponent(badge.text.replace(/-/g, "--"))}-${color}?style=for-the-badge${logo})`);
+        }
       }
       return lines.join("\n");
     },

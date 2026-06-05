@@ -8,6 +8,7 @@ import {
   htmlToMarkdown,
 } from "@/utils/editorShortcuts";
 import { renderInlineMarkdown } from "@/features/markdown/highlighter";
+import { useBlockFocus } from "@/hooks/useBlockFocus";
 
 export function QuoteBlock({ block }: { block: Block }) {
   const blocks = useEditorStore((s) => s.blocks);
@@ -16,20 +17,14 @@ export function QuoteBlock({ block }: { block: Block }) {
   const updateBlock = useEditorStore((s) => s.updateBlock);
   const selectBlock = useEditorStore((s) => s.selectBlock);
   const selectedBlockIds = useEditorStore((s) => s.selectedBlockIds);
-  const indentBlocks = useEditorStore((s) => s.indentBlocks);
-  const outdentBlocks = useEditorStore((s) => s.outdentBlocks);
+
 
   const text = (block.props.text as string) ?? "";
   const [isFocused, setIsFocused] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   // Auto-focus synchronization when block is selected
-  useEffect(() => {
-    const isSelected = selectedBlockIds[selectedBlockIds.length - 1] === block.id;
-    if (isSelected && ref.current && document.activeElement !== ref.current) {
-      ref.current.focus();
-    }
-  }, [selectedBlockIds, block.id, ref]);
+  useBlockFocus(ref, block.id, selectedBlockIds);
 
   // Sync state changes from store to DOM when they differ (e.g. on undo/redo)
   useEffect(() => {
@@ -114,8 +109,6 @@ export function QuoteBlock({ block }: { block: Block }) {
             removeBlocks,
             updateBlock,
             selectBlock,
-            indentBlocks,
-            outdentBlocks,
           )
         }
         style={{
