@@ -39,6 +39,18 @@ function extractRawText(node: any, markdown: string): string {
 
 // ── Parse: markdown → blocks ─────────────────────────────────────────────────
 
+function isBadgeUrl(url: string | undefined): boolean {
+  if (!url) return false;
+  const lower = url.toLowerCase();
+  return (
+    lower.includes("shields.io") ||
+    lower.includes("badge") ||
+    lower.includes("badges") ||
+    lower.includes("licence") ||
+    lower.includes("license")
+  );
+}
+
 export function parseMarkdown(markdown: string): Block[] {
   const tree = unified()
     .use(remarkParse)
@@ -119,7 +131,7 @@ export function parseMarkdown(markdown: string): Block[] {
 
       // Detect badge-group: <!-- badge-group --> followed by ![image](url) markdown
       if (val === "<!-- badge-group -->") {
-        const badges: { id: string; text: string; color: string; logo: string }[] = [];
+        const badges: any[] = [];
         let consumed = 0;
 
         for (let j = i + 1; j < tree.children.length; j++) {
@@ -127,13 +139,14 @@ export function parseMarkdown(markdown: string): Block[] {
           if (next.type !== "paragraph") break;
 
           const images = (next as any).children?.filter(
-            (c: any) => c.type === "image" && typeof c.url === "string" && c.url.startsWith("https://img.shields.io/badge/"),
+            (c: any) => c.type === "image" && typeof c.url === "string" && isBadgeUrl(c.url),
           ) ?? [];
           if (images.length === 0) break;
 
           for (const img of images) {
-            const badgeUrl = img.url.replace("https://img.shields.io/badge/", "");
-            const [labelColorPart, queryString = ""] = badgeUrl.split("?");
+            const badgeUrl = img.url;
+            const badgeUrlPart = badgeUrl.replace("https://img.shields.io/badge/", "");
+            const [labelColorPart, queryString = ""] = badgeUrlPart.split("?");
             const parts = labelColorPart.split("-");
             const color = parts.pop() ?? "000000";
             const text = decodeURIComponent(parts.join("-").replace(/--/g, " "));
@@ -146,6 +159,7 @@ export function parseMarkdown(markdown: string): Block[] {
               text,
               color,
               logo,
+              url: badgeUrl,
             });
           }
           consumed++;
@@ -163,6 +177,78 @@ export function parseMarkdown(markdown: string): Block[] {
           skipCount = consumed;
           continue;
         }
+      }
+    }
+
+    // ── Paragraph that is entirely image(s) → single image, badge-group, or image-grid ──────
+    // Remark inserts text("\n") / break nodes between images on consecutive lines.
+    // Strip those out before checking — only non-whitespace children need to be images.
+    if (node.type === "paragraph" && Array.isArray(node.children)) {
+      const significantChildren = (node.children as any[]).filter(
+        (c: any) =>
+          !(c.type === "text" && c.value.trim() === "") && c.type !== "break",
+      );
+      if (
+        significantChildren.length > 0 &&
+        significantChildren.every((c: any) => c.type === "image")
+      ) {
+        if (significantChildren.length === 1) {
+          const img = significantChildren[0];
+          blocks.push({
+            id: uuidv4(),
+            type: "image",
+            props: { url: img.url || "", alt: img.alt || "" },
+          });
+        } else {
+          // Check if all are badges
+          const allBadges = significantChildren.every(
+            (c: any) => typeof c.url === "string" && isBadgeUrl(c.url),
+          );
+          if (allBadges) {
+            const badges = significantChildren.map((img: any) => {
+              const badgeUrl = img.url;
+              const badgeUrlPart = badgeUrl.replace("https://img.shields.io/badge/", "");
+              const [labelColorPart, queryString = ""] = badgeUrlPart.split("?");
+              const parts = labelColorPart.split("-");
+              const color = parts.pop() ?? "000000";
+              const text = decodeURIComponent(parts.join("-").replace(/--/g, " "));
+              const logoMatch = queryString.match(/logo=([^&]+)/i);
+              const logo = logoMatch ? decodeURIComponent(logoMatch[1]) : "";
+              return {
+                id: Math.random().toString(36).substring(7),
+                text,
+                color,
+                logo,
+                url: badgeUrl,
+              };
+            });
+            blocks.push({
+              id: uuidv4(),
+              type: "badge-group",
+              props: {
+                badges,
+                alignment: "left",
+              },
+            });
+          } else {
+            // Otherwise, make it an image-grid
+            const images = significantChildren.map((img: any) => ({
+              id: Math.random().toString(36).substring(7),
+              url: img.url || "",
+              alt: img.alt || "",
+            }));
+            blocks.push({
+              id: uuidv4(),
+              type: "image-grid",
+              props: {
+                cols: images.length,
+                images,
+                showCaptions: true,
+              },
+            });
+          }
+        }
+        continue;
       }
     }
 
@@ -187,17 +273,6 @@ function nodeToBlock(node: any, markdown: string): Block | null {
     }
 
     case "paragraph": {
-      if (node.children?.length === 1 && node.children[0].type === "image") {
-        const img = node.children[0];
-        return {
-          id: uuidv4(),
-          type: "image",
-          props: {
-            url: img.url || "",
-            alt: img.alt || "",
-          },
-        };
-      }
       const text = extractRawText(node, markdown).trim();
       if (!text) return null;
       return { id: uuidv4(), type: "paragraph", props: { content: markdownToRichText(text) } };
@@ -494,13 +569,16 @@ function serializeBlock(block: Block, indentLevel: number = 0): string {
       break;
     }
     case "badge-group": {
-      const badges = (block.props.badges as { id: string; text: string; color: string; logo: string }[]) ?? [];
+      const badges = (block.props.badges as any[]) ?? [];
       if (!badges.length) break;
       const parts: string[] = [];
       parts.push("<!-- badge-group -->");
       const badgeLines = badges
         .map(
           (badge) => {
+            if (badge.url) {
+              return `![image](${badge.url})`;
+            }
             const color = badge.color.replace("#", "");
             const logo = badge.logo ? `&logo=${encodeURIComponent(badge.logo)}&logoColor=white` : "";
             return `![image](https://img.shields.io/badge/${encodeURIComponent(badge.text.replace(/-/g, "--"))}-${color}?style=for-the-badge${logo})`;

@@ -62,23 +62,9 @@ export function handleEditorKeyboardShortcuts(
   removeBlocks: (ids: string[]) => void,
   updateBlock: (id: string, props: any) => void,
   selectBlock: (id: string | null, extend?: boolean) => void,
-  indentBlocks?: (ids: string[]) => void,
-  outdentBlocks?: (ids: string[]) => void,
 ) {
   const hasMeta = e.ctrlKey || e.metaKey;
   const key = e.key.toLowerCase();
-
-  // Tab: indent block; Shift+Tab: outdent block
-  if (e.key === "Tab") {
-    e.preventDefault();
-    const idsToModify = selectedBlockIds.includes(block.id) ? selectedBlockIds : [block.id];
-    if (e.shiftKey) {
-      outdentBlocks?.(idsToModify);
-    } else {
-      indentBlocks?.(idsToModify);
-    }
-    return;
-  }
 
   // Handle Shift + ArrowUp/ArrowDown for multi-selection
   if (e.shiftKey && (e.key === "ArrowUp" || e.key === "ArrowDown")) {

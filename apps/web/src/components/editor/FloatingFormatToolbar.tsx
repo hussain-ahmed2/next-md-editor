@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useEditorStore } from "@next-md-editor/editor-core";
+import { useDragOperation } from "@dnd-kit/react";
 import type { RichText, FormatFlags, Block } from "@next-md-editor/types";
 import { getSelectionRichRange, getActiveFormats, toggleRichFormat, applyRichFormat } from "@next-md-editor/markdown";
 import { LinkDialog } from "./LinkDialog";
@@ -20,6 +21,11 @@ export function FloatingFormatToolbar() {
 	const elementRef = useRef<HTMLElement | null>(null);
 	const isRichTextRef = useRef(false);
 
+	// Hide toolbar while a DnD drag is in progress — dragging causes phantom
+	// selectionchange events that make the toolbar flicker after a drop.
+	const { source: dragSource } = useDragOperation();
+	const isDragging = dragSource !== null;
+
 	// Reset link dialog state when the toolbar becomes invisible
 	useEffect(() => {
 		if (!visible) {
@@ -28,6 +34,11 @@ export function FloatingFormatToolbar() {
 	}, [visible]);
 
 	const update = useCallback(() => {
+		// Suppress updates while a DnD drag is in flight
+		if (isDragging) {
+			setVisible(false);
+			return;
+		}
 		// If the user is currently interacting with the LinkDialog or toolbar,
 		// do not hide or reset the toolbar.
 		if (
@@ -103,7 +114,14 @@ export function FloatingFormatToolbar() {
 
 		setPos({ top, left });
 		setVisible(true);
-	}, []);
+	}, [isDragging]);
+
+	// Immediately hide toolbar when drag starts
+	useEffect(() => {
+		if (isDragging) {
+			setVisible(false);
+		}
+	}, [isDragging]);
 
 	useEffect(() => {
 		document.addEventListener("selectionchange", update);

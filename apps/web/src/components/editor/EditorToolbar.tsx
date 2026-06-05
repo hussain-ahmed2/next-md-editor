@@ -1,110 +1,15 @@
 "use client";
 
-import { useEditorStore } from "@next-md-editor/editor-core";
-import { serializeToMarkdown, parseMarkdown } from "@/features/markdown/serializer";
-import { useRef, useState, useEffect, useMemo } from "react";
-import {
-  Undo2,
-  Redo2,
-  Upload,
-  Eye,
-  EyeOff,
-  Copy,
-  Download,
-  CheckCheck,
-  Loader2,
-  FileCode2,
-  FileText,
-  LayoutTemplate,
-  ChevronDown,
-} from "lucide-react";
+import { CheckCheck, Loader2 } from "lucide-react";
 import { useUIStore } from "@/store/uiStore";
-import { TEMPLATES } from "@/constants/templates";
+import { UndoRedoButtons } from "./toolbar/UndoRedoButtons";
+import { ModeToggle } from "./toolbar/ModeToggle";
+import { TemplateMenu } from "./toolbar/TemplateMenu";
+import { FileActions } from "./toolbar/FileActions";
+import { Divider } from "./toolbar/ToolbarButton";
 
 export function EditorToolbar() {
-  const previewOpen = useUIStore((s) => s.isMobile ? s.mobileTab === "preview" : s.previewOpen);
-  const onTogglePreview = useUIStore((s) => s.togglePreview);
   const saveStatus = useUIStore((s) => s.saveStatus);
-
-  const blocks = useEditorStore((s) => s.blocks);
-  const setBlocks = useEditorStore((s) => s.setBlocks);
-  const undo = useEditorStore((s) => s.undo);
-  const redo = useEditorStore((s) => s.redo);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const editorMode = useUIStore((s) => s.editorMode);
-  const setEditorMode = useUIStore((s) => s.setEditorMode);
-  const sourceText = useUIStore((s) => s.sourceText);
-  const setSourceText = useUIStore((s) => s.setSourceText);
-
-  const handleToggleMode = () => {
-    if (editorMode === "canvas") {
-      const md = serializeToMarkdown(blocks);
-      setSourceText(md);
-      setEditorMode("source");
-    } else {
-      const parsed = parseMarkdown(sourceText);
-      setBlocks(parsed);
-      setEditorMode("canvas");
-    }
-  };
-
-  const handleCopy = async () => {
-    const md = serializeToMarkdown(blocks);
-    await navigator.clipboard.writeText(md);
-  };
-
-  const handleDownload = () => {
-    const md = serializeToMarkdown(blocks);
-    const blob = new Blob([md], { type: "text/markdown" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "document.md";
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const handleImportClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const text = event.target?.result as string;
-      if (text) {
-        const parsedBlocks = parseMarkdown(text);
-        setBlocks(parsedBlocks);
-      }
-    };
-    reader.readAsText(file);
-    e.target.value = "";
-  };
-
-  const handleLoadTemplate = (markdown: string) => {
-    const parsedBlocks = parseMarkdown(markdown);
-    setBlocks(parsedBlocks);
-    setTemplateOpen(false);
-  };
-
-  const [templateOpen, setTemplateOpen] = useState(false);
-  const templateRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (templateRef.current && !templateRef.current.contains(e.target as Node)) {
-        setTemplateOpen(false);
-      }
-    }
-    if (templateOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-      return () => document.removeEventListener("mousedown", handleClickOutside);
-    }
-  }, [templateOpen]);
 
   return (
     <header style={{
@@ -164,159 +69,12 @@ export function EditorToolbar() {
 
       {/* Actions */}
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-        <input
-          type="file"
-          accept=".md,text/markdown"
-          ref={fileInputRef}
-          onChange={handleFileChange}
-          style={{ display: "none" }}
-        />
-        <ToolbarButton onClick={undo} id="btn-undo" tooltip="Undo (Ctrl+Z)">
-          <Undo2 size={14} />
-          <span className="btn-label">Undo</span>
-        </ToolbarButton>
-        <ToolbarButton onClick={redo} id="btn-redo" tooltip="Redo (Ctrl+Y)">
-          <Redo2 size={14} />
-          <span className="btn-label">Redo</span>
-        </ToolbarButton>
+        <UndoRedoButtons />
         <Divider />
-        <div ref={templateRef} style={{ position: "relative" }}>
-          <ToolbarButton
-            onClick={() => setTemplateOpen(!templateOpen)}
-            id="btn-templates"
-            tooltip="Load a template"
-          >
-            <LayoutTemplate size={14} />
-            <span className="btn-label">Templates</span>
-            <ChevronDown size={10} style={{ opacity: 0.6 }} />
-          </ToolbarButton>
-          {templateOpen && (
-            <div
-              style={{
-                position: "absolute",
-                top: "calc(100% + 4px)",
-                left: 0,
-                zIndex: 100,
-                width: 220,
-                background: "var(--bg-elevated)",
-                border: "1px solid var(--border)",
-                borderRadius: "var(--radius-md)",
-                boxShadow: "var(--shadow-lg)",
-                display: "flex",
-                flexDirection: "column",
-                padding: "4px",
-                gap: 2,
-              }}
-            >
-              {TEMPLATES.map((tmpl) => (
-                <button
-                  key={tmpl.id}
-                  onClick={() => handleLoadTemplate(tmpl.markdown)}
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 2,
-                    padding: "8px 10px",
-                    borderRadius: "var(--radius-sm)",
-                    border: "none",
-                    background: "transparent",
-                    cursor: "pointer",
-                    textAlign: "left",
-                    transition: "background 0.1s ease",
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = "var(--bg-hover)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-                >
-                  <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>
-                    {tmpl.name}
-                  </span>
-                  <span style={{ fontSize: 11, color: "var(--text-muted)", lineHeight: 1.3 }}>
-                    {tmpl.description}
-                  </span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-        <ToolbarButton onClick={handleImportClick} id="btn-import-md" tooltip="Import a .md file">
-          <Upload size={14} />
-          <span className="btn-label">Import</span>
-        </ToolbarButton>
-        <ToolbarButton onClick={onTogglePreview} active={previewOpen} id="btn-toggle-preview" tooltip="Toggle preview pane">
-          {previewOpen ? <EyeOff size={14} /> : <Eye size={14} />}
-          <span className="btn-label">{previewOpen ? "Hide Preview" : "Preview"}</span>
-        </ToolbarButton>
-        <ToolbarButton onClick={handleToggleMode} active={editorMode === "source"} id="btn-toggle-mode" tooltip="Switch between visual canvas and raw markdown">
-          {editorMode === "source" ? <FileText size={14} /> : <FileCode2 size={14} />}
-          <span className="btn-label">{editorMode === "source" ? "Canvas" : "Source"}</span>
-        </ToolbarButton>
-        <ToolbarButton onClick={handleCopy} id="btn-copy-md" tooltip="Copy as Markdown">
-          <Copy size={14} />
-          <span className="btn-label">Copy</span>
-        </ToolbarButton>
-        <ToolbarButton onClick={handleDownload} primary id="btn-download-md" tooltip="Download as .md">
-          <Download size={14} />
-          <span className="btn-label">Download</span>
-        </ToolbarButton>
+        <TemplateMenu />
+        <ModeToggle />
+        <FileActions />
       </div>
     </header>
-  );
-}
-
-function Divider() {
-  return (
-    <div style={{
-      width: 1,
-      height: 20,
-      background: "var(--border)",
-      margin: "0 2px",
-      flexShrink: 0,
-    }} />
-  );
-}
-
-function ToolbarButton({
-  children,
-  onClick,
-  primary,
-  active,
-  id,
-  tooltip,
-}: {
-  children: React.ReactNode;
-  onClick: () => void;
-  primary?: boolean;
-  active?: boolean;
-  id?: string;
-  tooltip?: string;
-}) {
-  return (
-    <button
-      id={id}
-      onClick={onClick}
-      title={tooltip}
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 5,
-        padding: "5px 10px",
-        borderRadius: "var(--radius-sm)",
-        border: `1px solid ${primary ? "transparent" : active ? "var(--accent)" : "var(--border)"}`,
-        background: primary
-          ? "var(--accent)"
-          : active
-          ? "var(--accent-muted)"
-          : "transparent",
-        color: primary ? "#fff" : active ? "var(--accent)" : "var(--text-secondary)",
-        fontSize: 12.5,
-        fontWeight: 500,
-        cursor: "pointer",
-        transition: "all 0.15s ease",
-        fontFamily: "var(--font-sans)",
-        whiteSpace: "nowrap",
-      }}
-    >
-      {children}
-    </button>
   );
 }

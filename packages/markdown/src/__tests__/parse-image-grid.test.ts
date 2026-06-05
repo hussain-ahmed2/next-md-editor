@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseMarkdown } from "../index";
+import { parseMarkdown, serializeMarkdown } from "../index";
 
 const FLUID =
   "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=600&auto=format&fit=crop";
@@ -248,5 +248,47 @@ describe("parseMarkdown — image grid", () => {
     expect(grid.props.cols).toBe(1);
     expect(grid.props.images).toHaveLength(1);
     expect(grid.props.images[0].alt).toBe("Solo");
+  });
+
+  it("parses multiple normal images in a paragraph into an image-grid block", () => {
+    const md = `![img1](${FLUID}) ![img2](${GLOSSY})`;
+    const blocks = parseMarkdown(md);
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0].type).toBe("image-grid");
+    expect(blocks[0].props.cols).toBe(2);
+    expect(blocks[0].props.images).toHaveLength(2);
+    expect(blocks[0].props.images[0].url).toBe(FLUID);
+    expect(blocks[0].props.images[1].url).toBe(GLOSSY);
+  });
+
+  it("parses multiple badge images in a paragraph into a badge-group block and preserves exact URLs", () => {
+    const md = `![Badge1](https://img.shields.io/badge/license-MIT-blue.svg) ![Badge2](https://img.shields.io/badge/license-Apache-green.svg)`;
+    const blocks = parseMarkdown(md);
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0].type).toBe("badge-group");
+    expect(blocks[0].props.badges).toHaveLength(2);
+    expect(blocks[0].props.badges[0].text).toBe("license-MIT");
+    expect(blocks[0].props.badges[0].color).toBe("blue.svg");
+    expect(blocks[0].props.badges[0].url).toBe("https://img.shields.io/badge/license-MIT-blue.svg");
+    expect(blocks[0].props.badges[1].text).toBe("license-Apache");
+    expect(blocks[0].props.badges[1].url).toBe("https://img.shields.io/badge/license-Apache-green.svg");
+  });
+
+  it("handles different domains / badge styles and serializes them back unmodified", () => {
+    const originalMd = `<!-- badge-group -->
+
+![image](https://github.com/user/repo/actions/workflows/ci.yml/badge.svg)
+![image](https://img.shields.io/badge/license-Apache--2.0-blue?style=flat-square)`;
+    
+    const parsed = parseMarkdown(originalMd);
+    expect(parsed).toHaveLength(1);
+    expect(parsed[0].type).toBe("badge-group");
+    expect(parsed[0].props.badges).toHaveLength(2);
+    expect(parsed[0].props.badges[0].url).toBe("https://github.com/user/repo/actions/workflows/ci.yml/badge.svg");
+    expect(parsed[0].props.badges[1].url).toBe("https://img.shields.io/badge/license-Apache--2.0-blue?style=flat-square");
+
+    // Serialization roundtrip check
+    const serialized = serializeMarkdown(parsed);
+    expect(serialized.trim()).toBe(originalMd.trim());
   });
 });

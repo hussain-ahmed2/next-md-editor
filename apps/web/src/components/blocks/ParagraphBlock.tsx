@@ -18,8 +18,8 @@ import {
   applyRichFormat,
 } from "@next-md-editor/markdown";
 import { SlashCommandMenu } from "@/components/editor/SlashCommandMenu";
-import { BlockDepthContext } from "@/components/editor/SortableBlock";
 import { LinkDialog } from "@/components/editor/LinkDialog";
+import { useBlockFocus } from "@/hooks/useBlockFocus";
 
 export function ParagraphBlock({ block }: { block: Block }) {
   const blocks = useEditorStore((s) => s.blocks);
@@ -29,10 +29,6 @@ export function ParagraphBlock({ block }: { block: Block }) {
   const replaceBlock = useEditorStore((s) => s.replaceBlock);
   const selectBlock = useEditorStore((s) => s.selectBlock);
   const selectedBlockIds = useEditorStore((s) => s.selectedBlockIds);
-  const indentBlocks = useEditorStore((s) => s.indentBlocks);
-  const outdentBlocks = useEditorStore((s) => s.outdentBlocks);
-
-  const depth = useContext(BlockDepthContext);
 
   const content: RichText = Array.isArray(block.props.content)
     ? (block.props.content as RichText)
@@ -53,12 +49,7 @@ export function ParagraphBlock({ block }: { block: Block }) {
   const [slashSelectedIndex, setSlashSelectedIndex] = useState(0);
 
   // Auto-focus synchronization when block is selected
-  useEffect(() => {
-    const isSelected = selectedBlockIds[selectedBlockIds.length - 1] === block.id;
-    if (isSelected && ref.current && document.activeElement !== ref.current) {
-      ref.current.focus();
-    }
-  }, [selectedBlockIds, block.id, ref]);
+  useBlockFocus(ref, block.id, selectedBlockIds);
 
   // Sync store changes to DOM — preserves caret position
   useEffect(() => {
@@ -191,15 +182,7 @@ export function ParagraphBlock({ block }: { block: Block }) {
         }
       }
 
-      if (e.key === "Tab") {
-        e.preventDefault();
-        if (e.shiftKey) {
-          outdentBlocks([block.id]);
-        } else {
-          indentBlocks([block.id]);
-        }
-        return;
-      }
+
 
       // Ctrl+K / Cmd+K for link
       const hasMeta = e.ctrlKey || e.metaKey;
@@ -227,8 +210,6 @@ export function ParagraphBlock({ block }: { block: Block }) {
       removeBlocks,
       replaceBlock,
       selectBlock,
-      indentBlocks,
-      outdentBlocks,
       updateBlock,
     ],
   );

@@ -34,6 +34,13 @@
 - Props typed inline or via exported interface
 - Block components receive `{ block: Block }` prop from `BlockRenderer`
 - Use `contentEditable` with `dangerouslySetInnerHTML` for rich text editing (sanitized via richText utilities)
+- **Modularity & Directory Structure**: Split complex blocks or large editor components with rich logic, multiple sub-forms, or extensive constants into dedicated sub-folders (e.g., `badge-group/` inside `components/blocks/`, or `toolbar/`/`markdown-preview/`/`sortable-block/` inside `components/editor/`). The primary file acts as the coordinator (managing Zustand store bindings, global events, and orchestration), while sub-components handle isolated UI parts.
+
+## Shared Hooks
+
+- `useBlockFocus` — automatically focuses the DOM ref of a block when it is selected/focused. Used by interactive blocks: `ParagraphBlock`, `QuoteBlock`, `HeadingBlock`, `ListBlock`, `ImageBlock`, `ImageGridBlock`, and `BadgeGroupBlock`.
+- `useContentSync` — syncs the innerHTML of a contentEditable element with store changes while preserving caret position (mostly used for undo/redo reconciliation).
+
 
 ## State Management
 
@@ -73,11 +80,11 @@ interface Block {
 apps/web/src/
 ├── app/              # Next.js App Router (layout, page)
 ├── components/
-│   ├── blocks/       # One file per block type (HeadingBlock.tsx, etc.)
-│   └── editor/       # Editor chrome (Toolbar, Canvas, Sidebar, Preview)
-├── constants/        # Demo data, editor constants
+│   ├── blocks/       # One coordinator file per block type + sub-folders (badge-group/, image-grid/)
+│   └── editor/       # Coordinator files (EditorCanvas, EditorToolbar) + sub-folders (sortable-block/, toolbar/, markdown-preview/)
+├── constants/        # Demo data, shared constants (calloutTypes.tsx)
 ├── features/         # Feature modules (markdown serializer, highlighter)
-├── hooks/            # Custom React hooks
+├── hooks/            # Custom React hooks (useBlockFocus.ts, useContentSync.ts)
 ├── registry/         # Block registry initialization
 ├── store/            # Zustand UI store
 └── utils/            # Utility functions

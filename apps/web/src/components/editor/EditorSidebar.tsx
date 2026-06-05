@@ -97,7 +97,7 @@ const BLOCK_PALETTE: SidebarBlock[] = [
 		type: "badge-group",
 		label: "Badge Group",
 		icon: <Award size={18} />,
-		description: "Tech stack badges with shields.io style",
+		description: "Badge group with shields.io style",
 	},
 ];
 

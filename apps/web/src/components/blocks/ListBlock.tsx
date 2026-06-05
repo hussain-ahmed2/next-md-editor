@@ -5,6 +5,7 @@ import { useEditorStore } from "@next-md-editor/editor-core";
 import type { Block } from "@next-md-editor/types";
 import { v4 as uuidv4 } from "uuid";
 import { renderInlineMarkdown } from "@/features/markdown/highlighter";
+import { useBlockFocus } from "@/hooks/useBlockFocus";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -97,12 +98,7 @@ export function ListBlock({ block }: { block: Block }) {
 	const lastStoredRef = useRef<string>(html);
 
 	// ── Focus sync ──────────────────────────────────────────────────────────────
-	useEffect(() => {
-		const isSelected = selectedBlockIds[selectedBlockIds.length - 1] === block.id;
-		if (isSelected && ref.current && document.activeElement !== ref.current) {
-			ref.current.focus();
-		}
-	}, [selectedBlockIds, block.id]);
+	useBlockFocus(ref, block.id, selectedBlockIds);
 
 	// ── DOM sync ────────────────────────────────────────────────────────────────
 	useEffect(() => {

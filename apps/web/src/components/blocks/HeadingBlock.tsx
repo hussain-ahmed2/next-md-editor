@@ -9,6 +9,7 @@ import {
 } from "@/utils/editorShortcuts";
 import { renderInlineMarkdown } from "@/features/markdown/highlighter";
 import { LinkDialog } from "@/components/editor/LinkDialog";
+import { useBlockFocus } from "@/hooks/useBlockFocus";
 
 const LEVEL_STYLES: Record<
   number,
@@ -51,8 +52,7 @@ export function HeadingBlock({ block }: { block: Block }) {
   const updateBlock = useEditorStore((s) => s.updateBlock);
   const selectBlock = useEditorStore((s) => s.selectBlock);
   const selectedBlockIds = useEditorStore((s) => s.selectedBlockIds);
-  const indentBlocks = useEditorStore((s) => s.indentBlocks);
-  const outdentBlocks = useEditorStore((s) => s.outdentBlocks);
+
 
   const level = (block.props.level as number) ?? 1;
   const text = (block.props.text as string) ?? "";
@@ -65,12 +65,7 @@ export function HeadingBlock({ block }: { block: Block }) {
   const ref = useRef<HTMLDivElement>(null);
 
   // Auto-focus synchronization when block is selected
-  useEffect(() => {
-    const isSelected = selectedBlockIds[selectedBlockIds.length - 1] === block.id;
-    if (isSelected && ref.current && document.activeElement !== ref.current) {
-      ref.current.focus();
-    }
-  }, [selectedBlockIds, block.id, ref]);
+  useBlockFocus(ref, block.id, selectedBlockIds);
 
   // Sync state changes from store to DOM when they differ (e.g. on undo/redo)
   useEffect(() => {
@@ -177,8 +172,7 @@ export function HeadingBlock({ block }: { block: Block }) {
             removeBlocks,
             updateBlock,
             selectBlock,
-            indentBlocks,
-            outdentBlocks,
+
           )
         }}
         style={{
