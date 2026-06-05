@@ -45,11 +45,21 @@ html, body {
 /* ── Links inside contentEditable ──────────────────── */
 [contenteditable] a {
   color: var(--accent, #58a6ff);
-  text-decoration: underline;
+  text-decoration: none;
   cursor: pointer;
 }
 [contenteditable] a:hover {
+  text-decoration: underline;
   opacity: 0.85;
+}
+
+/* ── Links inside Preview ──────────────────────────── */
+.preview-link {
+  text-decoration: none;
+  transition: text-decoration 0.1s ease;
+}
+.preview-link:hover {
+  text-decoration: underline !important;
 }
 
 /* ── Animations ─────────────────────────────────────── */

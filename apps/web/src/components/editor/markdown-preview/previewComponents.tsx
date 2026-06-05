@@ -206,6 +206,7 @@ export const getMarkdownComponents = (): Components => {
         href={href}
         target="_blank"
         rel="noopener noreferrer"
+        className="preview-link"
         style={{ color: "#58a6ff", textDecoration: "none", fontWeight: 500 }}
       >
         {children}
