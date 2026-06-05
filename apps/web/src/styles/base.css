@@ -42,6 +42,16 @@ html, body {
 /* ── Focus ──────────────────────────────────────────── */
 [contenteditable]:focus { outline: none; }
 
+/* ── Links inside contentEditable ──────────────────── */
+[contenteditable] a {
+  color: var(--accent, #58a6ff);
+  text-decoration: underline;
+  cursor: pointer;
+}
+[contenteditable] a:hover {
+  opacity: 0.85;
+}
+
 /* ── Animations ─────────────────────────────────────── */
 @keyframes pulse {
   0%   { transform: scale(0.9); opacity: 0.5; }

@@ -13,9 +13,13 @@ import {
   markdownToRichText,
   getDomTextOffset,
   restoreDomRange,
+  getSelectionRichRange,
+  toggleRichFormat,
+  applyRichFormat,
 } from "@next-md-editor/markdown";
 import { SlashCommandMenu } from "@/components/editor/SlashCommandMenu";
 import { BlockDepthContext } from "@/components/editor/SortableBlock";
+import { LinkDialog } from "@/components/editor/LinkDialog";
 
 export function ParagraphBlock({ block }: { block: Block }) {
   const blocks = useEditorStore((s) => s.blocks);
@@ -37,6 +41,10 @@ export function ParagraphBlock({ block }: { block: Block }) {
       : [];
 
   const [isFocused, setIsFocused] = useState(false);
+  const [linkDialog, setLinkDialog] = useState<{
+    url: string;
+    pos: { top: number; left: number };
+  } | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
   // Slash Command State
@@ -199,13 +207,12 @@ export function ParagraphBlock({ block }: { block: Block }) {
         e.preventDefault();
         const sel = window.getSelection();
         if (!sel || sel.isCollapsed || !sel.rangeCount) return;
-        const url = window.prompt("Enter URL:", "https://");
-        if (url) {
-          document.execCommand("createLink", false, url);
-          // Save after link insertion
-          const newContent = htmlToRichText(ref.current?.innerHTML ?? "");
-          updateBlock(block.id, { content: newContent });
-        }
+        const range = sel.getRangeAt(0);
+        const rect = range.getBoundingClientRect();
+        setLinkDialog({
+          url: "https://",
+          pos: { top: rect.top - 8, left: rect.left + rect.width / 2 },
+        });
         return;
       }
     },
@@ -261,6 +268,20 @@ export function ParagraphBlock({ block }: { block: Block }) {
         data-placeholder="Start typing…"
       />
       {slashMenu}
+      {linkDialog && (
+        <LinkDialog
+          initialUrl={linkDialog.url}
+          position={linkDialog.pos}
+          onApply={(url) => {
+            const range = getSelectionRichRange(content, ref.current!);
+            if (!range || range.start >= range.end) return;
+            const newContent = applyRichFormat(content, range.start, range.end, { link: url });
+            updateBlock(block.id, { content: newContent });
+            setLinkDialog(null);
+          }}
+          onCancel={() => setLinkDialog(null)}
+        />
+      )}
     </div>
   );
 }

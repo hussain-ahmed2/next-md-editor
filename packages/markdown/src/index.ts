@@ -187,6 +187,17 @@ function nodeToBlock(node: any, markdown: string): Block | null {
     }
 
     case "paragraph": {
+      if (node.children?.length === 1 && node.children[0].type === "image") {
+        const img = node.children[0];
+        return {
+          id: uuidv4(),
+          type: "image",
+          props: {
+            url: img.url || "",
+            alt: img.alt || "",
+          },
+        };
+      }
       const text = extractRawText(node, markdown).trim();
       if (!text) return null;
       return { id: uuidv4(), type: "paragraph", props: { content: markdownToRichText(text) } };

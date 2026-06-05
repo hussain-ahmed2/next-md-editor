@@ -8,6 +8,7 @@ import {
   htmlToMarkdown,
 } from "@/utils/editorShortcuts";
 import { renderInlineMarkdown } from "@/features/markdown/highlighter";
+import { LinkDialog } from "@/components/editor/LinkDialog";
 
 const LEVEL_STYLES: Record<
   number,
@@ -57,6 +58,10 @@ export function HeadingBlock({ block }: { block: Block }) {
   const text = (block.props.text as string) ?? "";
   const style = LEVEL_STYLES[level] ?? LEVEL_STYLES[1];
   const [isFocused, setIsFocused] = useState(false);
+  const [linkDialog, setLinkDialog] = useState<{
+    url: string;
+    pos: { top: number; left: number };
+  } | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
   // Auto-focus synchronization when block is selected
@@ -148,7 +153,21 @@ export function HeadingBlock({ block }: { block: Block }) {
         onFocus={() => setIsFocused(true)}
         onBlur={handleBlur}
         onInput={handleInput}
-        onKeyDown={(e) =>
+        onKeyDown={(e) => {
+          const hasMeta = e.ctrlKey || e.metaKey;
+          if (hasMeta && e.key.toLowerCase() === "k") {
+            e.preventDefault();
+            e.stopPropagation();
+            const sel = window.getSelection();
+            if (!sel || sel.isCollapsed || !sel.rangeCount) return;
+            const range = sel.getRangeAt(0);
+            const rect = range.getBoundingClientRect();
+            setLinkDialog({
+              url: "https://",
+              pos: { top: rect.top - 8, left: rect.left + rect.width / 2 },
+            });
+            return;
+          }
           handleEditorKeyboardShortcuts(
             e,
             block,
@@ -161,7 +180,7 @@ export function HeadingBlock({ block }: { block: Block }) {
             indentBlocks,
             outdentBlocks,
           )
-        }
+        }}
         style={{
           ...style,
           color: "var(--text-primary)",
@@ -177,6 +196,23 @@ export function HeadingBlock({ block }: { block: Block }) {
             }
           : {})}
       />
+      {linkDialog && (
+        <LinkDialog
+          initialUrl={linkDialog.url}
+          position={linkDialog.pos}
+          onApply={(url) => {
+            const el = ref.current;
+            if (!el) return;
+            el.focus();
+            const sel = window.getSelection();
+            if (!sel || !sel.rangeCount) return;
+            document.execCommand("createLink", false, url);
+            updateBlock(block.id, { text: htmlToMarkdown(el.innerHTML) });
+            setLinkDialog(null);
+          }}
+          onCancel={() => setLinkDialog(null)}
+        />
+      )}
     </div>
   );
 }
