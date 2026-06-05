@@ -265,15 +265,13 @@ const MD_COMPONENTS: Components = {
 				/>
 			);
 		}
+		/* eslint-disable-next-line @next/next/no-img-element */
 		return (
-			<div style={{ display: "flex", justifyContent: "center", margin: "12px 0" }}>
-				{/* eslint-disable-next-line @next/next/no-img-element */}
-				<img
-					src={src}
-					alt={alt}
-					style={{ maxWidth: "100%", height: "auto", borderRadius: 6, border: "1px solid #30363d" }}
-				/>
-			</div>
+			<img
+				src={src}
+				alt={alt}
+				style={{ display: "block", margin: "12px auto", maxWidth: "100%", height: "auto", borderRadius: 6, border: "1px solid #30363d" }}
+			/>
 		);
 	},
 

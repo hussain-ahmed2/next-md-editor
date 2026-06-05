@@ -1,9 +1,7 @@
 import { useEffect, useState } from "react";
 import { useEditorStore } from "@next-md-editor/editor-core";
 import { initRegistry } from "@/registry";
-import { parseMarkdown } from "@/features/markdown/serializer";
 import { useUIStore } from "@/store/uiStore";
-import { DEMO_MARKDOWN } from "@/constants/editor";
 
 export function useEditorPersistence() {
   const blocks = useEditorStore((s) => s.blocks);
@@ -33,10 +31,8 @@ export function useEditorPersistence() {
       }
     }
 
-    const parsedBlocks = parseMarkdown(DEMO_MARKDOWN);
-    setBlocks(parsedBlocks);
     setIsLoaded(true);
-    setSaveStatus("saved");
+    setSaveStatus("idle");
   }, [setBlocks]);
 
   // Persist to localStorage with 600ms debounce
