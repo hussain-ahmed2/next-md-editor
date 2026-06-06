@@ -93,15 +93,21 @@ function generateSvg(stats: ComputedStats): string {
   l(`  .lang-pct { font-size: 11px; fill: var(--text-secondary); }`);
   l(`  .repo-name { font-size: 12px; font-weight: 600; fill: var(--link); }`);
   l(`  .repo-stars { font-size: 12px; font-weight: 500; fill: var(--text-secondary); }`);
+  l(`  .card-bg { fill: var(--card-bg); }`);
+  l(`  .card-border { fill: var(--card-bg); stroke: var(--border); }`);
+  l(`  .main-bg { fill: var(--bg); }`);
+  l(`  .divider { stroke: var(--border); }`);
+  l(`  .avatar-border { fill: none; stroke: var(--border); }`);
+  l(`  .bar-bg { fill: var(--bar-bg); }`);
   l(`</style></defs>`);
 
-  l(`<rect width="${W}" height="__H__" rx="8" ry="8" fill="var(--bg)" stroke="var(--border)" stroke-width="1"/>`);
+  l(`<rect width="${W}" height="__H__" rx="8" ry="8" class="main-bg"/>`);
 
   // ═══ ROW 1: Profile (full width) ═══
   const avatarSize = 48;
   l(`<defs><clipPath id="a"><circle cx="${PAD + avatarSize / 2}" cy="${y + avatarSize / 2}" r="${avatarSize / 2}"/></clipPath></defs>`);
   l(`<image x="${PAD}" y="${y}" width="${avatarSize}" height="${avatarSize}" href="${esc(stats.avatarUrl)}" clip-path="url(#a)"/>`);
-  l(`<circle cx="${PAD + avatarSize / 2}" cy="${y + avatarSize / 2}" r="${avatarSize / 2}" fill="none" stroke="var(--border)" stroke-width="1.5"/>`);
+  l(`<circle cx="${PAD + avatarSize / 2}" cy="${y + avatarSize / 2}" r="${avatarSize / 2}" class="avatar-border" stroke-width="1.5"/>`);
 
   const nameX = PAD + avatarSize + 10;
   const displayName = stats.name ?? stats.login;
@@ -118,7 +124,7 @@ function generateSvg(stats: ComputedStats): string {
   y += 80;
 
   // ── Divider ──
-  l(`<line x1="${PAD}" y1="${y}" x2="${W - PAD}" y2="${y}" stroke="var(--border)" stroke-width="1"/>`);
+  l(`<line x1="${PAD}" y1="${y}" x2="${W - PAD}" y2="${y}" class="divider" stroke-width="1"/>`);
   y += 14;
 
   // ═══ ROW 2: Stats (4 cards in a row) ═══
@@ -134,7 +140,7 @@ function generateSvg(stats: ComputedStats): string {
 
   statsItems.forEach((item, i) => {
     const cx = PAD + i * (statCardW + statCardGap);
-    l(`<rect x="${cx}" y="${y}" width="${statCardW}" height="${statCardH}" rx="6" ry="6" fill="var(--card-bg)" stroke="var(--border)" stroke-width="1"/>`);
+    l(`<rect x="${cx}" y="${y}" width="${statCardW}" height="${statCardH}" rx="6" ry="6" class="card-border" stroke-width="1"/>`);
     l(`<text x="${cx + statCardW / 2}" y="${y + 28}" text-anchor="middle" class="stat-val">${fmt(item.value)}</text>`);
     l(`<text x="${cx + statCardW / 2}" y="${y + 44}" text-anchor="middle" class="stat-lbl">${item.label}</text>`);
   });
@@ -142,7 +148,7 @@ function generateSvg(stats: ComputedStats): string {
   y += statCardH + 14;
 
   // ── Divider ──
-  l(`<line x1="${PAD}" y1="${y}" x2="${W - PAD}" y2="${y}" stroke="var(--border)" stroke-width="1"/>`);
+  l(`<line x1="${PAD}" y1="${y}" x2="${W - PAD}" y2="${y}" class="divider" stroke-width="1"/>`);
   y += 14;
 
   // ═══ ROW 3: Languages (full width) ═══
@@ -154,7 +160,7 @@ function generateSvg(stats: ComputedStats): string {
     const totalPct = stats.topLanguages.reduce((s, l) => s + l.percentage, 0);
     let bx = PAD;
 
-    l(`<rect x="${PAD}" y="${y}" width="${contentW}" height="${barH}" rx="3" ry="3" fill="var(--bar-bg)"/>`);
+    l(`<rect x="${PAD}" y="${y}" width="${contentW}" height="${barH}" rx="3" ry="3" class="bar-bg"/>`);
     stats.topLanguages.forEach((lang) => {
       const segW = Math.max((lang.percentage / totalPct) * contentW, lang.percentage > 0 ? 3 : 0);
       const color = LANG_COLORS[lang.name] ?? "#8b949e";
@@ -189,7 +195,7 @@ function generateSvg(stats: ComputedStats): string {
   }
 
   // ── Divider ──
-  l(`<line x1="${PAD}" y1="${y}" x2="${W - PAD}" y2="${y}" stroke="var(--border)" stroke-width="1"/>`);
+  l(`<line x1="${PAD}" y1="${y}" x2="${W - PAD}" y2="${y}" class="divider" stroke-width="1"/>`);
   y += 14;
 
   // ═══ ROW 4: Repos (3 cards in a row) ═══
@@ -204,7 +210,7 @@ function generateSvg(stats: ComputedStats): string {
 
     stats.mostStarredRepos.slice(0, 3).forEach((repo, i) => {
       const rx = PAD + i * (repoCardW + repoCardGap);
-      l(`<rect x="${rx}" y="${y}" width="${repoCardW}" height="${repoCardH}" rx="6" ry="6" fill="var(--card-bg)" stroke="var(--border)" stroke-width="1"/>`);
+      l(`<rect x="${rx}" y="${y}" width="${repoCardW}" height="${repoCardH}" rx="6" ry="6" class="card-border" stroke-width="1"/>`);
       l(`<text x="${rx + 10}" y="${y + 22}" class="repo-name">${esc(trunc(repo.name, 16))}</text>`);
       l(`<text x="${rx + repoCardW - 10}" y="${y + 22}" text-anchor="end" class="repo-stars">★ ${repo.stars}</text>`);
     });
