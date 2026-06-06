@@ -7,12 +7,12 @@ import type { DragOverEvent, DragEndEvent } from "@dnd-kit/react";
 import { SortableBlock } from "./SortableBlock";
 import { FloatingFormatToolbar } from "./FloatingFormatToolbar";
 import { BlockRegistry } from "@next-md-editor/editor-core";
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useMemo, useCallback } from "react";
 import { EmptyState } from "./EmptyState";
 
 export const CANVAS_ROOT_ID = "canvas-root";
 
-export function EditorCanvas() {
+export function EditorCanvas({ scrollRef }: { scrollRef?: React.Ref<HTMLDivElement> }) {
   const blocks = useEditorStore((s) => s.blocks);
   const manager = useDragDropManager();
 
@@ -22,7 +22,16 @@ export function EditorCanvas() {
   blocksRef.current = blocks;
 
   // Droppable canvas root — the whole canvas is a valid drop target
-  const { ref } = useDroppable({ id: CANVAS_ROOT_ID });
+  const { ref: droppableRef } = useDroppable({ id: CANVAS_ROOT_ID });
+
+  const setRef = useCallback((node: HTMLDivElement | null) => {
+    (droppableRef as (el: Element | null) => void)(node);
+    if (typeof scrollRef === "function") {
+      scrollRef(node);
+    } else if (scrollRef) {
+      (scrollRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+    }
+  }, [droppableRef, scrollRef]);
 
   // ── Reactive drag state from library (no manual state needed) ─────────────
   const { source } = useDragOperation();
@@ -109,7 +118,7 @@ export function EditorCanvas() {
 
   return (
     <main
-      ref={ref}
+      ref={setRef}
       className="editor-canvas-container"
       style={{
         flex: 1,

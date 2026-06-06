@@ -10,7 +10,7 @@ import { serializeToMarkdown } from "@/features/markdown/serializer";
 import { PreviewHeader } from "./markdown-preview/PreviewHeader";
 import { FONT_MONO, getMarkdownComponents, getTableComponents } from "./markdown-preview/previewComponents";
 
-export function MarkdownPreview() {
+export function MarkdownPreview({ scrollRef }: { scrollRef?: React.Ref<HTMLDivElement> }) {
 	const blocks = useEditorStore((s) => s.blocks);
 	const markdown = serializeToMarkdown(blocks);
 	const [debouncedMarkdown, setDebouncedMarkdown] = useState(markdown);
@@ -80,7 +80,7 @@ export function MarkdownPreview() {
 				</span>
 			</div>
 
-			<div
+      <div
 				style={{
 					flex: 1,
 					display: "flex",
@@ -92,50 +92,49 @@ export function MarkdownPreview() {
 				}}
 			>
 				<PreviewHeader blockCount={blocks.length} activeTab={activeTab} onTabChange={setActiveTab} />
-
-				{blocks.length === 0 ? (
-					<div
-						style={{
-							flex: 1,
-							display: "flex",
-							alignItems: "center",
-							justifyContent: "center",
-							color: "#8b949e",
-							fontSize: 13,
-							fontStyle: "italic",
-							textAlign: "center",
-						}}
-					>
-						Add blocks to see active GitHub preview…
-					</div>
-				) : activeTab === "raw" ? (
-					<pre
-						style={{
-							flex: 1,
-							margin: 0,
-							padding: "32px",
-							fontSize: 13,
-							lineHeight: 1.6,
-							fontFamily: FONT_MONO,
-							color: "#c9d1d9",
-							whiteSpace: "pre-wrap",
-							wordBreak: "break-word",
-							overflow: "auto",
-						}}
-					>
-						{debouncedMarkdown}
-					</pre>
-				) : (
-					<div className="markdown-body" style={{ flex: 1, overflow: "auto", padding: "32px" }}>
-						<ReactMarkdown
-							remarkPlugins={[remarkGfm]}
-							rehypePlugins={[rehypeRaw]}
-							components={{ ...markdownComponents, ...tableComponents }}
+				<div ref={scrollRef} style={{ flex: 1, overflow: "auto" }}>
+					{blocks.length === 0 ? (
+						<div
+							style={{
+								display: "flex",
+								alignItems: "center",
+								justifyContent: "center",
+								height: "100%",
+								color: "#8b949e",
+								fontSize: 13,
+								fontStyle: "italic",
+								textAlign: "center",
+							}}
+						>
+							Add blocks to see active GitHub preview…
+						</div>
+					) : activeTab === "raw" ? (
+						<pre
+							style={{
+								margin: 0,
+								padding: "32px",
+								fontSize: 13,
+								lineHeight: 1.6,
+								fontFamily: FONT_MONO,
+								color: "#c9d1d9",
+								whiteSpace: "pre-wrap",
+								wordBreak: "break-word",
+							}}
 						>
 							{debouncedMarkdown}
-						</ReactMarkdown>
-					</div>
-				)}
+						</pre>
+					) : (
+						<div className="markdown-body" style={{ padding: "32px" }}>
+							<ReactMarkdown
+								remarkPlugins={[remarkGfm]}
+								rehypePlugins={[rehypeRaw]}
+								components={{ ...markdownComponents, ...tableComponents }}
+							>
+								{debouncedMarkdown}
+							</ReactMarkdown>
+						</div>
+					)}
+				</div>
 			</div>
 		</aside>
 	);
