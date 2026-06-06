@@ -416,12 +416,10 @@ function exDefault(stats: ComputedStats, c: C): string {
 }
 
 function exCompact(stats: ComputedStats, c: C): string {
-  const W = 400, PAD = 16, cw = W - PAD * 2;
+  const W = 580, PAD = 20, cw = W - PAD * 2;
   let y = PAD;
   const lines: string[] = [svgExplicitPreamble(W)];
   lines.push(`<rect width="${W}" height="__H__" rx="8" ry="8" fill="${c.bg}"/>`);
-  y = exProfile(lines, stats, c, W, PAD, y);
-  y = exDivider(lines, c, PAD, W, y);
   y = exStatsCards(lines, stats, c, PAD, cw, y);
   y = exDivider(lines, c, PAD, W, y);
   y = exLanguages(lines, stats, c, PAD, W, cw, y);
@@ -446,8 +444,8 @@ function exMinimal(stats: ComputedStats, c: C): string {
 function generateSvg(stats: ComputedStats, variant: Variant, theme: Theme): string {
   // Auto mode: CSS variables with @media query (browser detects preference)
   if (theme === "auto") {
-    const W = variant === "compact" ? 400 : variant === "minimal" ? 500 : variant === "classic" ? 620 : 580;
-    const PAD = variant === "compact" || variant === "minimal" ? 16 : 20;
+    const W = variant === "compact" ? 580 : variant === "minimal" ? 500 : variant === "classic" ? 620 : 580;
+    const PAD = variant === "minimal" ? 16 : 20;
     const cw = W - PAD * 2;
     let y = PAD;
     const lines: string[] = [...svgAutoPreamble(W)];
@@ -456,10 +454,9 @@ function generateSvg(stats: ComputedStats, variant: Variant, theme: Theme): stri
     if (variant === "classic") {
       return generateAutoClassic(stats);
     }
-    if (variant !== "minimal") { y = autoProfile(lines, stats, W, PAD, y); y = autoDivider(lines, PAD, W, y); }
+    if (variant === "default") { y = autoProfile(lines, stats, W, PAD, y); y = autoDivider(lines, PAD, W, y); }
     y = autoStatsCards(lines, stats, PAD, cw, y);
-    y = autoDivider(lines, PAD, W, y);
-    if (variant !== "minimal") { y = autoLanguages(lines, stats, PAD, W, cw, y); }
+    if (variant !== "minimal") { y = autoDivider(lines, PAD, W, y); y = autoLanguages(lines, stats, PAD, W, cw, y); }
     if (variant === "default") { y = autoDivider(lines, PAD, W, y); y = autoRepos(lines, stats, PAD, cw, y); }
     lines.push(`</svg>`);
     return lines.join("\n").replace(/__H__/g, String(y + PAD));
