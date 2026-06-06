@@ -29,6 +29,8 @@ export interface ComputedStats {
   name: string | null;
   bio: string | null;
   login: string;
+  contributions?: number;
+  reposContributedTo?: number;
 }
 
 export function computeStats(profile: GitHubProfile, repos: GitHubRepo[]): ComputedStats {
@@ -73,5 +75,46 @@ export function computeStats(profile: GitHubProfile, repos: GitHubRepo[]): Compu
     name: profile.name,
     bio: profile.bio,
     login: profile.login,
+  };
+}
+
+export async function fetchContributions(
+  username: string,
+  token?: string,
+): Promise<{ contributions: number; reposContributedTo: number }> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    "User-Agent": "next-md-editor",
+  };
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  const query = `query($login: String!) {
+    user(login: $login) {
+      contributionsCollection {
+        contributionCalendar {
+          totalContributions
+        }
+      }
+      repositoriesContributedTo(first: 1, contributionTypes: [COMMIT, ISSUE, PR, REVIEW]) {
+        totalCount
+      }
+    }
+  }`;
+
+  const res = await fetch("https://api.github.com/graphql", {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ query, variables: { login: username } }),
+  });
+
+  if (!res.ok) return { contributions: 0, reposContributedTo: 0 };
+
+  const json = await res.json();
+  const user = json?.data?.user;
+  if (!user) return { contributions: 0, reposContributedTo: 0 };
+
+  return {
+    contributions: user.contributionsCollection?.contributionCalendar?.totalContributions ?? 0,
+    reposContributedTo: user.repositoriesContributedTo?.totalCount ?? 0,
   };
 }

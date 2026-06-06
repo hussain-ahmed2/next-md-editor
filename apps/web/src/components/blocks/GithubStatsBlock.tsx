@@ -40,6 +40,13 @@ const VARIANTS = [
   { value: "default", label: "Default" },
   { value: "compact", label: "Compact" },
   { value: "minimal", label: "Minimal" },
+  { value: "classic", label: "Classic" },
+] as const;
+
+const THEMES = [
+  { value: "auto", label: "Auto" },
+  { value: "light", label: "Light" },
+  { value: "dark", label: "Dark" },
 ] as const;
 
 function fmt(n: number): string {
@@ -53,6 +60,7 @@ export function GithubStatsBlock({ block }: { block: Block }) {
   const myBlock = blocks.find((b) => b.id === block.id) ?? block;
   const username = (myBlock.props.username as string) ?? "";
   const variant = ((myBlock.props.variant as string) ?? "default") as string;
+  const theme = ((myBlock.props.theme as string) ?? "auto") as string;
 
   const [stats, setStats] = useState<ComputedStats | null>(null);
   const [loading, setLoading] = useState(false);
@@ -86,6 +94,10 @@ export function GithubStatsBlock({ block }: { block: Block }) {
 
   const handleVariantChange = (newVariant: string) => {
     updateBlock(block.id, { variant: newVariant });
+  };
+
+  const handleThemeChange = (newTheme: string) => {
+    updateBlock(block.id, { theme: newTheme });
   };
 
   if (!username.trim()) {
@@ -122,6 +134,9 @@ export function GithubStatsBlock({ block }: { block: Block }) {
           <>
             <select value={variant} onChange={(e) => handleVariantChange(e.target.value)} style={selectStyle}>
               {VARIANTS.map((v) => <option key={v.value} value={v.value}>{v.label}</option>)}
+            </select>
+            <select value={theme} onChange={(e) => handleThemeChange(e.target.value)} style={selectStyle}>
+              {THEMES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
             </select>
             <button onClick={() => setEditing(true)} style={btnGhost}>Change</button>
           </>

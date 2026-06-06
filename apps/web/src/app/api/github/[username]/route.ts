@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@/generated/browser";
-import { computeStats, type ComputedStats, type GitHubProfile, type GitHubRepo } from "@/lib/github-stats";
+import { computeStats, fetchContributions, type ComputedStats, type GitHubProfile, type GitHubRepo } from "@/lib/github-stats";
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const CACHE_TTL = 24 * 60 * 60 * 1000;
@@ -44,6 +44,10 @@ export async function GET(
     )) as GitHubRepo[];
 
     const stats = computeStats(profile, repos);
+
+    const contrib = await fetchContributions(cleanUser, GITHUB_TOKEN);
+    stats.contributions = contrib.contributions;
+    stats.reposContributedTo = contrib.reposContributedTo;
 
     await prisma.gitHubStats.upsert({
       where: { username: cleanUser },
