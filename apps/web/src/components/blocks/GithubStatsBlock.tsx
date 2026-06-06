@@ -59,6 +59,12 @@ const VARIANTS = [
   { value: "classic", label: "Classic" },
 ] as const;
 
+const THEMES = [
+  { value: "auto", label: "Auto" },
+  { value: "light", label: "Light" },
+  { value: "dark", label: "Dark" },
+] as const;
+
 function fmt(n: number): string {
   if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
   return String(n);
@@ -70,6 +76,7 @@ export function GithubStatsBlock({ block }: { block: Block }) {
   const myBlock = blocks.find((b) => b.id === block.id) ?? block;
   const username = (myBlock.props.username as string) ?? "";
   const variant = ((myBlock.props.variant as string) ?? "default") as string;
+  const theme = ((myBlock.props.theme as string) ?? "auto") as string;
   const c = useSiteTheme();
 
   const [stats, setStats] = useState<ComputedStats | null>(null);
@@ -97,6 +104,7 @@ export function GithubStatsBlock({ block }: { block: Block }) {
   }, [inputUsername, updateBlock, block.id]);
 
   const handleVariantChange = useCallback((v: string) => updateBlock(block.id, { variant: v }), [updateBlock, block.id]);
+  const handleThemeChange = useCallback((t: string) => updateBlock(block.id, { theme: t }), [updateBlock, block.id]);
 
   const cardStyle = useMemo<React.CSSProperties>(() => ({
     position: "relative", borderRadius: 8,
@@ -170,15 +178,18 @@ export function GithubStatsBlock({ block }: { block: Block }) {
             </>
           ) : (
             <>
-              <select value={variant} onChange={(e) => handleVariantChange(e.target.value)} style={selectStyle}>
-                {VARIANTS.map((v) => <option key={v.value} value={v.value}>{v.label}</option>)}
-              </select>
-              <button onClick={() => setEditing(true)} style={btnGhost}>Change</button>
-            </>
-          )}
-        </div>
+            <select value={variant} onChange={(e) => handleVariantChange(e.target.value)} style={selectStyle}>
+              {VARIANTS.map((v) => <option key={v.value} value={v.value}>{v.label}</option>)}
+            </select>
+            <select value={theme} onChange={(e) => handleThemeChange(e.target.value)} style={selectStyle}>
+              {THEMES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+            </select>
+            <button onClick={() => setEditing(true)} style={btnGhost}>Change</button>
+          </>
+        )}
+      </div>
 
-        {/* Title */}
+      {/* Title */}
         <div style={{ padding: "16px 16px 12px" }}>
           <span style={{ fontSize: 16, fontWeight: 700, color: c.link }}>{stats.name ?? stats.login}</span>
           <span style={{ fontSize: 16, fontWeight: 700, color: c.textPrimary }}>'s GitHub Statistics</span>
@@ -247,6 +258,9 @@ export function GithubStatsBlock({ block }: { block: Block }) {
           <>
             <select value={variant} onChange={(e) => handleVariantChange(e.target.value)} style={selectStyle}>
               {VARIANTS.map((v) => <option key={v.value} value={v.value}>{v.label}</option>)}
+            </select>
+            <select value={theme} onChange={(e) => handleThemeChange(e.target.value)} style={selectStyle}>
+              {THEMES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
             </select>
             <button onClick={() => setEditing(true)} style={btnGhost}>Change</button>
           </>
