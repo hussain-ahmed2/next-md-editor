@@ -48,12 +48,13 @@ export function useDragAndDrop() {
 
         if (targetId === CANVAS_ROOT_ID) {
           if (blocks.length > 0) {
-            const firstDroppable = manager?.registry.droppables.get(blocks[0].id);
-            const rect =
-              firstDroppable?.shape?.boundingRectangle ??
-              firstDroppable?.element?.getBoundingClientRect();
-            if (rect) {
-              insertIdx = cursorY < rect.top + rect.height / 2 ? 0 : blocks.length;
+            for (let i = 0; i < blocks.length; i++) {
+              const d = manager?.registry.droppables.get(blocks[i].id);
+              const rect = d?.shape?.boundingRectangle ?? d?.element?.getBoundingClientRect();
+              if (rect && cursorY < rect.top + rect.height / 2) {
+                insertIdx = i;
+                break;
+              }
             }
           } else {
             insertIdx = 0;
