@@ -48,6 +48,28 @@
   list-style-type: square !important;
 }
 
+.rich-list-content ol ol,
+.markdown-body .rich-list-content ol ol {
+  list-style-type: lower-roman !important;
+}
+
+.rich-list-content ol ol ol,
+.markdown-body .rich-list-content ol ol ol {
+  list-style-type: lower-alpha !important;
+}
+
+/* Restore list markers inside github-markdown-css preview (Tailwind preflight sets list-style: none) */
+.markdown-body ul, .markdown-body ol {
+  list-style: revert;
+}
+
+/* Inline code inside .markdown-body: override base.css background to match GitHub */
+.markdown-body :not(pre) > code {
+  background: var(--bgColor-muted, #eff1f3);
+  border-radius: 6px;
+  padding: 0.2em 0.4em;
+}
+
 /* Universal fluid responsiveness for Image Grid controls on any size */
 .image-grid-controls {
   display: flex !important;

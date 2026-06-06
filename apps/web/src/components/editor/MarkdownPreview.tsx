@@ -9,7 +9,6 @@ import { useUIStore } from "@/store/uiStore";
 import { serializeToMarkdown } from "@/features/markdown/serializer";
 import { PreviewHeader } from "./markdown-preview/PreviewHeader";
 import {
-  FONT_SANS,
   FONT_MONO,
   getMarkdownComponents,
   getTableComponents,
@@ -102,58 +101,48 @@ export function MarkdownPreview() {
           onTabChange={setActiveTab}
         />
 
-        <div style={{ flex: 1, overflow: "auto", padding: "32px", background: "#0d1117" }}>
-          {blocks.length === 0 ? (
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                height: "100%",
-                color: "#8b949e",
-                fontSize: 13,
-                fontStyle: "italic",
-                textAlign: "center",
-              }}
-            >
-              Add blocks to see active GitHub preview…
-            </div>
-          ) : activeTab === "raw" ? (
-            <pre
-              style={{
-                margin: 0,
-                fontSize: 13,
-                lineHeight: 1.6,
-                fontFamily: FONT_MONO,
-                color: "#c9d1d9",
-                whiteSpace: "pre-wrap",
-                wordBreak: "break-word",
-              }}
+        {blocks.length === 0 ? (
+          <div
+            style={{
+              flex: 1,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#8b949e",
+              fontSize: 13,
+              fontStyle: "italic",
+              textAlign: "center",
+            }}
+          >
+            Add blocks to see active GitHub preview…
+          </div>
+        ) : activeTab === "raw" ? (
+          <pre
+            style={{
+              flex: 1,
+              margin: 0,
+              padding: "32px",
+              fontSize: 13,
+              lineHeight: 1.6,
+              fontFamily: FONT_MONO,
+              color: "#c9d1d9",
+              whiteSpace: "pre-wrap",
+              wordBreak: "break-word",
+            }}
+          >
+            {debouncedMarkdown}
+          </pre>
+        ) : (
+          <div className="markdown-body" style={{ flex: 1, overflow: "auto", padding: "32px" }}>
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              rehypePlugins={[rehypeRaw]}
+              components={{ ...markdownComponents, ...tableComponents }}
             >
               {debouncedMarkdown}
-            </pre>
-          ) : (
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                fontFamily: FONT_SANS,
-                fontSize: "15px",
-                lineHeight: 1.6,
-                color: "#e6edf3",
-                wordWrap: "break-word",
-              }}
-            >
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                rehypePlugins={[rehypeRaw]}
-                components={{ ...markdownComponents, ...tableComponents }}
-              >
-                {debouncedMarkdown}
-              </ReactMarkdown>
-            </div>
-          )}
-        </div>
+            </ReactMarkdown>
+          </div>
+        )}
       </div>
     </aside>
   );

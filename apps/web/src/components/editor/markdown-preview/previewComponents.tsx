@@ -5,7 +5,6 @@ import type { Components } from "react-markdown";
 import { highlightCodeHtml } from "@/features/markdown/highlighter";
 import { CALLOUT_TYPES } from "@/constants/calloutTypes";
 
-export const FONT_SANS = '-apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif';
 export const FONT_MONO = "ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace";
 
 function extractText(node: React.ReactNode): string {
@@ -28,55 +27,6 @@ function findImgInNode(node: React.ReactNode): React.ReactElement | null {
 
 export const getMarkdownComponents = (): Components => {
   return {
-    h1: ({ children }) => (
-      <h1
-        style={{
-          fontSize: "2em",
-          fontWeight: 600,
-          lineHeight: 1.25,
-          color: "#f0f6fc",
-          borderBottom: "1px solid #30363d",
-          paddingBottom: "0.3em",
-          margin: "16px 0 12px",
-        }}
-      >
-        {children}
-      </h1>
-    ),
-    h2: ({ children }) => (
-      <h2
-        style={{
-          fontSize: "1.5em",
-          fontWeight: 600,
-          lineHeight: 1.25,
-          color: "#f0f6fc",
-          borderBottom: "1px solid #30363d",
-          paddingBottom: "0.3em",
-          margin: "16px 0 12px",
-        }}
-      >
-        {children}
-      </h2>
-    ),
-    h3: ({ children }) => (
-      <h3 style={{ fontSize: "1.25em", fontWeight: 600, color: "#f0f6fc", margin: "16px 0 8px" }}>{children}</h3>
-    ),
-    h4: ({ children }) => (
-      <h4 style={{ fontSize: "1.1em", fontWeight: 600, color: "#f0f6fc", margin: "12px 0 6px" }}>{children}</h4>
-    ),
-    h5: ({ children }) => (
-      <h5 style={{ fontSize: "1em", fontWeight: 600, color: "#f0f6fc", margin: "12px 0 6px" }}>{children}</h5>
-    ),
-    h6: ({ children }) => (
-      <h6 style={{ fontSize: "0.85em", fontWeight: 600, color: "#8b949e", margin: "12px 0 6px" }}>{children}</h6>
-    ),
-
-    p: ({ children }) => (
-      <p style={{ margin: "0 0 8px", fontSize: 15, lineHeight: 1.6, color: "#e6edf3", wordBreak: "break-word" }}>
-        {children}
-      </p>
-    ),
-
     blockquote: ({ children }) => {
       const rawText = extractText(children).trimStart();
       const alertMatch = rawText.match(/^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]/i);
@@ -98,6 +48,7 @@ export const getMarkdownComponents = (): Components => {
         });
         return (
           <div
+            className="markdown-alert"
             style={{
               padding: "12px 16px",
               borderRadius: 6,
@@ -122,17 +73,11 @@ export const getMarkdownComponents = (): Components => {
               {theme.icon}
               <span>{theme.label}</span>
             </div>
-            <div style={{ color: "#e6edf3", fontSize: 14, lineHeight: 1.6 }}>{bodyChildren}</div>
+            <div style={{ color: "inherit", fontSize: 14, lineHeight: 1.6 }}>{bodyChildren}</div>
           </div>
         );
       }
-      return (
-        <blockquote
-          style={{ margin: "0 0 8px", padding: "0 1em", color: "#8b949e", borderLeft: "4px solid #30363d" }}
-        >
-          {children}
-        </blockquote>
-      );
+      return <blockquote>{children}</blockquote>;
     },
 
     code: ({ children, className }) => {
@@ -141,17 +86,7 @@ export const getMarkdownComponents = (): Components => {
       const codeStr = rawStr.replace(/\n$/, "");
       if (className || rawStr.includes("\n")) {
         return (
-          <div
-            style={{
-              position: "relative",
-              borderRadius: 6,
-              background: "#161b22",
-              border: "1px solid #30363d",
-              padding: 16,
-              overflow: "auto",
-              margin: "8px 0",
-            }}
-          >
+          <div style={{ position: "relative" }}>
             {lang && (
               <span
                 style={{
@@ -161,57 +96,21 @@ export const getMarkdownComponents = (): Components => {
                   fontSize: 10,
                   fontWeight: 600,
                   textTransform: "uppercase",
-                  color: "#8b949e",
+                  color: "var(--color-prettylights-syntax-comment, #8b949e)",
                   userSelect: "none",
                 }}
               >
                 {lang}
               </span>
             )}
-            <pre
-              style={{
-                margin: 0,
-                fontFamily: FONT_MONO,
-                fontSize: 13,
-                lineHeight: 1.6,
-                whiteSpace: "pre",
-                color: "#e6edf3",
-              }}
-            >
-              <code dangerouslySetInnerHTML={{ __html: highlightCodeHtml(codeStr, lang || "ts") }} />
+            <pre>
+              <code className={`language-${lang}`} dangerouslySetInnerHTML={{ __html: highlightCodeHtml(codeStr, lang || "ts") }} />
             </pre>
           </div>
         );
       }
-      return (
-        <code
-          style={{
-            background: "rgba(110,118,129,0.3)",
-            padding: "2px 4px",
-            borderRadius: 4,
-            fontFamily: FONT_MONO,
-            fontSize: "85%",
-            color: "#e6edf3",
-          }}
-        >
-          {children}
-        </code>
-      );
+      return <code>{children}</code>;
     },
-
-    hr: () => <hr style={{ height: "0.25em", padding: 0, margin: "12px 0", backgroundColor: "#30363d", border: 0 }} />,
-
-    a: ({ href, children }) => (
-      <a
-        href={href}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="preview-link"
-        style={{ color: "#58a6ff", textDecoration: "none", fontWeight: 500 }}
-      >
-        {children}
-      </a>
-    ),
 
     img: ({ src, alt }) => {
       const isShieldsBadge = typeof src === "string" && src.startsWith("https://img.shields.io/badge/");
@@ -226,75 +125,14 @@ export const getMarkdownComponents = (): Components => {
         );
       }
       /* eslint-disable-next-line @next/next/no-img-element */
-      return (
-        <img
-          src={src}
-          alt={alt}
-          style={{ display: "block", margin: "12px auto", maxWidth: "100%", height: "auto", borderRadius: 6, border: "1px solid #30363d" }}
-        />
-      );
+      return <img src={src} alt={alt} />;
     },
-
-    ul: ({ children }) => (
-      <ul
-        style={{
-          margin: "0 0 8px",
-          paddingLeft: 24,
-          color: "#e6edf3",
-          fontSize: 15,
-          lineHeight: 1.6,
-          listStyleType: "disc",
-        }}
-      >
-        {children}
-      </ul>
-    ),
-    ol: ({ children }) => (
-      <ol
-        style={{
-          margin: "0 0 8px",
-          paddingLeft: 24,
-          color: "#e6edf3",
-          fontSize: 15,
-          lineHeight: 1.6,
-          listStyleType: "decimal",
-        }}
-      >
-        {children}
-      </ol>
-    ),
-    li: ({ children }) => <li style={{ marginBottom: 2, lineHeight: 1.6 }}>{children}</li>,
-
-    strong: ({ children }) => <strong style={{ fontWeight: 600, color: "#f0f6fc" }}>{children}</strong>,
-    em: ({ children }) => <em style={{ fontStyle: "italic" }}>{children}</em>,
-    del: ({ children }) => <del style={{ color: "#8b949e" }}>{children}</del>,
   };
 };
 
 export const getTableComponents = (isImageGrid: boolean, hasHiddenCaptions: boolean): Components => {
   if (!isImageGrid) {
-    return {
-      table: ({ children }) => (
-        <div style={{ overflowX: "auto", margin: "12px 0" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14, textAlign: "left", border: "1px solid #30363d" }}>
-            {children}
-          </table>
-        </div>
-      ),
-      thead: ({ children }) => <thead style={{ borderBottom: "2px solid #30363d", background: "#161b22" }}>{children}</thead>,
-      tbody: ({ children }) => <tbody>{children}</tbody>,
-      tr: ({ children }) => <tr style={{ borderBottom: "1px solid #30363d" }}>{children}</tr>,
-      th: ({ children }) => (
-        <th style={{ padding: "8px 12px", fontWeight: 600, borderRight: "1px solid #30363d", color: "#f0f6fc" }}>
-          {children}
-        </th>
-      ),
-      td: ({ children }) => (
-        <td style={{ padding: "8px 12px", borderRight: "1px solid #30363d", color: "#c9d1d9" }}>
-          {children}
-        </td>
-      ),
-    };
+    return {};
   }
 
   return {
@@ -310,24 +148,12 @@ export const getTableComponents = (isImageGrid: boolean, hasHiddenCaptions: bool
         : kids.filter((c): c is React.ReactElement => React.isValidElement(c) && c.type === "tr");
 
       if (!bodyChildren.length) {
-        return (
-          <div style={{ overflowX: "auto", margin: "12px 0" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14, textAlign: "left", border: "1px solid #30363d" }}>
-              {children}
-            </table>
-          </div>
-        );
+        return <table>{children}</table>;
       }
 
       const bodyRows = bodyChildren;
       if (!bodyRows.length) {
-        return (
-          <div style={{ overflowX: "auto", margin: "12px 0" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14, textAlign: "left", border: "1px solid #30363d" }}>
-              {children}
-            </table>
-          </div>
-        );
+        return <table>{children}</table>;
       }
 
       const cols = Math.max(...bodyRows.map((r: any) =>
@@ -357,18 +183,10 @@ export const getTableComponents = (isImageGrid: boolean, hasHiddenCaptions: bool
         </div>
       );
     },
-    thead: ({ children }) => <thead style={{ borderBottom: "2px solid #30363d", background: "#161b22" }}>{children}</thead>,
+    thead: ({ children }) => <thead>{children}</thead>,
     tbody: ({ children }) => <tbody>{children}</tbody>,
-    tr: ({ children }) => <tr style={{ borderBottom: "1px solid #30363d" }}>{children}</tr>,
-    th: ({ children }) => (
-      <th style={{ padding: "8px 12px", fontWeight: 600, borderRight: "1px solid #30363d", color: "#f0f6fc" }}>
-        {children}
-      </th>
-    ),
-    td: ({ children }) => (
-      <td style={{ padding: "8px 12px", borderRight: "1px solid #30363d", color: "#c9d1d9" }}>
-        {children}
-      </td>
-    ),
+    tr: ({ children }) => <tr>{children}</tr>,
+    th: ({ children }) => <th>{children}</th>,
+    td: ({ children }) => <td>{children}</td>,
   };
 };
