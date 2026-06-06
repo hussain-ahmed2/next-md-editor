@@ -208,6 +208,7 @@ function generateSvg(stats: ComputedStats): string {
       l(`<text x="${rx + 10}" y="${y + 22}" class="repo-name">${esc(trunc(repo.name, 16))}</text>`);
       l(`<text x="${rx + repoCardW - 10}" y="${y + 22}" text-anchor="end" class="repo-stars">★ ${repo.stars}</text>`);
     });
+    y += repoCardH;
   }
 
   const H = y + PAD;
