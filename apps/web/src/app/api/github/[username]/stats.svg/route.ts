@@ -61,7 +61,7 @@ function wrapText(text: string, maxChars: number): string[] {
 
 function generateSvg(stats: ComputedStats): string {
   const W = 580;
-  const H = 360;
+  const H = 378;
   const PAD = 20;
   const contentW = W - PAD * 2;
 
@@ -97,9 +97,10 @@ function generateSvg(stats: ComputedStats): string {
   l(`<text x="${nameX}" y="${y + 18}" class="name">${esc(trunc(displayName, 24))}</text>`);
   l(`<text x="${nameX}" y="${y + 32}" class="username">@${esc(trunc(stats.login, 24))}</text>`);
   if (stats.bio) {
-    const bioLines = wrapText(stats.bio, 50);
+    const bioMaxChars = Math.floor((W - PAD - nameX) / 5.5);
+    const bioLines = wrapText(stats.bio, bioMaxChars);
     bioLines.slice(0, 2).forEach((line, i) => {
-      l(`<text x="${nameX}" y="${y + 46 + i * 14}" class="bio">${esc(trunc(line, 50))}</text>`);
+      l(`<text x="${nameX}" y="${y + 46 + i * 14}" class="bio">${esc(trunc(line, bioMaxChars))}</text>`);
     });
   }
 
@@ -152,21 +153,28 @@ function generateSvg(stats: ComputedStats): string {
 
     y += barH + 10;
 
-    // Labels inline
+    // Labels inline with wrapping
     let lx = PAD;
+    let ly = y;
+    const lineH = 18;
     stats.topLanguages.slice(0, 6).forEach((lang, i) => {
       const color = LANG_COLORS[lang.name] ?? "#8b949e";
-      if (i > 0) lx += 16;
-      l(`<circle cx="${lx + 3}" cy="${y}" r="3" fill="${color}"/>`);
-      l(`<text x="${lx + 10}" y="${y + 4}" class="lang-name">${esc(lang.name)}</text>`);
       const nameW = lang.name.length * 7;
       const pctText = `${lang.percentage}%`;
-      l(`<text x="${lx + 10 + nameW + 4}" y="${y + 4}" class="lang-pct">${esc(pctText)}</text>`);
       const pctW = pctText.length * 6.5;
-      lx += 10 + nameW + 4 + pctW + 10;
+      const labelW = 6 + 7 + nameW + 4 + pctW + 10;
+      if (i > 0 && lx + labelW > W - PAD) {
+        lx = PAD;
+        ly += lineH;
+      }
+      if (i > 0) lx += 16;
+      l(`<circle cx="${lx + 3}" cy="${ly}" r="3" fill="${color}"/>`);
+      l(`<text x="${lx + 10}" y="${ly + 4}" class="lang-name">${esc(lang.name)}</text>`);
+      l(`<text x="${lx + 10 + nameW + 4}" y="${ly + 4}" class="lang-pct">${esc(pctText)}</text>`);
+      lx += labelW;
     });
 
-    y += 22;
+    y = ly + lineH;
   }
 
   // ── Divider ──
