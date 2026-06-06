@@ -61,7 +61,7 @@ function wrapText(text: string, maxChars: number): string[] {
 
 function generateSvg(stats: ComputedStats): string {
   const W = 580;
-  const H = 350;
+  const H = 378;
   const PAD = 20;
   const contentW = W - PAD * 2;
 
@@ -97,9 +97,10 @@ function generateSvg(stats: ComputedStats): string {
   l(`<text x="${nameX}" y="${y + 18}" class="name">${esc(trunc(displayName, 24))}</text>`);
   l(`<text x="${nameX}" y="${y + 32}" class="username">@${esc(trunc(stats.login, 24))}</text>`);
   if (stats.bio) {
-    const bioLines = wrapText(stats.bio, 50);
+    const bioMaxChars = Math.floor((W - PAD - nameX) / 5.5);
+    const bioLines = wrapText(stats.bio, bioMaxChars);
     bioLines.slice(0, 2).forEach((line, i) => {
-      l(`<text x="${nameX}" y="${y + 46 + i * 14}" class="bio">${esc(trunc(line, 50))}</text>`);
+      l(`<text x="${nameX}" y="${y + 46 + i * 14}" class="bio">${esc(trunc(line, bioMaxChars))}</text>`);
     });
   }
 
@@ -118,13 +119,13 @@ function generateSvg(stats: ComputedStats): string {
   ];
   const statCardGap = 10;
   const statCardW = (contentW - statCardGap * 3) / 4;
-  const statCardH = 48;
+  const statCardH = 56;
 
   statsItems.forEach((item, i) => {
     const cx = PAD + i * (statCardW + statCardGap);
     l(`<rect x="${cx}" y="${y}" width="${statCardW}" height="${statCardH}" rx="6" ry="6" fill="#161b22" stroke="#30363d" stroke-width="1"/>`);
-    l(`<text x="${cx + statCardW / 2}" y="${y + 22}" text-anchor="middle" class="stat-val">${fmt(item.value)}</text>`);
-    l(`<text x="${cx + statCardW / 2}" y="${y + 38}" text-anchor="middle" class="stat-lbl">${item.label}</text>`);
+    l(`<text x="${cx + statCardW / 2}" y="${y + 28}" text-anchor="middle" class="stat-val">${fmt(item.value)}</text>`);
+    l(`<text x="${cx + statCardW / 2}" y="${y + 44}" text-anchor="middle" class="stat-lbl">${item.label}</text>`);
   });
 
   y += statCardH + 14;
@@ -152,19 +153,28 @@ function generateSvg(stats: ComputedStats): string {
 
     y += barH + 10;
 
-    // Labels inline
+    // Labels inline with wrapping
     let lx = PAD;
+    let ly = y;
+    const lineH = 18;
     stats.topLanguages.slice(0, 6).forEach((lang, i) => {
       const color = LANG_COLORS[lang.name] ?? "#8b949e";
-      if (i > 0) lx += 12;
-      l(`<circle cx="${lx + 3}" cy="${y}" r="3" fill="${color}"/>`);
-      l(`<text x="${lx + 10}" y="${y + 4}" class="lang-name">${esc(lang.name)}</text>`);
-      const nameW = lang.name.length * 6.5;
-      l(`<text x="${lx + 10 + nameW + 3}" y="${y + 4}" class="lang-pct">${lang.percentage}%</text>`);
-      lx += 10 + nameW + 3 + (lang.percentage + "").length * 6.5 + 10;
+      const nameW = lang.name.length * 7;
+      const pctText = `${lang.percentage}%`;
+      const pctW = pctText.length * 6.5;
+      const labelW = 6 + 7 + nameW + 4 + pctW + 10;
+      if (i > 0 && lx + labelW > W - PAD) {
+        lx = PAD;
+        ly += lineH;
+      }
+      if (i > 0) lx += 16;
+      l(`<circle cx="${lx + 3}" cy="${ly}" r="3" fill="${color}"/>`);
+      l(`<text x="${lx + 10}" y="${ly + 4}" class="lang-name">${esc(lang.name)}</text>`);
+      l(`<text x="${lx + 10 + nameW + 4}" y="${ly + 4}" class="lang-pct">${esc(pctText)}</text>`);
+      lx += labelW;
     });
 
-    y += 22;
+    y = ly + lineH;
   }
 
   // ── Divider ──
@@ -193,6 +203,19 @@ function generateSvg(stats: ComputedStats): string {
   return lines.join("\n");
 }
 
+async function fetchAvatarDataUri(url: string): Promise<string> {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return url;
+    const buf = await res.arrayBuffer();
+    const b64 = Buffer.from(buf).toString("base64");
+    const mime = res.headers.get("content-type") ?? "image/png";
+    return `data:${mime};base64,${b64}`;
+  } catch {
+    return url;
+  }
+}
+
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ username: string }> },
@@ -207,6 +230,7 @@ export async function GET(
     }
 
     const stats = cached.data as unknown as ComputedStats;
+    stats.avatarUrl = await fetchAvatarDataUri(stats.avatarUrl);
     const svg = generateSvg(stats);
 
     return new Response(svg, {
