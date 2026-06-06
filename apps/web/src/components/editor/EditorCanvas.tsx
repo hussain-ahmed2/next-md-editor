@@ -12,7 +12,7 @@ import { EmptyState } from "./EmptyState";
 
 export const CANVAS_ROOT_ID = "canvas-root";
 
-export function EditorCanvas({ scrollRef }: { scrollRef?: React.RefObject<HTMLDivElement | null> }) {
+export function EditorCanvas({ scrollRef }: { scrollRef?: React.Ref<HTMLDivElement> }) {
   const blocks = useEditorStore((s) => s.blocks);
   const manager = useDragDropManager();
 
@@ -25,8 +25,12 @@ export function EditorCanvas({ scrollRef }: { scrollRef?: React.RefObject<HTMLDi
   const { ref: droppableRef } = useDroppable({ id: CANVAS_ROOT_ID });
 
   const setRef = useCallback((node: HTMLDivElement | null) => {
-    (droppableRef as React.RefCallback<HTMLDivElement>)(node);
-    if (scrollRef) scrollRef.current = node;
+    (droppableRef as (el: Element | null) => void)(node);
+    if (typeof scrollRef === "function") {
+      scrollRef(node);
+    } else if (scrollRef) {
+      (scrollRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+    }
   }, [droppableRef, scrollRef]);
 
   // ── Reactive drag state from library (no manual state needed) ─────────────

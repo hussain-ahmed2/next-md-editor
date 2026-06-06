@@ -10,7 +10,7 @@ import { serializeToMarkdown } from "@/features/markdown/serializer";
 import { PreviewHeader } from "./markdown-preview/PreviewHeader";
 import { FONT_MONO, getMarkdownComponents, getTableComponents } from "./markdown-preview/previewComponents";
 
-export function MarkdownPreview({ scrollRef }: { scrollRef?: React.RefObject<HTMLDivElement | null> }) {
+export function MarkdownPreview({ scrollRef }: { scrollRef?: React.Ref<HTMLDivElement> }) {
 	const blocks = useEditorStore((s) => s.blocks);
 	const markdown = serializeToMarkdown(blocks);
 	const [debouncedMarkdown, setDebouncedMarkdown] = useState(markdown);
@@ -92,7 +92,7 @@ export function MarkdownPreview({ scrollRef }: { scrollRef?: React.RefObject<HTM
 				}}
 			>
 				<PreviewHeader blockCount={blocks.length} activeTab={activeTab} onTabChange={setActiveTab} />
-				<div ref={scrollRef as React.RefObject<HTMLDivElement | null>} style={{ flex: 1, overflow: "auto" }}>
+				<div ref={scrollRef} style={{ flex: 1, overflow: "auto" }}>
 					{blocks.length === 0 ? (
 						<div
 							style={{

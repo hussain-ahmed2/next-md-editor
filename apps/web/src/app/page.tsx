@@ -5,7 +5,7 @@ import { EditorSidebar } from "@/components/editor/EditorSidebar";
 import { EditorCanvas } from "@/components/editor/EditorCanvas";
 import { SourceEditor } from "@/components/editor/SourceEditor";
 import { MarkdownPreview } from "@/components/editor/MarkdownPreview";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { DragDropProvider, DragOverlay } from "@dnd-kit/react";
 import { useUIStore } from "@/store/uiStore";
 
@@ -47,9 +47,7 @@ export default function EditorPage() {
   // Only two things needed from the hook now
   const { sensors, handleDragEnd } = useDragAndDrop();
 
-  const canvasScrollRef = useRef<HTMLDivElement>(null);
-  const previewScrollRef = useRef<HTMLDivElement>(null);
-  useSynchronizedScroll(canvasScrollRef, previewScrollRef);
+  const { refA: canvasScrollRef, refB: previewScrollRef } = useSynchronizedScroll();
 
   useEffect(() => {
     setMounted(true);

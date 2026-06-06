@@ -1,40 +1,59 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
 
-export function useSynchronizedScroll(
-  a: React.RefObject<HTMLElement | null>,
-  b: React.RefObject<HTMLElement | null>,
-) {
+export function useSynchronizedScroll() {
   const lock = useRef(false);
+  const elARef = useRef<HTMLElement | null>(null);
+  const elBRef = useRef<HTMLElement | null>(null);
+  const cleanupRef = useRef<(() => void) | null>(null);
 
-  useEffect(() => {
-    const elA = a.current;
-    const elB = b.current;
+  function sync(from: HTMLElement, to: HTMLElement) {
+    if (lock.current) return;
+    lock.current = true;
+    const maxFrom = from.scrollHeight - from.clientHeight;
+    const maxTo = to.scrollHeight - to.clientHeight;
+    if (maxFrom <= 0 || maxTo <= 0) {
+      lock.current = false;
+      return;
+    }
+    to.scrollTop = (from.scrollTop / maxFrom) * maxTo;
+    requestAnimationFrame(() => { lock.current = false; });
+  }
+
+  function attach() {
+    if (cleanupRef.current) cleanupRef.current();
+    const elA = elARef.current;
+    const elB = elBRef.current;
     if (!elA || !elB) return;
 
-    function sync(from: HTMLElement, to: HTMLElement) {
-      if (lock.current) return;
-      lock.current = true;
-      const maxFrom = from.scrollHeight - from.clientHeight;
-      const maxTo = to.scrollHeight - to.clientHeight;
-      if (maxFrom <= 0 || maxTo <= 0) {
-        lock.current = false;
-        return;
-      }
-      to.scrollTop = (from.scrollTop / maxFrom) * maxTo;
-      requestAnimationFrame(() => { lock.current = false; });
-    }
-
-    function onScrollA() { sync(elA!, elB!); }
-    function onScrollB() { sync(elB!, elA!); }
+    const onScrollA = () => sync(elA, elB);
+    const onScrollB = () => sync(elB, elA);
 
     elA.addEventListener("scroll", onScrollA, { passive: true });
     elB.addEventListener("scroll", onScrollB, { passive: true });
 
-    return () => {
+    cleanupRef.current = () => {
       elA.removeEventListener("scroll", onScrollA);
       elB.removeEventListener("scroll", onScrollB);
     };
-  }, [a, b]);
+  }
+
+  useEffect(() => {
+    return () => {
+      if (cleanupRef.current) cleanupRef.current();
+    };
+  }, []);
+
+  const refA = useCallback((node: HTMLElement | null) => {
+    elARef.current = node;
+    attach();
+  }, []);
+
+  const refB = useCallback((node: HTMLElement | null) => {
+    elBRef.current = node;
+    attach();
+  }, []);
+
+  return { refA, refB };
 }
