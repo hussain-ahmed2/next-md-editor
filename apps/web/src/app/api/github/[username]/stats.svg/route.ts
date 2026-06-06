@@ -30,18 +30,23 @@ const LANG_COLORS: Record<string, string> = {
   "Objective-C": "#438EFF", R: "#198CE7", Julia: "#A270BA", Elixir: "#6E4A7E",
 };
 
+// ═══════════════════════════════════════════════════
+// Color palettes for inline rendering
+// ═══════════════════════════════════════════════════
+
+interface C { bg: string; card: string; border: string; barBg: string; text: string; secondary: string; muted: string; link: string }
+const DARK: C = { bg: "#0d1117", card: "#161b22", border: "#30363d", barBg: "#21262d", text: "#f0f6fc", secondary: "#8b949e", muted: "#c9d1d9", link: "#58a6ff" };
+const LIGHT: C = { bg: "#ffffff", card: "#f6f8fa", border: "#d0d7de", barBg: "#e8e8e8", text: "#1f2328", secondary: "#656d76", muted: "#1f2328", link: "#0969da" };
+
 function esc(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
-
 function trunc(s: string, max: number): string {
   return s.length > max ? s.slice(0, max - 1) + "…" : s;
 }
-
 function fmt(n: number): string {
   return n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n);
 }
-
 function wrapText(text: string, maxChars: number): string[] {
   const words = text.split(" ");
   const lines: string[] = [];
@@ -61,13 +66,12 @@ function wrapText(text: string, maxChars: number): string[] {
 const FONT = "font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif";
 
 // ═══════════════════════════════════════════════════
-// Theme system: CSS variables with media query + data-theme
+// AUTO mode: CSS variables with @media query
 // ═══════════════════════════════════════════════════
 
-function svgPreamble(W: number, theme: Theme): string[] {
-  const attr = theme === "light" || theme === "dark" ? ` data-theme="${theme}"` : "";
+function svgAutoPreamble(W: number): string[] {
   return [
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="__H__" viewBox="0 0 ${W} __H__"${attr}>`,
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="__H__" viewBox="0 0 ${W} __H__">`,
     `<defs><style>`,
     `  :root {`,
     `    --bg: #0d1117; --card-bg: #161b22; --border: #30363d; --bar-bg: #21262d;`,
@@ -81,244 +85,131 @@ function svgPreamble(W: number, theme: Theme): string[] {
     `      --link: #0969da;`,
     `    }`,
     `  }`,
-    `  svg[data-theme="light"] {`,
-    `    --bg: #ffffff; --card-bg: #f6f8fa; --border: #d0d7de; --bar-bg: #e8e8e8;`,
-    `    --text-primary: #1f2328; --text-secondary: #656d76; --text-muted: #1f2328;`,
-    `    --link: #0969da;`,
-    `  }`,
-    `  svg[data-theme="dark"] {`,
-    `    --bg: #0d1117; --card-bg: #161b22; --border: #30363d; --bar-bg: #21262d;`,
-    `    --text-primary: #f0f6fc; --text-secondary: #8b949e; --text-muted: #c9d1d9;`,
-    `    --link: #58a6ff;`,
-    `  }`,
     `  text { ${FONT} }`,
-    `  .name { font-size: 16px; font-weight: 700; fill: var(--text-primary); }`,
-    `  .username { font-size: 12px; font-weight: 500; fill: var(--text-secondary); }`,
-    `  .bio { font-size: 11px; fill: var(--text-secondary); }`,
-    `  .stat-val { font-size: 22px; font-weight: 700; fill: var(--text-primary); }`,
-    `  .stat-lbl { font-size: 10px; font-weight: 500; fill: var(--text-secondary); }`,
-    `  .section { font-size: 10px; font-weight: 600; fill: var(--text-secondary); letter-spacing: 0.6px; }`,
-    `  .lang-name { font-size: 11px; font-weight: 500; fill: var(--text-muted); }`,
-    `  .lang-pct { font-size: 11px; fill: var(--text-secondary); }`,
-    `  .repo-name { font-size: 12px; font-weight: 600; fill: var(--link); }`,
-    `  .repo-stars { font-size: 12px; font-weight: 500; fill: var(--text-secondary); }`,
-    `  .card-border { fill: var(--card-bg); stroke: var(--border); }`,
-    `  .main-bg { fill: var(--bg); }`,
-    `  .divider { stroke: var(--border); }`,
-    `  .avatar-border { fill: none; stroke: var(--border); }`,
-    `  .bar-bg { fill: var(--bar-bg); }`,
+    `  .n { font-size: 16px; font-weight: 700; fill: var(--text-primary); }`,
+    `  .u { font-size: 12px; font-weight: 500; fill: var(--text-secondary); }`,
+    `  .b { font-size: 11px; fill: var(--text-secondary); }`,
+    `  .sv { font-size: 22px; font-weight: 700; fill: var(--text-primary); }`,
+    `  .sl { font-size: 10px; font-weight: 500; fill: var(--text-secondary); }`,
+    `  .sc { font-size: 10px; font-weight: 600; fill: var(--text-secondary); letter-spacing: 0.6px; }`,
+    `  .ln { font-size: 11px; font-weight: 500; fill: var(--text-muted); }`,
+    `  .lp { font-size: 11px; fill: var(--text-secondary); }`,
+    `  .rn { font-size: 12px; font-weight: 600; fill: var(--link); }`,
+    `  .rs { font-size: 12px; font-weight: 500; fill: var(--text-secondary); }`,
+    `  .cb { fill: var(--card-bg); stroke: var(--border); }`,
+    `  .bg { fill: var(--bg); }`,
+    `  .dv { stroke: var(--border); }`,
+    `  .av { fill: none; stroke: var(--border); }`,
+    `  .bb { fill: var(--bar-bg); }`,
     `</style></defs>`,
   ];
 }
 
-function renderProfile(lines: string[], stats: ComputedStats, W: number, PAD: number, y: number): number {
-  const avatarSize = 48;
-  lines.push(`<defs><clipPath id="a"><circle cx="${PAD + avatarSize / 2}" cy="${y + avatarSize / 2}" r="${avatarSize / 2}"/></clipPath></defs>`);
-  lines.push(`<image x="${PAD}" y="${y}" width="${avatarSize}" height="${avatarSize}" href="${esc(stats.avatarUrl)}" clip-path="url(#a)"/>`);
-  lines.push(`<circle cx="${PAD + avatarSize / 2}" cy="${y + avatarSize / 2}" r="${avatarSize / 2}" class="avatar-border" stroke-width="1.5"/>`);
-
-  const nameX = PAD + avatarSize + 10;
-  const displayName = stats.name ?? stats.login;
-  lines.push(`<text x="${nameX}" y="${y + 18}" class="name">${esc(trunc(displayName, 24))}</text>`);
-  lines.push(`<text x="${nameX}" y="${y + 32}" class="username">@${esc(trunc(stats.login, 24))}</text>`);
+function autoProfile(lines: string[], stats: ComputedStats, W: number, PAD: number, y: number): number {
+  const sz = 48;
+  lines.push(`<defs><clipPath id="a"><circle cx="${PAD + sz / 2}" cy="${y + sz / 2}" r="${sz / 2}"/></clipPath></defs>`);
+  lines.push(`<image x="${PAD}" y="${y}" width="${sz}" height="${sz}" href="${esc(stats.avatarUrl)}" clip-path="url(#a)"/>`);
+  lines.push(`<circle cx="${PAD + sz / 2}" cy="${y + sz / 2}" r="${sz / 2}" class="av" stroke-width="1.5"/>`);
+  const nx = PAD + sz + 10;
+  const dn = stats.name ?? stats.login;
+  lines.push(`<text x="${nx}" y="${y + 18}" class="n">${esc(trunc(dn, 24))}</text>`);
+  lines.push(`<text x="${nx}" y="${y + 32}" class="u">@${esc(trunc(stats.login, 24))}</text>`);
   if (stats.bio) {
-    const bioMaxChars = Math.floor((W - PAD - nameX) / 5.5);
-    const bioLines = wrapText(stats.bio, bioMaxChars);
-    bioLines.slice(0, 2).forEach((line, i) => {
-      lines.push(`<text x="${nameX}" y="${y + 46 + i * 14}" class="bio">${esc(trunc(line, bioMaxChars))}</text>`);
+    const mc = Math.floor((W - PAD - nx) / 5.5);
+    wrapText(stats.bio, mc).slice(0, 2).forEach((l, i) => {
+      lines.push(`<text x="${nx}" y="${y + 46 + i * 14}" class="b">${esc(trunc(l, mc))}</text>`);
     });
   }
   return y + 80;
 }
 
-function renderDivider(lines: string[], PAD: number, W: number, y: number): number {
-  lines.push(`<line x1="${PAD}" y1="${y}" x2="${W - PAD}" y2="${y}" class="divider" stroke-width="1"/>`);
+function autoDivider(lines: string[], PAD: number, W: number, y: number): number {
+  lines.push(`<line x1="${PAD}" y1="${y}" x2="${W - PAD}" y2="${y}" class="dv" stroke-width="1"/>`);
   return y + 14;
 }
 
-function renderStatsCards(lines: string[], stats: ComputedStats, PAD: number, contentW: number, y: number): number {
+function autoStatsCards(lines: string[], stats: ComputedStats, PAD: number, cw: number, y: number): number {
   const items = [
-    { label: "REPOS", value: stats.totalRepos },
-    { label: "STARS", value: stats.totalStars },
-    { label: "FORKS", value: stats.totalForks },
-    { label: "FOLLOWERS", value: stats.followers },
+    { l: "REPOS", v: stats.totalRepos }, { l: "STARS", v: stats.totalStars },
+    { l: "FORKS", v: stats.totalForks }, { l: "FOLLOWERS", v: stats.followers },
   ];
-  const gap = 10;
-  const cardW = (contentW - gap * 3) / 4;
-  const cardH = 56;
-
-  items.forEach((item, i) => {
+  const gap = 10, cardW = (cw - gap * 3) / 4, cardH = 56;
+  items.forEach((it, i) => {
     const cx = PAD + i * (cardW + gap);
-    lines.push(`<rect x="${cx}" y="${y}" width="${cardW}" height="${cardH}" rx="6" ry="6" class="card-border" stroke-width="1"/>`);
-    lines.push(`<text x="${cx + cardW / 2}" y="${y + 28}" text-anchor="middle" class="stat-val">${fmt(item.value)}</text>`);
-    lines.push(`<text x="${cx + cardW / 2}" y="${y + 44}" text-anchor="middle" class="stat-lbl">${item.label}</text>`);
+    lines.push(`<rect x="${cx}" y="${y}" width="${cardW}" height="${cardH}" rx="6" ry="6" class="cb" stroke-width="1"/>`);
+    lines.push(`<text x="${cx + cardW / 2}" y="${y + 28}" text-anchor="middle" class="sv">${fmt(it.v)}</text>`);
+    lines.push(`<text x="${cx + cardW / 2}" y="${y + 44}" text-anchor="middle" class="sl">${it.l}</text>`);
   });
   return y + cardH + 14;
 }
 
-function renderLanguages(lines: string[], stats: ComputedStats, PAD: number, W: number, contentW: number, y: number): number {
+function autoLanguages(lines: string[], stats: ComputedStats, PAD: number, W: number, cw: number, y: number): number {
   if (stats.topLanguages.length === 0) return y;
-
-  lines.push(`<text x="${PAD}" y="${y + 10}" class="section">LANGUAGES</text>`);
+  lines.push(`<text x="${PAD}" y="${y + 10}" class="sc">LANGUAGES</text>`);
   y += 18;
-
-  const barH = 6;
-  const totalPct = stats.topLanguages.reduce((s, l) => s + l.percentage, 0);
+  const barH = 6, total = stats.topLanguages.reduce((s, l) => s + l.percentage, 0);
   let bx = PAD;
-
-  lines.push(`<rect x="${PAD}" y="${y}" width="${contentW}" height="${barH}" rx="3" ry="3" class="bar-bg"/>`);
-  stats.topLanguages.forEach((lang) => {
-    const segW = Math.max((lang.percentage / totalPct) * contentW, lang.percentage > 0 ? 3 : 0);
-    const color = LANG_COLORS[lang.name] ?? "#8b949e";
-    lines.push(`<rect x="${bx}" y="${y}" width="${segW}" height="${barH}" rx="3" ry="3" fill="${color}"/>`);
-    bx += segW;
+  lines.push(`<rect x="${PAD}" y="${y}" width="${cw}" height="${barH}" rx="3" ry="3" class="bb"/>`);
+  stats.topLanguages.forEach((l) => {
+    const w = Math.max((l.percentage / total) * cw, l.percentage > 0 ? 3 : 0);
+    lines.push(`<rect x="${bx}" y="${y}" width="${w}" height="${barH}" rx="3" ry="3" fill="${LANG_COLORS[l.name] ?? "#8b949e"}"/>`);
+    bx += w;
   });
-
   y += barH + 10;
-
-  let lx = PAD;
-  let ly = y;
+  let lx = PAD, ly = y;
   const lineH = 18;
-  stats.topLanguages.slice(0, 6).forEach((lang, i) => {
-    const color = LANG_COLORS[lang.name] ?? "#8b949e";
-    const nameW = lang.name.length * 7;
-    const pctText = `${lang.percentage}%`;
-    const pctW = pctText.length * 6.5;
-    const labelW = 6 + 7 + nameW + 4 + pctW + 10;
-    if (i > 0 && lx + labelW > W - PAD) {
-      lx = PAD;
-      ly += lineH;
-    }
+  stats.topLanguages.slice(0, 6).forEach((l, i) => {
+    const c = LANG_COLORS[l.name] ?? "#8b949e";
+    const nw = l.name.length * 7;
+    const pt = `${l.percentage}%`;
+    const pw = pt.length * 6.5;
+    const lw = 6 + 7 + nw + 4 + pw + 10;
+    if (i > 0 && lx + lw > W - PAD) { lx = PAD; ly += lineH; }
     if (i > 0) lx += 16;
-    lines.push(`<circle cx="${lx + 3}" cy="${ly}" r="3" fill="${color}"/>`);
-    lines.push(`<text x="${lx + 10}" y="${ly + 4}" class="lang-name">${esc(lang.name)}</text>`);
-    lines.push(`<text x="${lx + 10 + nameW + 4}" y="${ly + 4}" class="lang-pct">${esc(pctText)}</text>`);
-    lx += labelW;
+    lines.push(`<circle cx="${lx + 3}" cy="${ly}" r="3" fill="${c}"/>`);
+    lines.push(`<text x="${lx + 10}" y="${ly + 4}" class="ln">${esc(l.name)}</text>`);
+    lines.push(`<text x="${lx + 10 + nw + 4}" y="${ly + 4}" class="lp">${esc(pt)}</text>`);
+    lx += lw;
   });
-
   return ly + lineH;
 }
 
-function renderRepos(lines: string[], stats: ComputedStats, PAD: number, contentW: number, y: number): number {
+function autoRepos(lines: string[], stats: ComputedStats, PAD: number, cw: number, y: number): number {
   if (stats.mostStarredRepos.length === 0) return y;
-
-  lines.push(`<text x="${PAD}" y="${y + 10}" class="section">MOST STARRED</text>`);
+  lines.push(`<text x="${PAD}" y="${y + 10}" class="sc">MOST STARRED</text>`);
   y += 22;
-
-  const repoCount = Math.min(stats.mostStarredRepos.length, 3);
-  const gap = 10;
-  const cardW = (contentW - gap * (repoCount - 1)) / repoCount;
-  const cardH = 36;
-
-  stats.mostStarredRepos.slice(0, 3).forEach((repo, i) => {
+  const rc = Math.min(stats.mostStarredRepos.length, 3), gap = 10;
+  const cardW = (cw - gap * (rc - 1)) / rc, cardH = 36;
+  stats.mostStarredRepos.slice(0, 3).forEach((r, i) => {
     const rx = PAD + i * (cardW + gap);
-    lines.push(`<rect x="${rx}" y="${y}" width="${cardW}" height="${cardH}" rx="6" ry="6" class="card-border" stroke-width="1"/>`);
-    lines.push(`<text x="${rx + 10}" y="${y + 22}" class="repo-name">${esc(trunc(repo.name, 16))}</text>`);
-    lines.push(`<text x="${rx + cardW - 10}" y="${y + 22}" text-anchor="end" class="repo-stars">★ ${repo.stars}</text>`);
+    lines.push(`<rect x="${rx}" y="${y}" width="${cardW}" height="${cardH}" rx="6" ry="6" class="cb" stroke-width="1"/>`);
+    lines.push(`<text x="${rx + 10}" y="${y + 22}" class="rn">${esc(trunc(r.name, 16))}</text>`);
+    lines.push(`<text x="${rx + cardW - 10}" y="${y + 22}" text-anchor="end" class="rs">★ ${r.stars}</text>`);
   });
   return y + cardH;
 }
 
-// ═══════════════════════════════════════════════════
-// Variant: default
-// ═══════════════════════════════════════════════════
-
-function generateDefault(stats: ComputedStats, theme: Theme): string {
-  const W = 580;
-  const PAD = 20;
-  const contentW = W - PAD * 2;
-  let y = PAD;
-  const lines: string[] = [...svgPreamble(W, theme)];
-  lines.push(`<rect width="${W}" height="__H__" rx="8" ry="8" class="main-bg"/>`);
-
-  y = renderProfile(lines, stats, W, PAD, y);
-  y = renderDivider(lines, PAD, W, y);
-  y = renderStatsCards(lines, stats, PAD, contentW, y);
-  y = renderDivider(lines, PAD, W, y);
-  y = renderLanguages(lines, stats, PAD, W, contentW, y);
-  y = renderDivider(lines, PAD, W, y);
-  y = renderRepos(lines, stats, PAD, contentW, y);
-
-  lines.push(`</svg>`);
-  lines[0] = lines[0].replace(/__H__/g, String(y + PAD));
-  return lines.join("\n");
-}
-
-// ═══════════════════════════════════════════════════
-// Variant: compact
-// ═══════════════════════════════════════════════════
-
-function generateCompact(stats: ComputedStats, theme: Theme): string {
-  const W = 400;
-  const PAD = 16;
-  const contentW = W - PAD * 2;
-  let y = PAD;
-  const lines: string[] = [...svgPreamble(W, theme)];
-  lines.push(`<rect width="${W}" height="__H__" rx="8" ry="8" class="main-bg"/>`);
-
-  y = renderProfile(lines, stats, W, PAD, y);
-  y = renderDivider(lines, PAD, W, y);
-  y = renderStatsCards(lines, stats, PAD, contentW, y);
-  y = renderDivider(lines, PAD, W, y);
-  y = renderLanguages(lines, stats, PAD, W, contentW, y);
-
-  lines.push(`</svg>`);
-  lines[0] = lines[0].replace(/__H__/g, String(y + PAD));
-  return lines.join("\n");
-}
-
-// ═══════════════════════════════════════════════════
-// Variant: minimal
-// ═══════════════════════════════════════════════════
-
-function generateMinimal(stats: ComputedStats, theme: Theme): string {
-  const W = 500;
-  const PAD = 16;
-  const contentW = W - PAD * 2;
-  let y = PAD;
-  const lines: string[] = [...svgPreamble(W, theme)];
-  lines.push(`<rect width="${W}" height="__H__" rx="8" ry="8" class="main-bg"/>`);
-
-  y = renderStatsCards(lines, stats, PAD, contentW, y);
-
-  lines.push(`</svg>`);
-  lines[0] = lines[0].replace(/__H__/g, String(y + PAD - 14));
-  return lines.join("\n");
-}
-
-// ═══════════════════════════════════════════════════
-// Variant: classic — two-column layout
-// ═══════════════════════════════════════════════════
-
-function renderClassicStatRow(lines: string[], icon: string, label: string, value: string, y: number, x: number, valX: number): number {
+function autoClassicStatRow(lines: string[], icon: string, label: string, value: string, y: number, x: number, vx: number): number {
   lines.push(`<text x="${x}" y="${y + 4}" font-size="13" fill="var(--text-secondary)" ${FONT}>${icon}</text>`);
   lines.push(`<text x="${x + 20}" y="${y + 4}" font-size="13" fill="var(--text-primary)" ${FONT}>${esc(label)}</text>`);
-  lines.push(`<text x="${valX}" y="${y + 4}" text-anchor="end" font-size="13" font-weight="600" fill="var(--text-primary)" ${FONT}>${esc(value)}</text>`);
+  lines.push(`<text x="${vx}" y="${y + 4}" text-anchor="end" font-size="13" font-weight="600" fill="var(--text-primary)" ${FONT}>${esc(value)}</text>`);
   return y + 28;
 }
 
-function generateClassic(stats: ComputedStats, theme: Theme): string {
-  const W = 620;
-  const PAD = 20;
-  const contentW = W - PAD * 2;
-  const leftW = Math.floor(contentW * 0.52);
-  const rightW = contentW - leftW - 16;
+function generateAutoClassic(stats: ComputedStats): string {
+  const W = 620, PAD = 20, cw = W - PAD * 2;
+  const leftW = Math.floor(cw * 0.52), rightW = cw - leftW - 16;
   let y = PAD;
-  const lines: string[] = [...svgPreamble(W, theme)];
-  lines.push(`<rect width="${W}" height="__H__" rx="8" ry="8" class="main-bg"/>`);
-
-  const displayName = stats.name ?? stats.login;
-  lines.push(`<text x="${PAD}" y="${y + 14}" font-size="16" font-weight="700" fill="var(--link)" ${FONT}>${esc(trunc(displayName, 26))}'s GitHub Statistics</text>`);
+  const lines: string[] = [...svgAutoPreamble(W)];
+  lines.push(`<rect width="${W}" height="__H__" rx="8" ry="8" class="bg"/>`);
+  const dn = stats.name ?? stats.login;
+  lines.push(`<text x="${PAD}" y="${y + 14}" font-size="16" font-weight="700" fill="var(--link)" ${FONT}>${esc(trunc(dn, 26))}'s GitHub Statistics</text>`);
   y += 30;
-  y = renderDivider(lines, PAD, W, y);
+  y = autoDivider(lines, PAD, W, y);
   y += 4;
-
-  const leftX = PAD;
-  const rightX = PAD + leftW + 16;
-  const startY = y;
-
-  let ly = startY;
-  const contributionStats = [
+  const leftX = PAD, rightX = PAD + leftW + 16, sy = y;
+  let ly = sy;
+  const cs = [
     { icon: "★", label: "Stars", value: fmt(stats.totalStars) },
     { icon: "⑂", label: "Forks", value: fmt(stats.totalForks) },
     { icon: "⊞", label: "All-time contributions", value: fmt(stats.contributions ?? 0) },
@@ -327,44 +218,229 @@ function generateClassic(stats: ComputedStats, theme: Theme): string {
     { icon: "⊡", label: "Repos", value: fmt(stats.totalRepos) },
     { icon: "♡", label: "Followers", value: fmt(stats.followers) },
   ];
-  for (const s of contributionStats) {
-    ly = renderClassicStatRow(lines, s.icon, s.label, s.value, ly, leftX, leftX + leftW);
-  }
-
-  let ry = startY;
+  for (const s of cs) ly = autoClassicStatRow(lines, s.icon, s.label, s.value, ly, leftX, leftX + leftW);
+  let ry = sy;
   if (stats.topLanguages.length > 0) {
     lines.push(`<text x="${rightX}" y="${ry + 10}" font-size="13" font-weight="600" fill="var(--text-primary)" ${FONT}>Languages Used (By File Size)</text>`);
     ry += 22;
-
-    const barH = 10;
-    const totalPct = stats.topLanguages.reduce((s, l) => s + l.percentage, 0);
+    const barH = 10, total = stats.topLanguages.reduce((s, l) => s + l.percentage, 0);
     let bx = rightX;
-    lines.push(`<rect x="${rightX}" y="${ry}" width="${rightW}" height="${barH}" rx="5" ry="5" class="bar-bg"/>`);
-    stats.topLanguages.forEach((lang) => {
-      const segW = Math.max((lang.percentage / totalPct) * rightW, lang.percentage > 0 ? 3 : 0);
-      const color = LANG_COLORS[lang.name] ?? "#8b949e";
-      lines.push(`<rect x="${bx}" y="${ry}" width="${segW}" height="${barH}" rx="5" ry="5" fill="${color}"/>`);
-      bx += segW;
+    lines.push(`<rect x="${rightX}" y="${ry}" width="${rightW}" height="${barH}" rx="5" ry="5" class="bb"/>`);
+    stats.topLanguages.forEach((l) => {
+      const w = Math.max((l.percentage / total) * rightW, l.percentage > 0 ? 3 : 0);
+      lines.push(`<rect x="${bx}" y="${ry}" width="${w}" height="${barH}" rx="5" ry="5" fill="${LANG_COLORS[l.name] ?? "#8b949e"}"/>`);
+      bx += w;
     });
     ry += barH + 14;
-
-    const colW = rightW / 3;
-    const lineH = 20;
-    stats.topLanguages.slice(0, 12).forEach((lang, i) => {
-      const col = i % 3;
-      const row = Math.floor(i / 3);
-      const lx = rightX + col * colW;
-      const cy = ry + row * lineH + 4;
-      const color = LANG_COLORS[lang.name] ?? "#8b949e";
-      lines.push(`<circle cx="${lx}" cy="${cy}" r="4" fill="${color}"/>`);
-      lines.push(`<text x="${lx + 10}" y="${cy + 4}" font-size="11" fill="var(--text-muted)" ${FONT}>${esc(lang.name)} ${lang.percentage}%</text>`);
+    const colW = rightW / 3, lineH = 20;
+    stats.topLanguages.slice(0, 12).forEach((l, i) => {
+      const col = i % 3, row = Math.floor(i / 3);
+      const lx = rightX + col * colW, cy = ry + row * lineH + 4;
+      lines.push(`<circle cx="${lx}" cy="${cy}" r="4" fill="${LANG_COLORS[l.name] ?? "#8b949e"}"/>`);
+      lines.push(`<text x="${lx + 10}" y="${cy + 4}" font-size="11" fill="var(--text-muted)" ${FONT}>${esc(l.name)} ${l.percentage}%</text>`);
     });
     ry += Math.ceil(stats.topLanguages.slice(0, 12).length / 3) * lineH;
   }
-
-  const finalY = Math.max(ly, ry);
+  const fy = Math.max(ly, ry);
   lines.push(`</svg>`);
-  lines[0] = lines[0].replace(/__H__/g, String(finalY + PAD));
+  lines[0] = lines[0].replace(/__H__/g, String(fy + PAD));
+  return lines.join("\n");
+}
+
+// ═══════════════════════════════════════════════════
+// EXPLICIT mode: all colors inlined (no CSS vars)
+// ═══════════════════════════════════════════════════
+
+function svgExplicitPreamble(W: number): string {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="__H__" viewBox="0 0 ${W} __H__">`;
+}
+
+function exProfile(lines: string[], stats: ComputedStats, c: C, W: number, PAD: number, y: number): number {
+  const sz = 48;
+  lines.push(`<defs><clipPath id="a"><circle cx="${PAD + sz / 2}" cy="${y + sz / 2}" r="${sz / 2}"/></clipPath></defs>`);
+  lines.push(`<image x="${PAD}" y="${y}" width="${sz}" height="${sz}" href="${esc(stats.avatarUrl)}" clip-path="url(#a)"/>`);
+  lines.push(`<circle cx="${PAD + sz / 2}" cy="${y + sz / 2}" r="${sz / 2}" fill="none" stroke="${c.border}" stroke-width="1.5"/>`);
+  const nx = PAD + sz + 10;
+  const dn = stats.name ?? stats.login;
+  lines.push(`<text x="${nx}" y="${y + 18}" font-size="16" font-weight="700" fill="${c.text}" ${FONT}>${esc(trunc(dn, 24))}</text>`);
+  lines.push(`<text x="${nx}" y="${y + 32}" font-size="12" font-weight="500" fill="${c.secondary}" ${FONT}>@${esc(trunc(stats.login, 24))}</text>`);
+  if (stats.bio) {
+    const mc = Math.floor((W - PAD - nx) / 5.5);
+    wrapText(stats.bio, mc).slice(0, 2).forEach((l, i) => {
+      lines.push(`<text x="${nx}" y="${y + 46 + i * 14}" font-size="11" fill="${c.secondary}" ${FONT}>${esc(trunc(l, mc))}</text>`);
+    });
+  }
+  return y + 80;
+}
+
+function exDivider(lines: string[], c: C, PAD: number, W: number, y: number): number {
+  lines.push(`<line x1="${PAD}" y1="${y}" x2="${W - PAD}" y2="${y}" stroke="${c.border}" stroke-width="1"/>`);
+  return y + 14;
+}
+
+function exStatsCards(lines: string[], stats: ComputedStats, c: C, PAD: number, cw: number, y: number): number {
+  const items = [
+    { l: "REPOS", v: stats.totalRepos }, { l: "STARS", v: stats.totalStars },
+    { l: "FORKS", v: stats.totalForks }, { l: "FOLLOWERS", v: stats.followers },
+  ];
+  const gap = 10, cardW = (cw - gap * 3) / 4, cardH = 56;
+  items.forEach((it, i) => {
+    const cx = PAD + i * (cardW + gap);
+    lines.push(`<rect x="${cx}" y="${y}" width="${cardW}" height="${cardH}" rx="6" ry="6" fill="${c.card}" stroke="${c.border}" stroke-width="1"/>`);
+    lines.push(`<text x="${cx + cardW / 2}" y="${y + 28}" text-anchor="middle" font-size="22" font-weight="700" fill="${c.text}" ${FONT}>${fmt(it.v)}</text>`);
+    lines.push(`<text x="${cx + cardW / 2}" y="${y + 44}" text-anchor="middle" font-size="10" font-weight="500" fill="${c.secondary}" ${FONT}>${it.l}</text>`);
+  });
+  return y + cardH + 14;
+}
+
+function exLanguages(lines: string[], stats: ComputedStats, c: C, PAD: number, W: number, cw: number, y: number): number {
+  if (stats.topLanguages.length === 0) return y;
+  lines.push(`<text x="${PAD}" y="${y + 10}" font-size="10" font-weight="600" fill="${c.secondary}" letter-spacing="0.6" ${FONT}>LANGUAGES</text>`);
+  y += 18;
+  const barH = 6, total = stats.topLanguages.reduce((s, l) => s + l.percentage, 0);
+  let bx = PAD;
+  lines.push(`<rect x="${PAD}" y="${y}" width="${cw}" height="${barH}" rx="3" ry="3" fill="${c.barBg}"/>`);
+  stats.topLanguages.forEach((l) => {
+    const w = Math.max((l.percentage / total) * cw, l.percentage > 0 ? 3 : 0);
+    lines.push(`<rect x="${bx}" y="${y}" width="${w}" height="${barH}" rx="3" ry="3" fill="${LANG_COLORS[l.name] ?? c.secondary}"/>`);
+    bx += w;
+  });
+  y += barH + 10;
+  let lx = PAD, ly = y;
+  const lineH = 18;
+  stats.topLanguages.slice(0, 6).forEach((l, i) => {
+    const color = LANG_COLORS[l.name] ?? c.secondary;
+    const nw = l.name.length * 7;
+    const pt = `${l.percentage}%`;
+    const pw = pt.length * 6.5;
+    const lw = 6 + 7 + nw + 4 + pw + 10;
+    if (i > 0 && lx + lw > W - PAD) { lx = PAD; ly += lineH; }
+    if (i > 0) lx += 16;
+    lines.push(`<circle cx="${lx + 3}" cy="${ly}" r="3" fill="${color}"/>`);
+    lines.push(`<text x="${lx + 10}" y="${ly + 4}" font-size="11" font-weight="500" fill="${c.muted}" ${FONT}>${esc(l.name)}</text>`);
+    lines.push(`<text x="${lx + 10 + nw + 4}" y="${ly + 4}" font-size="11" fill="${c.secondary}" ${FONT}>${esc(pt)}</text>`);
+    lx += lw;
+  });
+  return ly + lineH;
+}
+
+function exRepos(lines: string[], stats: ComputedStats, c: C, PAD: number, cw: number, y: number): number {
+  if (stats.mostStarredRepos.length === 0) return y;
+  lines.push(`<text x="${PAD}" y="${y + 10}" font-size="10" font-weight="600" fill="${c.secondary}" letter-spacing="0.6" ${FONT}>MOST STARRED</text>`);
+  y += 22;
+  const rc = Math.min(stats.mostStarredRepos.length, 3), gap = 10;
+  const cardW = (cw - gap * (rc - 1)) / rc, cardH = 36;
+  stats.mostStarredRepos.slice(0, 3).forEach((r, i) => {
+    const rx = PAD + i * (cardW + gap);
+    lines.push(`<rect x="${rx}" y="${y}" width="${cardW}" height="${cardH}" rx="6" ry="6" fill="${c.card}" stroke="${c.border}" stroke-width="1"/>`);
+    lines.push(`<text x="${rx + 10}" y="${y + 22}" font-size="12" font-weight="600" fill="${c.link}" ${FONT}>${esc(trunc(r.name, 16))}</text>`);
+    lines.push(`<text x="${rx + cardW - 10}" y="${y + 22}" text-anchor="end" font-size="12" font-weight="500" fill="${c.secondary}" ${FONT}>★ ${r.stars}</text>`);
+  });
+  return y + cardH;
+}
+
+function exClassicStatRow(lines: string[], icon: string, label: string, value: string, c: C, y: number, x: number, vx: number): number {
+  lines.push(`<text x="${x}" y="${y + 4}" font-size="13" fill="${c.secondary}" ${FONT}>${icon}</text>`);
+  lines.push(`<text x="${x + 20}" y="${y + 4}" font-size="13" fill="${c.text}" ${FONT}>${esc(label)}</text>`);
+  lines.push(`<text x="${vx}" y="${y + 4}" text-anchor="end" font-size="13" font-weight="600" fill="${c.text}" ${FONT}>${esc(value)}</text>`);
+  return y + 28;
+}
+
+function exClassic(stats: ComputedStats, c: C): string {
+  const W = 620, PAD = 20, cw = W - PAD * 2;
+  const leftW = Math.floor(cw * 0.52), rightW = cw - leftW - 16;
+  let y = PAD;
+  const lines: string[] = [svgExplicitPreamble(W)];
+  lines.push(`<rect width="${W}" height="__H__" rx="8" ry="8" fill="${c.bg}"/>`);
+  const dn = stats.name ?? stats.login;
+  lines.push(`<text x="${PAD}" y="${y + 14}" font-size="16" font-weight="700" fill="${c.link}" ${FONT}>${esc(trunc(dn, 26))}'s GitHub Statistics</text>`);
+  y += 30;
+  y = exDivider(lines, c, PAD, W, y);
+  y += 4;
+  const leftX = PAD, rightX = PAD + leftW + 16, sy = y;
+  let ly = sy;
+  const cs = [
+    { icon: "★", label: "Stars", value: fmt(stats.totalStars) },
+    { icon: "⑂", label: "Forks", value: fmt(stats.totalForks) },
+    { icon: "⊞", label: "All-time contributions", value: fmt(stats.contributions ?? 0) },
+    { icon: "⟐", label: "Lines of code changed", value: "N/A" },
+    { icon: "⊙", label: "Repositories with contributions", value: fmt(stats.reposContributedTo ?? 0) },
+    { icon: "⊡", label: "Repos", value: fmt(stats.totalRepos) },
+    { icon: "♡", label: "Followers", value: fmt(stats.followers) },
+  ];
+  for (const s of cs) ly = exClassicStatRow(lines, s.icon, s.label, s.value, c, ly, leftX, leftX + leftW);
+  let ry = sy;
+  if (stats.topLanguages.length > 0) {
+    lines.push(`<text x="${rightX}" y="${ry + 10}" font-size="13" font-weight="600" fill="${c.text}" ${FONT}>Languages Used (By File Size)</text>`);
+    ry += 22;
+    const barH = 10, total = stats.topLanguages.reduce((s, l) => s + l.percentage, 0);
+    let bx = rightX;
+    lines.push(`<rect x="${rightX}" y="${ry}" width="${rightW}" height="${barH}" rx="5" ry="5" fill="${c.barBg}"/>`);
+    stats.topLanguages.forEach((l) => {
+      const w = Math.max((l.percentage / total) * rightW, l.percentage > 0 ? 3 : 0);
+      lines.push(`<rect x="${bx}" y="${ry}" width="${w}" height="${barH}" rx="5" ry="5" fill="${LANG_COLORS[l.name] ?? c.secondary}"/>`);
+      bx += w;
+    });
+    ry += barH + 14;
+    const colW = rightW / 3, lineH = 20;
+    stats.topLanguages.slice(0, 12).forEach((l, i) => {
+      const col = i % 3, row = Math.floor(i / 3);
+      const lx = rightX + col * colW, cy = ry + row * lineH + 4;
+      lines.push(`<circle cx="${lx}" cy="${cy}" r="4" fill="${LANG_COLORS[l.name] ?? c.secondary}"/>`);
+      lines.push(`<text x="${lx + 10}" y="${cy + 4}" font-size="11" fill="${c.muted}" ${FONT}>${esc(l.name)} ${l.percentage}%</text>`);
+    });
+    ry += Math.ceil(stats.topLanguages.slice(0, 12).length / 3) * lineH;
+  }
+  const fy = Math.max(ly, ry);
+  lines.push(`</svg>`);
+  lines[0] = lines[0].replace(/__H__/g, String(fy + PAD));
+  return lines.join("\n");
+}
+
+// ═══════════════════════════════════════════════════
+// Explicit mode generators
+// ═══════════════════════════════════════════════════
+
+function exDefault(stats: ComputedStats, c: C): string {
+  const W = 580, PAD = 20, cw = W - PAD * 2;
+  let y = PAD;
+  const lines: string[] = [svgExplicitPreamble(W)];
+  lines.push(`<rect width="${W}" height="__H__" rx="8" ry="8" fill="${c.bg}"/>`);
+  y = exProfile(lines, stats, c, W, PAD, y);
+  y = exDivider(lines, c, PAD, W, y);
+  y = exStatsCards(lines, stats, c, PAD, cw, y);
+  y = exDivider(lines, c, PAD, W, y);
+  y = exLanguages(lines, stats, c, PAD, W, cw, y);
+  y = exDivider(lines, c, PAD, W, y);
+  y = exRepos(lines, stats, c, PAD, cw, y);
+  lines.push(`</svg>`);
+  lines[0] = lines[0].replace(/__H__/g, String(y + PAD));
+  return lines.join("\n");
+}
+
+function exCompact(stats: ComputedStats, c: C): string {
+  const W = 400, PAD = 16, cw = W - PAD * 2;
+  let y = PAD;
+  const lines: string[] = [svgExplicitPreamble(W)];
+  lines.push(`<rect width="${W}" height="__H__" rx="8" ry="8" fill="${c.bg}"/>`);
+  y = exProfile(lines, stats, c, W, PAD, y);
+  y = exDivider(lines, c, PAD, W, y);
+  y = exStatsCards(lines, stats, c, PAD, cw, y);
+  y = exDivider(lines, c, PAD, W, y);
+  y = exLanguages(lines, stats, c, PAD, W, cw, y);
+  lines.push(`</svg>`);
+  lines[0] = lines[0].replace(/__H__/g, String(y + PAD));
+  return lines.join("\n");
+}
+
+function exMinimal(stats: ComputedStats, c: C): string {
+  const W = 500, PAD = 16, cw = W - PAD * 2;
+  let y = PAD;
+  const lines: string[] = [svgExplicitPreamble(W)];
+  lines.push(`<rect width="${W}" height="__H__" rx="8" ry="8" fill="${c.bg}"/>`);
+  y = exStatsCards(lines, stats, c, PAD, cw, y);
+  lines.push(`</svg>`);
+  lines[0] = lines[0].replace(/__H__/g, String(y + PAD - 14));
   return lines.join("\n");
 }
 
@@ -373,11 +449,35 @@ function generateClassic(stats: ComputedStats, theme: Theme): string {
 // ═══════════════════════════════════════════════════
 
 function generateSvg(stats: ComputedStats, variant: Variant, theme: Theme): string {
+  // Auto mode: CSS variables with @media query (browser detects preference)
+  if (theme === "auto") {
+    const W = variant === "compact" ? 400 : variant === "minimal" ? 500 : variant === "classic" ? 620 : 580;
+    const PAD = variant === "compact" || variant === "minimal" ? 16 : 20;
+    const cw = W - PAD * 2;
+    let y = PAD;
+    const lines: string[] = [...svgAutoPreamble(W)];
+    lines.push(`<rect width="${W}" height="__H__" rx="8" ry="8" class="bg"/>`);
+
+    if (variant === "classic") {
+      return generateAutoClassic(stats);
+    }
+    if (variant !== "minimal") { y = autoProfile(lines, stats, W, PAD, y); y = autoDivider(lines, PAD, W, y); }
+    y = autoStatsCards(lines, stats, PAD, cw, y);
+    y = autoDivider(lines, PAD, W, y);
+    if (variant !== "minimal") { y = autoLanguages(lines, stats, PAD, W, cw, y); }
+    if (variant === "default") { y = autoDivider(lines, PAD, W, y); y = autoRepos(lines, stats, PAD, cw, y); }
+    lines.push(`</svg>`);
+    lines[0] = lines[0].replace(/__H__/g, String(y + PAD));
+    return lines.join("\n");
+  }
+
+  // Explicit light/dark: all colors inlined (no CSS vars, guaranteed to work in <img>)
+  const palette = theme === "light" ? LIGHT : DARK;
   switch (variant) {
-    case "compact": return generateCompact(stats, theme);
-    case "minimal": return generateMinimal(stats, theme);
-    case "classic": return generateClassic(stats, theme);
-    default: return generateDefault(stats, theme);
+    case "compact": return exCompact(stats, palette);
+    case "minimal": return exMinimal(stats, palette);
+    case "classic": return exClassic(stats, palette);
+    default: return exDefault(stats, palette);
   }
 }
 
