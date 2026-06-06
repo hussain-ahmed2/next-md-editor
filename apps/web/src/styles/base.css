@@ -44,7 +44,7 @@ html, body {
 
 /* ── Links inside contentEditable ──────────────────── */
 [contenteditable] a {
-  color: var(--accent, #58a6ff);
+  color: var(--link, #58a6ff);
   text-decoration: none;
   cursor: pointer;
 }
