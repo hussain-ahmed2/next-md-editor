@@ -129,6 +129,17 @@ export function parseMarkdown(markdown: string): Block[] {
         }
       }
 
+      // Detect github-stats: <!-- github-stats:username -->
+      const statsMatch = val.match(/^<!--\s*github-stats:\s*([a-zA-Z0-9-]+)\s*-->$/);
+      if (statsMatch) {
+        blocks.push({
+          id: uuidv4(),
+          type: "github-stats",
+          props: { username: statsMatch[1] },
+        });
+        continue;
+      }
+
       // Detect badge-group: <!-- badge-group --> followed by ![image](url) markdown
       if (val === "<!-- badge-group -->") {
         const badges: any[] = [];
@@ -194,11 +205,21 @@ export function parseMarkdown(markdown: string): Block[] {
       ) {
         if (significantChildren.length === 1) {
           const img = significantChildren[0];
-          blocks.push({
-            id: uuidv4(),
-            type: "image",
-            props: { url: img.url || "", alt: img.alt || "" },
-          });
+          const imgUrl = img.url || "";
+          const statsMatch = imgUrl.match(/\/api\/github\/([a-zA-Z0-9-]+)\/stats\.svg$/);
+          if (statsMatch) {
+            blocks.push({
+              id: uuidv4(),
+              type: "github-stats",
+              props: { username: statsMatch[1] },
+            });
+          } else {
+            blocks.push({
+              id: uuidv4(),
+              type: "image",
+              props: { url: imgUrl, alt: img.alt || "" },
+            });
+          }
         } else {
           // Check if all are badges
           const allBadges = significantChildren.every(
@@ -566,6 +587,11 @@ function serializeBlock(block: Block, indentLevel: number = 0): string {
         .join("\n");
       parts.push(`<table>\n${rows}\n</table>`);
       text = parts.join("\n\n");
+      break;
+    }
+    case "github-stats": {
+      const username = (block.props.username as string) ?? "";
+      if (username) text = `![GitHub Stats](/api/github/${username}/stats.svg)`;
       break;
     }
     case "badge-group": {

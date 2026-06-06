@@ -10,6 +10,7 @@ import { CalloutBlock } from "@/components/blocks/CalloutBlock";
 import { ListBlock } from "@/components/blocks/ListBlock";
 import { ImageGridBlock } from "@/components/blocks/ImageGridBlock";
 import { BadgeGroupBlock } from "@/components/blocks/BadgeGroupBlock";
+import { GithubStatsBlock } from "@/components/blocks/GithubStatsBlock";
 
 export function initRegistry() {
   BlockRegistry.register({
@@ -160,6 +161,17 @@ export function initRegistry() {
       parts.push(tableMarkdown);
 
       return parts.join("\n\n");
+    },
+  });
+
+  BlockRegistry.register({
+    type: "github-stats",
+    component: GithubStatsBlock,
+    defaultProps: { username: "hussain-ahmed2" },
+    serializer: (b) => {
+      const username = (b.props.username as string) ?? "";
+      if (!username) return "";
+      return `<!-- github-stats:${username} -->`;
     },
   });
 
