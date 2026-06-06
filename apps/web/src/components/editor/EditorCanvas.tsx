@@ -61,19 +61,19 @@ export function EditorCanvas({ scrollRef }: { scrollRef?: React.Ref<HTMLDivEleme
           if (currentBlocks.length === 0) {
             setInsertIndex(0);
           } else {
-            const firstDroppable = manager.registry.droppables.get(currentBlocks[0].id);
-            const rect =
-              firstDroppable?.shape?.boundingRectangle ??
-              firstDroppable?.element?.getBoundingClientRect();
-            if (rect) {
-              setInsertIndex(
-                cursorY < rect.top + rect.height / 2
-                  ? 0
-                  : currentBlocks.length,
-              );
-            } else {
-              setInsertIndex(currentBlocks.length);
+            let found = false;
+            for (let i = 0; i < currentBlocks.length; i++) {
+              const droppable = manager.registry.droppables.get(currentBlocks[i].id);
+              const rect =
+                droppable?.shape?.boundingRectangle ??
+                droppable?.element?.getBoundingClientRect();
+              if (rect && cursorY < rect.top + rect.height / 2) {
+                setInsertIndex(i);
+                found = true;
+                break;
+              }
             }
+            if (!found) setInsertIndex(currentBlocks.length);
           }
         } else if (!targetId.startsWith("placeholder-")) {
           const idx = currentBlocks.findIndex((b) => b.id === targetId);
