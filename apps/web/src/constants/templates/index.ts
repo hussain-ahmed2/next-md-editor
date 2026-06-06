@@ -5,6 +5,8 @@ export interface TemplateDef {
   markdown: string;
 }
 
+const BASE = process.env.NEXT_PUBLIC_FRONTEND_URL ?? "";
+
 const GITHUB_PROFILE = `# Hi there 👋
 
 Welcome to my GitHub profile!
@@ -31,7 +33,7 @@ Welcome to my GitHub profile!
 
 ## My GitHub Stats
 
-![GitHub Stats](/api/github/hussain-ahmed2/stats.svg)
+![GitHub Stats](${BASE}/api/github/hussain-ahmed2/stats.svg)
 
 ---
 

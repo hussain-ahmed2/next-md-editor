@@ -1,5 +1,20 @@
 import { prisma } from "@/lib/prisma";
-import type { ComputedStats } from "@/lib/github-stats";
+import type { Prisma } from "@/generated/browser";
+import { computeStats, type ComputedStats, type GitHubProfile, type GitHubRepo } from "@/lib/github-stats";
+
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+const CACHE_TTL = 24 * 60 * 60 * 1000;
+
+async function fetchGitHub(url: string): Promise<unknown> {
+  const headers: Record<string, string> = {
+    Accept: "application/vnd.github.v3+json",
+    "User-Agent": "next-md-editor",
+  };
+  if (GITHUB_TOKEN) headers.Authorization = `Bearer ${GITHUB_TOKEN}`;
+  const res = await fetch(url, { headers });
+  if (!res.ok) throw new Error(`GitHub API error: ${res.status} ${res.statusText}`);
+  return res.json();
+}
 
 const LANG_COLORS: Record<string, string> = {
   TypeScript: "#3178C6",
@@ -246,11 +261,21 @@ export async function GET(
     const cleanUser = username.toLowerCase().trim();
 
     const cached = await prisma.gitHubStats.findUnique({ where: { username: cleanUser } });
-    if (!cached) {
-      return new Response("Stats not found", { status: 404 });
+    let stats: ComputedStats;
+
+    if (cached && Date.now() - cached.updatedAt.getTime() < CACHE_TTL) {
+      stats = cached.data as unknown as ComputedStats;
+    } else {
+      const profile = (await fetchGitHub(`https://api.github.com/users/${cleanUser}`)) as GitHubProfile;
+      const repos = (await fetchGitHub(`https://api.github.com/users/${cleanUser}/repos?sort=updated&per_page=100`)) as GitHubRepo[];
+      stats = computeStats(profile, repos);
+      await prisma.gitHubStats.upsert({
+        where: { username: cleanUser },
+        update: { data: stats as unknown as Prisma.InputJsonValue },
+        create: { username: cleanUser, data: stats as unknown as Prisma.InputJsonValue },
+      });
     }
 
-    const stats = cached.data as unknown as ComputedStats;
     stats.avatarUrl = await fetchAvatarDataUri(stats.avatarUrl);
     const svg = generateSvg(stats);
 
