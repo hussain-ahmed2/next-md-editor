@@ -34,7 +34,7 @@ const LIGHT: ThemeColors = {
   link: "#0969da", green: "#1a7f37",
 };
 
-function useSiteTheme(): ThemeColors {
+function useSiteTheme(theme: string = "auto"): ThemeColors {
   const [prefersLight, setPrefersLight] = useState(() =>
     typeof window !== "undefined"
       ? window.matchMedia("(prefers-color-scheme: light)").matches

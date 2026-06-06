@@ -63,7 +63,7 @@ function wrapText(text: string, maxChars: number): string[] {
   return lines;
 }
 
-const FONT = "font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif";
+const FONT = `font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif"`;
 
 // ═══════════════════════════════════════════════════
 // AUTO mode: CSS variables with @media query
@@ -85,7 +85,7 @@ function svgAutoPreamble(W: number): string[] {
     `      --link: #0969da;`,
     `    }`,
     `  }`,
-    `  text { ${FONT} }`,
+    `  text { font-family: -apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif; }`,
     `  .n { font-size: 16px; font-weight: 700; fill: var(--text-primary); }`,
     `  .u { font-size: 12px; font-weight: 500; fill: var(--text-secondary); }`,
     `  .b { font-size: 11px; fill: var(--text-secondary); }`,
@@ -152,14 +152,14 @@ function autoLanguages(lines: string[], stats: ComputedStats, PAD: number, W: nu
   lines.push(`<rect x="${PAD}" y="${y}" width="${cw}" height="${barH}" rx="3" ry="3" class="bb"/>`);
   stats.topLanguages.forEach((l) => {
     const w = Math.max((l.percentage / total) * cw, l.percentage > 0 ? 3 : 0);
-    lines.push(`<rect x="${bx}" y="${y}" width="${w}" height="${barH}" rx="3" ry="3" fill="${LANG_COLORS[l.name] ?? "#8b949e"}"/>`);
+    lines.push(`<rect x="${bx}" y="${y}" width="${w}" height="${barH}" rx="3" ry="3" fill="${LANG_COLORS[l.name] ?? "var(--text-secondary)"}"/>`);
     bx += w;
   });
   y += barH + 10;
   let lx = PAD, ly = y;
   const lineH = 18;
   stats.topLanguages.slice(0, 6).forEach((l, i) => {
-    const c = LANG_COLORS[l.name] ?? "#8b949e";
+    const c = LANG_COLORS[l.name] ?? "var(--text-secondary)";
     const nw = l.name.length * 7;
     const pt = `${l.percentage}%`;
     const pw = pt.length * 6.5;
@@ -228,7 +228,7 @@ function generateAutoClassic(stats: ComputedStats): string {
     lines.push(`<rect x="${rightX}" y="${ry}" width="${rightW}" height="${barH}" rx="5" ry="5" class="bb"/>`);
     stats.topLanguages.forEach((l) => {
       const w = Math.max((l.percentage / total) * rightW, l.percentage > 0 ? 3 : 0);
-      lines.push(`<rect x="${bx}" y="${ry}" width="${w}" height="${barH}" rx="5" ry="5" fill="${LANG_COLORS[l.name] ?? "#8b949e"}"/>`);
+      lines.push(`<rect x="${bx}" y="${ry}" width="${w}" height="${barH}" rx="5" ry="5" fill="${LANG_COLORS[l.name] ?? "var(--text-secondary)"}"/>`);
       bx += w;
     });
     ry += barH + 14;
@@ -236,15 +236,14 @@ function generateAutoClassic(stats: ComputedStats): string {
     stats.topLanguages.slice(0, 12).forEach((l, i) => {
       const col = i % 3, row = Math.floor(i / 3);
       const lx = rightX + col * colW, cy = ry + row * lineH + 4;
-      lines.push(`<circle cx="${lx}" cy="${cy}" r="4" fill="${LANG_COLORS[l.name] ?? "#8b949e"}"/>`);
+      lines.push(`<circle cx="${lx}" cy="${cy}" r="4" fill="${LANG_COLORS[l.name] ?? "var(--text-secondary)"}"/>`);
       lines.push(`<text x="${lx + 10}" y="${cy + 4}" font-size="11" fill="var(--text-muted)" ${FONT}>${esc(l.name)} ${l.percentage}%</text>`);
     });
     ry += Math.ceil(stats.topLanguages.slice(0, 12).length / 3) * lineH;
   }
   const fy = Math.max(ly, ry);
   lines.push(`</svg>`);
-  lines[0] = lines[0].replace(/__H__/g, String(fy + PAD));
-  return lines.join("\n");
+  return lines.join("\n").replace(/__H__/g, String(fy + PAD));
 }
 
 // ═══════════════════════════════════════════════════
@@ -393,8 +392,7 @@ function exClassic(stats: ComputedStats, c: C): string {
   }
   const fy = Math.max(ly, ry);
   lines.push(`</svg>`);
-  lines[0] = lines[0].replace(/__H__/g, String(fy + PAD));
-  return lines.join("\n");
+  return lines.join("\n").replace(/__H__/g, String(fy + PAD));
 }
 
 // ═══════════════════════════════════════════════════
@@ -414,8 +412,7 @@ function exDefault(stats: ComputedStats, c: C): string {
   y = exDivider(lines, c, PAD, W, y);
   y = exRepos(lines, stats, c, PAD, cw, y);
   lines.push(`</svg>`);
-  lines[0] = lines[0].replace(/__H__/g, String(y + PAD));
-  return lines.join("\n");
+  return lines.join("\n").replace(/__H__/g, String(y + PAD));
 }
 
 function exCompact(stats: ComputedStats, c: C): string {
@@ -429,8 +426,7 @@ function exCompact(stats: ComputedStats, c: C): string {
   y = exDivider(lines, c, PAD, W, y);
   y = exLanguages(lines, stats, c, PAD, W, cw, y);
   lines.push(`</svg>`);
-  lines[0] = lines[0].replace(/__H__/g, String(y + PAD));
-  return lines.join("\n");
+  return lines.join("\n").replace(/__H__/g, String(y + PAD));
 }
 
 function exMinimal(stats: ComputedStats, c: C): string {
@@ -440,8 +436,7 @@ function exMinimal(stats: ComputedStats, c: C): string {
   lines.push(`<rect width="${W}" height="__H__" rx="8" ry="8" fill="${c.bg}"/>`);
   y = exStatsCards(lines, stats, c, PAD, cw, y);
   lines.push(`</svg>`);
-  lines[0] = lines[0].replace(/__H__/g, String(y + PAD - 14));
-  return lines.join("\n");
+  return lines.join("\n").replace(/__H__/g, String(y + PAD - 14));
 }
 
 // ═══════════════════════════════════════════════════
@@ -467,8 +462,7 @@ function generateSvg(stats: ComputedStats, variant: Variant, theme: Theme): stri
     if (variant !== "minimal") { y = autoLanguages(lines, stats, PAD, W, cw, y); }
     if (variant === "default") { y = autoDivider(lines, PAD, W, y); y = autoRepos(lines, stats, PAD, cw, y); }
     lines.push(`</svg>`);
-    lines[0] = lines[0].replace(/__H__/g, String(y + PAD));
-    return lines.join("\n");
+    return lines.join("\n").replace(/__H__/g, String(y + PAD));
   }
 
   // Explicit light/dark: all colors inlined (no CSS vars, guaranteed to work in <img>)
