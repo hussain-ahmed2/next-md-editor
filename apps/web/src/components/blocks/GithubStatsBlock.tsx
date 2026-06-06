@@ -34,7 +34,7 @@ const LIGHT: ThemeColors = {
   link: "#0969da", green: "#1a7f37",
 };
 
-function useThemeColors(theme: string): ThemeColors {
+function useSiteTheme(): ThemeColors {
   const [prefersLight, setPrefersLight] = useState(() =>
     typeof window !== "undefined"
       ? window.matchMedia("(prefers-color-scheme: light)").matches
@@ -42,16 +42,13 @@ function useThemeColors(theme: string): ThemeColors {
   );
 
   useEffect(() => {
-    if (theme !== "auto") return;
     const mq = window.matchMedia("(prefers-color-scheme: light)");
     const handler = (e: MediaQueryListEvent) => setPrefersLight(e.matches);
     mq.addEventListener("change", handler);
     setPrefersLight(mq.matches);
     return () => mq.removeEventListener("change", handler);
-  }, [theme]);
+  }, []);
 
-  if (theme === "light") return LIGHT;
-  if (theme === "dark") return DARK;
   return prefersLight ? LIGHT : DARK;
 }
 
@@ -60,12 +57,6 @@ const VARIANTS = [
   { value: "compact", label: "Compact" },
   { value: "minimal", label: "Minimal" },
   { value: "classic", label: "Classic" },
-] as const;
-
-const THEMES = [
-  { value: "auto", label: "Auto" },
-  { value: "light", label: "Light" },
-  { value: "dark", label: "Dark" },
 ] as const;
 
 function fmt(n: number): string {
@@ -79,8 +70,7 @@ export function GithubStatsBlock({ block }: { block: Block }) {
   const myBlock = blocks.find((b) => b.id === block.id) ?? block;
   const username = (myBlock.props.username as string) ?? "";
   const variant = ((myBlock.props.variant as string) ?? "default") as string;
-  const theme = ((myBlock.props.theme as string) ?? "auto") as string;
-  const c = useThemeColors(theme);
+  const c = useSiteTheme();
 
   const [stats, setStats] = useState<ComputedStats | null>(null);
   const [loading, setLoading] = useState(false);
@@ -107,7 +97,6 @@ export function GithubStatsBlock({ block }: { block: Block }) {
   }, [inputUsername, updateBlock, block.id]);
 
   const handleVariantChange = useCallback((v: string) => updateBlock(block.id, { variant: v }), [updateBlock, block.id]);
-  const handleThemeChange = useCallback((t: string) => updateBlock(block.id, { theme: t }), [updateBlock, block.id]);
 
   const cardStyle = useMemo<React.CSSProperties>(() => ({
     position: "relative", borderRadius: 8,
@@ -163,9 +152,84 @@ export function GithubStatsBlock({ block }: { block: Block }) {
     );
   }
 
-  const showProfile = variant === "default" || variant === "compact";
-  const showLanguages = variant === "default" || variant === "compact";
+  const showProfile = variant === "default" || variant === "compact" || variant === "classic";
+  const showLanguages = variant === "default" || variant === "compact" || variant === "classic";
   const showRepos = variant === "default";
+
+  if (variant === "classic") {
+    return (
+      <div style={cardStyle}>
+        <div style={{ position: "absolute", top: 8, right: 8, zIndex: 1, display: "flex", gap: 4, alignItems: "center" }}>
+          {editing ? (
+            <>
+              <input value={inputUsername} onChange={(e) => setInputUsername(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSave()}
+                style={inputStyle} placeholder="GitHub username" autoFocus />
+              <button onClick={handleSave} style={btnPrimary}>Save</button>
+              <button onClick={() => { setEditing(false); setInputUsername(username); }} style={btnGhost}>Cancel</button>
+            </>
+          ) : (
+            <>
+              <select value={variant} onChange={(e) => handleVariantChange(e.target.value)} style={selectStyle}>
+                {VARIANTS.map((v) => <option key={v.value} value={v.value}>{v.label}</option>)}
+              </select>
+              <button onClick={() => setEditing(true)} style={btnGhost}>Change</button>
+            </>
+          )}
+        </div>
+
+        {/* Title */}
+        <div style={{ padding: "16px 16px 12px" }}>
+          <span style={{ fontSize: 16, fontWeight: 700, color: c.link }}>{stats.name ?? stats.login}</span>
+          <span style={{ fontSize: 16, fontWeight: 700, color: c.textPrimary }}>'s GitHub Statistics</span>
+        </div>
+        <div style={{ height: 1, background: c.border, margin: "0 16px" }} />
+
+        {/* Two-column layout */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, padding: "12px 16px" }}>
+          {/* Left: Stats */}
+          <div>
+            {[
+              { icon: "★", label: "Stars", value: stats.totalStars },
+              { icon: "⑂", label: "Forks", value: stats.totalForks },
+              { icon: "⊞", label: "All-time contributions", value: (stats as any).contributions ?? 0 },
+              { icon: "⊙", label: "Repos contributed to", value: (stats as any).reposContributedTo ?? 0 },
+              { icon: "⊡", label: "Repos", value: stats.totalRepos },
+              { icon: "♡", label: "Followers", value: stats.followers },
+            ].map((s) => (
+              <div key={s.label} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: `1px solid ${c.border}` }}>
+                <span style={{ fontSize: 13, color: c.textSecondary }}>{s.icon} {s.label}</span>
+                <span style={{ fontSize: 13, fontWeight: 600, color: c.textPrimary }}>{fmt(s.value)}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Right: Languages */}
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: c.textPrimary, marginBottom: 10 }}>Languages Used (By File Size)</div>
+            {stats.topLanguages.length > 0 && (
+              <>
+                <div style={{ height: 10, borderRadius: 5, background: c.barBg, display: "flex", overflow: "hidden", marginBottom: 12 }}>
+                  {stats.topLanguages.map((lang) => (
+                    <div key={lang.name}
+                      style={{ width: `${lang.percentage}%`, background: LANG_COLORS[lang.name] ?? c.textSecondary, minWidth: lang.percentage > 0 ? 3 : 0 }} />
+                  ))}
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "6px 8px" }}>
+                  {stats.topLanguages.slice(0, 12).map((lang) => (
+                    <div key={lang.name} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                      <div style={{ width: 6, height: 6, borderRadius: "50%", background: LANG_COLORS[lang.name] ?? c.textSecondary, flexShrink: 0 }} />
+                      <span style={{ fontSize: 11, color: c.textMuted }}>{lang.name} {lang.percentage}%</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={cardStyle}>
@@ -183,9 +247,6 @@ export function GithubStatsBlock({ block }: { block: Block }) {
           <>
             <select value={variant} onChange={(e) => handleVariantChange(e.target.value)} style={selectStyle}>
               {VARIANTS.map((v) => <option key={v.value} value={v.value}>{v.label}</option>)}
-            </select>
-            <select value={theme} onChange={(e) => handleThemeChange(e.target.value)} style={selectStyle}>
-              {THEMES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
             </select>
             <button onClick={() => setEditing(true)} style={btnGhost}>Change</button>
           </>
