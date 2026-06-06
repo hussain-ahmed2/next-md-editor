@@ -171,7 +171,7 @@ export function initRegistry() {
     serializer: (b) => {
       const username = (b.props.username as string) ?? "";
       if (!username) return "";
-      return `<!-- github-stats:${username} -->`;
+      return `![GitHub Stats](/api/github/${username}/stats.svg)`;
     },
   });
 
