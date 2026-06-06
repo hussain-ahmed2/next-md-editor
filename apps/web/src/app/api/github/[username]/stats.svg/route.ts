@@ -117,14 +117,6 @@ function svgPreamble(W: number): string[] {
   ];
 }
 
-function finalizeSvg(lines: string[]): string {
-  const H = parseInt(lines[0].match(/height="__H__"/) ? "__H__" : "0", 10);
-  const yMatch = lines.join("\n").match(/<!--END_Y:(\d+)-->/);
-  const finalY = yMatch ? parseInt(yMatch[1]) : 20;
-  lines[0] = lines[0].replace(/__H__/g, String(finalY));
-  return lines.join("\n");
-}
-
 function renderProfile(lines: string[], stats: ComputedStats, W: number, PAD: number, y: number): number {
   const avatarSize = 48;
   lines.push(`<defs><clipPath id="a"><circle cx="${PAD + avatarSize / 2}" cy="${y + avatarSize / 2}" r="${avatarSize / 2}"/></clipPath></defs>`);
