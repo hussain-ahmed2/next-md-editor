@@ -5,13 +5,14 @@ import { EditorSidebar } from "@/components/editor/EditorSidebar";
 import { EditorCanvas } from "@/components/editor/EditorCanvas";
 import { SourceEditor } from "@/components/editor/SourceEditor";
 import { MarkdownPreview } from "@/components/editor/MarkdownPreview";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { DragDropProvider, DragOverlay } from "@dnd-kit/react";
 import { useUIStore } from "@/store/uiStore";
 
 // Custom hooks
 import { useEditorPersistence } from "@/hooks/useEditorPersistence";
 import { useDragAndDrop } from "@/hooks/useDragAndDrop";
+import { useSynchronizedScroll } from "@/hooks/useSynchronizedScroll";
 
 // Extracted components
 import { ResizeBar } from "@/components/editor/ResizeBar";
@@ -45,6 +46,10 @@ export default function EditorPage() {
 
   // Only two things needed from the hook now
   const { sensors, handleDragEnd } = useDragAndDrop();
+
+  const canvasScrollRef = useRef<HTMLDivElement>(null);
+  const previewScrollRef = useRef<HTMLDivElement>(null);
+  useSynchronizedScroll(canvasScrollRef, previewScrollRef);
 
   useEffect(() => {
     setMounted(true);
@@ -132,18 +137,18 @@ export default function EditorPage() {
             {isMobile ? (
               <>
                 {mobileTab === "blocks" && <EditorSidebar />}
-                {mobileTab === "editor" && <EditorCanvas />}
-                {mobileTab === "preview" && <MarkdownPreview />}
+                {mobileTab === "editor" && <EditorCanvas scrollRef={canvasScrollRef} />}
+                {mobileTab === "preview" && <MarkdownPreview scrollRef={previewScrollRef} />}
               </>
             ) : (
               <>
                 <EditorSidebar />
                 <ResizeBar pane="sidebar" />
-                <EditorCanvas />
+                <EditorCanvas scrollRef={canvasScrollRef} />
                 {previewOpen && (
                   <>
                     <ResizeBar pane="preview" />
-                    <MarkdownPreview />
+                    <MarkdownPreview scrollRef={previewScrollRef} />
                   </>
                 )}
               </>
