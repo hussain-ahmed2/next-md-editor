@@ -79,19 +79,6 @@ function wrapText(text: string, maxChars: number): string[] {
 }
 
 // ═══════════════════════════════════════════════════
-// Theme palettes
-// ═══════════════════════════════════════════════════
-
-const THEME_DARK = {
-  bg: "#0d1117", cardBg: "#161b22", border: "#30363d", barBg: "#21262d",
-  textPrimary: "#f0f6fc", textSecondary: "#8b949e", textMuted: "#c9d1d9", link: "#58a6ff",
-};
-const THEME_LIGHT = {
-  bg: "#ffffff", cardBg: "#f6f8fa", border: "#d0d7de", barBg: "#e8e8e8",
-  textPrimary: "#1f2328", textSecondary: "#656d76", textMuted: "#1f2328", link: "#0969da",
-};
-
-// ═══════════════════════════════════════════════════
 // Shared SVG helpers
 // ═══════════════════════════════════════════════════
 
