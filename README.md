@@ -4,6 +4,10 @@ A professional-grade block-based visual markdown editor built with **Next.js 16*
 
 **Created by [Hussain Ahmed](https://github.com/hussain-ahmed2).**
 
+<p align="center">
+  <img src="apps/web/public/app.png" alt="Next MD Editor Visual Preview" width="100%" style="border-radius: 8px;" />
+</p>
+
 ---
 
 ## Features
