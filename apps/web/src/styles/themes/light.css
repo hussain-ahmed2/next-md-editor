@@ -21,10 +21,13 @@
   --text-muted:     #8b8fa8;
 
   /* Accent */
-  --accent:       #5a6aff;
-  --accent-hover: #4a5aef;
-  --accent-muted: rgba(90, 106, 255, 0.1);
-  --accent-glow:  rgba(90, 106, 255, 0.2);
+  --accent:       #238636;
+  --accent-hover: #2ea043;
+  --accent-muted: rgba(35, 134, 54, 0.1);
+  --accent-glow:  rgba(35, 134, 54, 0.2);
+
+  /* Links */
+  --link: #0969da;
 
   /* Semantic */
   --success: #22c55e;
