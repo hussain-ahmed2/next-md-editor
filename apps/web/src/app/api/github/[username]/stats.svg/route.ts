@@ -4,6 +4,8 @@ import { computeStats, type ComputedStats, type GitHubProfile, type GitHubRepo }
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const CACHE_TTL = 24 * 60 * 60 * 1000;
+const VALID_VARIANTS = ["default", "compact", "minimal"] as const;
+type Variant = (typeof VALID_VARIANTS)[number];
 
 async function fetchGitHub(url: string): Promise<unknown> {
   const headers: Record<string, string> = {
@@ -74,169 +76,243 @@ function wrapText(text: string, maxChars: number): string[] {
   return lines;
 }
 
-function generateSvg(stats: ComputedStats): string {
-  const W = 580;
-  const PAD = 20;
-  const contentW = W - PAD * 2;
+// ═══════════════════════════════════════════════════
+// Shared SVG helpers
+// ═══════════════════════════════════════════════════
 
-  let y = PAD;
-  const lines: string[] = [];
-  const l = (s: string) => lines.push(s);
+function svgPreamble(W: number): string[] {
+  return [
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="__H__" viewBox="0 0 ${W} __H__">`,
+    `<defs><style>`,
+    `  :root {`,
+    `    --bg: #0d1117; --card-bg: #161b22; --border: #30363d; --bar-bg: #21262d;`,
+    `    --text-primary: #f0f6fc; --text-secondary: #8b949e; --text-muted: #c9d1d9;`,
+    `    --link: #58a6ff;`,
+    `  }`,
+    `  @media (prefers-color-scheme: light) {`,
+    `    :root {`,
+    `      --bg: #ffffff; --card-bg: #f6f8fa; --border: #d0d7de; --bar-bg: #e8e8e8;`,
+    `      --text-primary: #1f2328; --text-secondary: #656d76; --text-muted: #1f2328;`,
+    `      --link: #0969da;`,
+    `    }`,
+    `  }`,
+    `  text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif; }`,
+    `  .name { font-size: 16px; font-weight: 700; fill: var(--text-primary); }`,
+    `  .username { font-size: 12px; font-weight: 500; fill: var(--text-secondary); }`,
+    `  .bio { font-size: 11px; fill: var(--text-secondary); }`,
+    `  .stat-val { font-size: 22px; font-weight: 700; fill: var(--text-primary); }`,
+    `  .stat-lbl { font-size: 10px; font-weight: 500; fill: var(--text-secondary); text-transform: uppercase; }`,
+    `  .section { font-size: 10px; font-weight: 600; fill: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.6px; }`,
+    `  .lang-name { font-size: 11px; font-weight: 500; fill: var(--text-muted); }`,
+    `  .lang-pct { font-size: 11px; fill: var(--text-secondary); }`,
+    `  .repo-name { font-size: 12px; font-weight: 600; fill: var(--link); }`,
+    `  .repo-stars { font-size: 12px; font-weight: 500; fill: var(--text-secondary); }`,
+    `  .card-bg { fill: var(--card-bg); }`,
+    `  .card-border { fill: var(--card-bg); stroke: var(--border); }`,
+    `  .main-bg { fill: var(--bg); }`,
+    `  .divider { stroke: var(--border); }`,
+    `  .avatar-border { fill: none; stroke: var(--border); }`,
+    `  .bar-bg { fill: var(--bar-bg); }`,
+    `</style></defs>`,
+  ];
+}
 
-  l(`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="__H__" viewBox="0 0 ${W} __H__">`);
-  l(`<defs><style>`);
-  l(`  :root {`);
-  l(`    --bg: #0d1117; --card-bg: #161b22; --border: #30363d; --bar-bg: #21262d;`);
-  l(`    --text-primary: #f0f6fc; --text-secondary: #8b949e; --text-muted: #c9d1d9;`);
-  l(`    --link: #58a6ff;`);
-  l(`  }`);
-  l(`  @media (prefers-color-scheme: light) {`);
-  l(`    :root {`);
-  l(`      --bg: #ffffff; --card-bg: #f6f8fa; --border: #d0d7de; --bar-bg: #e8e8e8;`);
-  l(`      --text-primary: #1f2328; --text-secondary: #656d76; --text-muted: #1f2328;`);
-  l(`      --link: #0969da;`);
-  l(`    }`);
-  l(`  }`);
-  l(`  text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif; }`);
-  l(`  .name { font-size: 16px; font-weight: 700; fill: var(--text-primary); }`);
-  l(`  .username { font-size: 12px; font-weight: 500; fill: var(--text-secondary); }`);
-  l(`  .bio { font-size: 11px; fill: var(--text-secondary); }`);
-  l(`  .stat-val { font-size: 22px; font-weight: 700; fill: var(--text-primary); }`);
-  l(`  .stat-lbl { font-size: 10px; font-weight: 500; fill: var(--text-secondary); text-transform: uppercase; }`);
-  l(`  .section { font-size: 10px; font-weight: 600; fill: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.6px; }`);
-  l(`  .lang-name { font-size: 11px; font-weight: 500; fill: var(--text-muted); }`);
-  l(`  .lang-pct { font-size: 11px; fill: var(--text-secondary); }`);
-  l(`  .repo-name { font-size: 12px; font-weight: 600; fill: var(--link); }`);
-  l(`  .repo-stars { font-size: 12px; font-weight: 500; fill: var(--text-secondary); }`);
-  l(`  .card-bg { fill: var(--card-bg); }`);
-  l(`  .card-border { fill: var(--card-bg); stroke: var(--border); }`);
-  l(`  .main-bg { fill: var(--bg); }`);
-  l(`  .divider { stroke: var(--border); }`);
-  l(`  .avatar-border { fill: none; stroke: var(--border); }`);
-  l(`  .bar-bg { fill: var(--bar-bg); }`);
-  l(`</style></defs>`);
+function finalizeSvg(lines: string[]): string {
+  const H = parseInt(lines[0].match(/height="__H__"/) ? "__H__" : "0", 10);
+  const yMatch = lines.join("\n").match(/<!--END_Y:(\d+)-->/);
+  const finalY = yMatch ? parseInt(yMatch[1]) : 20;
+  lines[0] = lines[0].replace(/__H__/g, String(finalY));
+  return lines.join("\n");
+}
 
-  l(`<rect width="${W}" height="__H__" rx="8" ry="8" class="main-bg"/>`);
-
-  // ═══ ROW 1: Profile (full width) ═══
+function renderProfile(lines: string[], stats: ComputedStats, W: number, PAD: number, y: number): number {
   const avatarSize = 48;
-  l(`<defs><clipPath id="a"><circle cx="${PAD + avatarSize / 2}" cy="${y + avatarSize / 2}" r="${avatarSize / 2}"/></clipPath></defs>`);
-  l(`<image x="${PAD}" y="${y}" width="${avatarSize}" height="${avatarSize}" href="${esc(stats.avatarUrl)}" clip-path="url(#a)"/>`);
-  l(`<circle cx="${PAD + avatarSize / 2}" cy="${y + avatarSize / 2}" r="${avatarSize / 2}" class="avatar-border" stroke-width="1.5"/>`);
+  lines.push(`<defs><clipPath id="a"><circle cx="${PAD + avatarSize / 2}" cy="${y + avatarSize / 2}" r="${avatarSize / 2}"/></clipPath></defs>`);
+  lines.push(`<image x="${PAD}" y="${y}" width="${avatarSize}" height="${avatarSize}" href="${esc(stats.avatarUrl)}" clip-path="url(#a)"/>`);
+  lines.push(`<circle cx="${PAD + avatarSize / 2}" cy="${y + avatarSize / 2}" r="${avatarSize / 2}" class="avatar-border" stroke-width="1.5"/>`);
 
   const nameX = PAD + avatarSize + 10;
   const displayName = stats.name ?? stats.login;
-  l(`<text x="${nameX}" y="${y + 18}" class="name">${esc(trunc(displayName, 24))}</text>`);
-  l(`<text x="${nameX}" y="${y + 32}" class="username">@${esc(trunc(stats.login, 24))}</text>`);
+  lines.push(`<text x="${nameX}" y="${y + 18}" class="name">${esc(trunc(displayName, 24))}</text>`);
+  lines.push(`<text x="${nameX}" y="${y + 32}" class="username">@${esc(trunc(stats.login, 24))}</text>`);
   if (stats.bio) {
     const bioMaxChars = Math.floor((W - PAD - nameX) / 5.5);
     const bioLines = wrapText(stats.bio, bioMaxChars);
     bioLines.slice(0, 2).forEach((line, i) => {
-      l(`<text x="${nameX}" y="${y + 46 + i * 14}" class="bio">${esc(trunc(line, bioMaxChars))}</text>`);
+      lines.push(`<text x="${nameX}" y="${y + 46 + i * 14}" class="bio">${esc(trunc(line, bioMaxChars))}</text>`);
     });
   }
+  return y + 80;
+}
 
-  y += 80;
+function renderDivider(lines: string[], PAD: number, W: number, y: number): number {
+  lines.push(`<line x1="${PAD}" y1="${y}" x2="${W - PAD}" y2="${y}" class="divider" stroke-width="1"/>`);
+  return y + 14;
+}
 
-  // ── Divider ──
-  l(`<line x1="${PAD}" y1="${y}" x2="${W - PAD}" y2="${y}" class="divider" stroke-width="1"/>`);
-  y += 14;
-
-  // ═══ ROW 2: Stats (4 cards in a row) ═══
+function renderStatsCards(lines: string[], stats: ComputedStats, PAD: number, contentW: number, y: number): number {
   const statsItems = [
     { label: "REPOS", value: stats.totalRepos },
     { label: "STARS", value: stats.totalStars },
     { label: "FORKS", value: stats.totalForks },
     { label: "FOLLOWERS", value: stats.followers },
   ];
-  const statCardGap = 10;
-  const statCardW = (contentW - statCardGap * 3) / 4;
-  const statCardH = 56;
+  const gap = 10;
+  const cardW = (contentW - gap * 3) / 4;
+  const cardH = 56;
 
   statsItems.forEach((item, i) => {
-    const cx = PAD + i * (statCardW + statCardGap);
-    l(`<rect x="${cx}" y="${y}" width="${statCardW}" height="${statCardH}" rx="6" ry="6" class="card-border" stroke-width="1"/>`);
-    l(`<text x="${cx + statCardW / 2}" y="${y + 28}" text-anchor="middle" class="stat-val">${fmt(item.value)}</text>`);
-    l(`<text x="${cx + statCardW / 2}" y="${y + 44}" text-anchor="middle" class="stat-lbl">${item.label}</text>`);
+    const cx = PAD + i * (cardW + gap);
+    lines.push(`<rect x="${cx}" y="${y}" width="${cardW}" height="${cardH}" rx="6" ry="6" class="card-border" stroke-width="1"/>`);
+    lines.push(`<text x="${cx + cardW / 2}" y="${y + 28}" text-anchor="middle" class="stat-val">${fmt(item.value)}</text>`);
+    lines.push(`<text x="${cx + cardW / 2}" y="${y + 44}" text-anchor="middle" class="stat-lbl">${item.label}</text>`);
+  });
+  return y + cardH + 14;
+}
+
+function renderLanguages(lines: string[], stats: ComputedStats, PAD: number, W: number, contentW: number, y: number): number {
+  if (stats.topLanguages.length === 0) return y;
+
+  lines.push(`<text x="${PAD}" y="${y + 10}" class="section">Languages</text>`);
+  y += 18;
+
+  const barH = 6;
+  const totalPct = stats.topLanguages.reduce((s, l) => s + l.percentage, 0);
+  let bx = PAD;
+
+  lines.push(`<rect x="${PAD}" y="${y}" width="${contentW}" height="${barH}" rx="3" ry="3" class="bar-bg"/>`);
+  stats.topLanguages.forEach((lang) => {
+    const segW = Math.max((lang.percentage / totalPct) * contentW, lang.percentage > 0 ? 3 : 0);
+    const color = LANG_COLORS[lang.name] ?? "#8b949e";
+    lines.push(`<rect x="${bx}" y="${y}" width="${segW}" height="${barH}" rx="3" ry="3" fill="${color}"/>`);
+    bx += segW;
   });
 
-  y += statCardH + 14;
+  y += barH + 10;
 
-  // ── Divider ──
-  l(`<line x1="${PAD}" y1="${y}" x2="${W - PAD}" y2="${y}" class="divider" stroke-width="1"/>`);
-  y += 14;
+  let lx = PAD;
+  let ly = y;
+  const lineH = 18;
+  stats.topLanguages.slice(0, 6).forEach((lang, i) => {
+    const color = LANG_COLORS[lang.name] ?? "#8b949e";
+    const nameW = lang.name.length * 7;
+    const pctText = `${lang.percentage}%`;
+    const pctW = pctText.length * 6.5;
+    const labelW = 6 + 7 + nameW + 4 + pctW + 10;
+    if (i > 0 && lx + labelW > W - PAD) {
+      lx = PAD;
+      ly += lineH;
+    }
+    if (i > 0) lx += 16;
+    lines.push(`<circle cx="${lx + 3}" cy="${ly}" r="3" fill="${color}"/>`);
+    lines.push(`<text x="${lx + 10}" y="${ly + 4}" class="lang-name">${esc(lang.name)}</text>`);
+    lines.push(`<text x="${lx + 10 + nameW + 4}" y="${ly + 4}" class="lang-pct">${esc(pctText)}</text>`);
+    lx += labelW;
+  });
 
-  // ═══ ROW 3: Languages (full width) ═══
-  if (stats.topLanguages.length > 0) {
-    l(`<text x="${PAD}" y="${y + 10}" class="section">Languages</text>`);
-    y += 18;
+  return ly + lineH;
+}
 
-    const barH = 6;
-    const totalPct = stats.topLanguages.reduce((s, l) => s + l.percentage, 0);
-    let bx = PAD;
+function renderRepos(lines: string[], stats: ComputedStats, PAD: number, contentW: number, y: number): number {
+  if (stats.mostStarredRepos.length === 0) return y;
 
-    l(`<rect x="${PAD}" y="${y}" width="${contentW}" height="${barH}" rx="3" ry="3" class="bar-bg"/>`);
-    stats.topLanguages.forEach((lang) => {
-      const segW = Math.max((lang.percentage / totalPct) * contentW, lang.percentage > 0 ? 3 : 0);
-      const color = LANG_COLORS[lang.name] ?? "#8b949e";
-      l(`<rect x="${bx}" y="${y}" width="${segW}" height="${barH}" rx="3" ry="3" fill="${color}"/>`);
-      bx += segW;
-    });
+  lines.push(`<text x="${PAD}" y="${y + 10}" class="section">Most Starred</text>`);
+  y += 22;
 
-    y += barH + 10;
+  const repoCount = Math.min(stats.mostStarredRepos.length, 3);
+  const gap = 10;
+  const cardW = (contentW - gap * (repoCount - 1)) / repoCount;
+  const cardH = 36;
 
-    // Labels inline with wrapping
-    let lx = PAD;
-    let ly = y;
-    const lineH = 18;
-    stats.topLanguages.slice(0, 6).forEach((lang, i) => {
-      const color = LANG_COLORS[lang.name] ?? "#8b949e";
-      const nameW = lang.name.length * 7;
-      const pctText = `${lang.percentage}%`;
-      const pctW = pctText.length * 6.5;
-      const labelW = 6 + 7 + nameW + 4 + pctW + 10;
-      if (i > 0 && lx + labelW > W - PAD) {
-        lx = PAD;
-        ly += lineH;
-      }
-      if (i > 0) lx += 16;
-      l(`<circle cx="${lx + 3}" cy="${ly}" r="3" fill="${color}"/>`);
-      l(`<text x="${lx + 10}" y="${ly + 4}" class="lang-name">${esc(lang.name)}</text>`);
-      l(`<text x="${lx + 10 + nameW + 4}" y="${ly + 4}" class="lang-pct">${esc(pctText)}</text>`);
-      lx += labelW;
-    });
+  stats.mostStarredRepos.slice(0, 3).forEach((repo, i) => {
+    const rx = PAD + i * (cardW + gap);
+    lines.push(`<rect x="${rx}" y="${y}" width="${cardW}" height="${cardH}" rx="6" ry="6" class="card-border" stroke-width="1"/>`);
+    lines.push(`<text x="${rx + 10}" y="${y + 22}" class="repo-name">${esc(trunc(repo.name, 16))}</text>`);
+    lines.push(`<text x="${rx + cardW - 10}" y="${y + 22}" text-anchor="end" class="repo-stars">★ ${repo.stars}</text>`);
+  });
+  return y + cardH;
+}
 
-    y = ly + lineH;
-  }
+// ═══════════════════════════════════════════════════
+// Variant: default — profile + stats + languages + repos
+// ═══════════════════════════════════════════════════
 
-  // ── Divider ──
-  l(`<line x1="${PAD}" y1="${y}" x2="${W - PAD}" y2="${y}" class="divider" stroke-width="1"/>`);
-  y += 14;
+function generateDefault(stats: ComputedStats): string {
+  const W = 580;
+  const PAD = 20;
+  const contentW = W - PAD * 2;
+  let y = PAD;
+  const lines: string[] = [...svgPreamble(W)];
 
-  // ═══ ROW 4: Repos (3 cards in a row) ═══
-  if (stats.mostStarredRepos.length > 0) {
-    l(`<text x="${PAD}" y="${y + 10}" class="section">Most Starred</text>`);
-    y += 22;
+  lines.push(`<rect width="${W}" height="__H__" rx="8" ry="8" class="main-bg"/>`);
 
-    const repoCount = Math.min(stats.mostStarredRepos.length, 3);
-    const repoCardGap = 10;
-    const repoCardW = (contentW - repoCardGap * (repoCount - 1)) / repoCount;
-    const repoCardH = 36;
+  y = renderProfile(lines, stats, W, PAD, y);
+  y = renderDivider(lines, PAD, W, y);
+  y = renderStatsCards(lines, stats, PAD, contentW, y);
+  y = renderDivider(lines, PAD, W, y);
+  y = renderLanguages(lines, stats, PAD, W, contentW, y);
+  y = renderDivider(lines, PAD, W, y);
+  y = renderRepos(lines, stats, PAD, contentW, y);
 
-    stats.mostStarredRepos.slice(0, 3).forEach((repo, i) => {
-      const rx = PAD + i * (repoCardW + repoCardGap);
-      l(`<rect x="${rx}" y="${y}" width="${repoCardW}" height="${repoCardH}" rx="6" ry="6" class="card-border" stroke-width="1"/>`);
-      l(`<text x="${rx + 10}" y="${y + 22}" class="repo-name">${esc(trunc(repo.name, 16))}</text>`);
-      l(`<text x="${rx + repoCardW - 10}" y="${y + 22}" text-anchor="end" class="repo-stars">★ ${repo.stars}</text>`);
-    });
-    y += repoCardH;
-  }
-
-  const H = y + PAD;
-  lines[0] = lines[0].replace(/__H__/g, String(H));
-
-  l(`</svg>`);
+  lines.push(`</svg>`);
+  lines[0] = lines[0].replace(/__H__/g, String(y + PAD));
   return lines.join("\n");
+}
+
+// ═══════════════════════════════════════════════════
+// Variant: compact — profile + stats + languages (no repos)
+// ═══════════════════════════════════════════════════
+
+function generateCompact(stats: ComputedStats): string {
+  const W = 400;
+  const PAD = 16;
+  const contentW = W - PAD * 2;
+  let y = PAD;
+  const lines: string[] = [...svgPreamble(W)];
+
+  lines.push(`<rect width="${W}" height="__H__" rx="8" ry="8" class="main-bg"/>`);
+
+  y = renderProfile(lines, stats, W, PAD, y);
+  y = renderDivider(lines, PAD, W, y);
+  y = renderStatsCards(lines, stats, PAD, contentW, y);
+  y = renderDivider(lines, PAD, W, y);
+  y = renderLanguages(lines, stats, PAD, W, contentW, y);
+
+  lines.push(`</svg>`);
+  lines[0] = lines[0].replace(/__H__/g, String(y + PAD));
+  return lines.join("\n");
+}
+
+// ═══════════════════════════════════════════════════
+// Variant: minimal — stats cards only (no profile, no languages, no repos)
+// ═══════════════════════════════════════════════════
+
+function generateMinimal(stats: ComputedStats): string {
+  const W = 500;
+  const PAD = 16;
+  const contentW = W - PAD * 2;
+  let y = PAD;
+  const lines: string[] = [...svgPreamble(W)];
+
+  lines.push(`<rect width="${W}" height="__H__" rx="8" ry="8" class="main-bg"/>`);
+
+  y = renderStatsCards(lines, stats, PAD, contentW, y);
+
+  lines.push(`</svg>`);
+  lines[0] = lines[0].replace(/__H__/g, String(y + PAD - 14));
+  return lines.join("\n");
+}
+
+// ═══════════════════════════════════════════════════
+// Dispatch + API handler
+// ═══════════════════════════════════════════════════
+
+function generateSvg(stats: ComputedStats, variant: Variant): string {
+  switch (variant) {
+    case "compact": return generateCompact(stats);
+    case "minimal": return generateMinimal(stats);
+    default: return generateDefault(stats);
+  }
 }
 
 async function fetchAvatarDataUri(url: string): Promise<string> {
@@ -253,12 +329,17 @@ async function fetchAvatarDataUri(url: string): Promise<string> {
 }
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ username: string }> },
 ) {
   try {
     const { username } = await params;
     const cleanUser = username.toLowerCase().trim();
+    const url = new URL(request.url);
+    const variantParam = url.searchParams.get("variant");
+    const variant: Variant = VALID_VARIANTS.includes(variantParam as Variant)
+      ? (variantParam as Variant)
+      : "default";
 
     const cached = await prisma.gitHubStats.findUnique({ where: { username: cleanUser } });
     let stats: ComputedStats;
@@ -277,7 +358,7 @@ export async function GET(
     }
 
     stats.avatarUrl = await fetchAvatarDataUri(stats.avatarUrl);
-    const svg = generateSvg(stats);
+    const svg = generateSvg(stats, variant);
 
     return new Response(svg, {
       headers: {

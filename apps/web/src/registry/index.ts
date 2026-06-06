@@ -167,7 +167,7 @@ export function initRegistry() {
   BlockRegistry.register({
     type: "github-stats",
     component: GithubStatsBlock,
-    defaultProps: { username: "hussain-ahmed2" },
+    defaultProps: { username: "hussain-ahmed2", variant: "default" },
     serializer: (b) => {
       const username = (b.props.username as string) ?? "";
       if (!username) return "";

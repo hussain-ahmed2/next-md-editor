@@ -36,6 +36,12 @@ const LANG_COLORS: Record<string, string> = {
   Elixir: "#6E4A7E",
 };
 
+const VARIANTS = [
+  { value: "default", label: "Default" },
+  { value: "compact", label: "Compact" },
+  { value: "minimal", label: "Minimal" },
+] as const;
+
 function fmt(n: number): string {
   if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
   return String(n);
@@ -46,6 +52,7 @@ export function GithubStatsBlock({ block }: { block: Block }) {
   const blocks = useEditorStore((s) => s.blocks);
   const myBlock = blocks.find((b) => b.id === block.id) ?? block;
   const username = (myBlock.props.username as string) ?? "";
+  const variant = ((myBlock.props.variant as string) ?? "default") as string;
 
   const [stats, setStats] = useState<ComputedStats | null>(null);
   const [loading, setLoading] = useState(false);
@@ -77,6 +84,10 @@ export function GithubStatsBlock({ block }: { block: Block }) {
     setEditing(false);
   };
 
+  const handleVariantChange = (newVariant: string) => {
+    updateBlock(block.id, { variant: newVariant });
+  };
+
   if (!username.trim()) {
     return <ConnectPrompt inputUsername={inputUsername} setInputUsername={setInputUsername} editing={editing} setEditing={setEditing} handleSave={handleSave} />;
   }
@@ -91,45 +102,56 @@ export function GithubStatsBlock({ block }: { block: Block }) {
     );
   }
 
+  const showProfile = variant === "default" || variant === "compact";
+  const showLanguages = variant === "default" || variant === "compact";
+  const showRepos = variant === "default";
+
   return (
     <div style={cardStyle}>
-      {/* Edit button */}
-      <div style={{ position: "absolute", top: 8, right: 8, zIndex: 1 }}>
+      {/* Toolbar */}
+      <div style={{ position: "absolute", top: 8, right: 8, zIndex: 1, display: "flex", gap: 4, alignItems: "center" }}>
         {editing ? (
-          <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+          <>
             <input value={inputUsername} onChange={(e) => setInputUsername(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSave()}
               style={inputStyle} placeholder="GitHub username" autoFocus />
             <button onClick={handleSave} style={btnPrimary}>Save</button>
             <button onClick={() => { setEditing(false); setInputUsername(username); }} style={btnGhost}>Cancel</button>
-          </div>
+          </>
         ) : (
-          <button onClick={() => setEditing(true)} style={btnGhost}>Change</button>
+          <>
+            <select value={variant} onChange={(e) => handleVariantChange(e.target.value)} style={selectStyle}>
+              {VARIANTS.map((v) => <option key={v.value} value={v.value}>{v.label}</option>)}
+            </select>
+            <button onClick={() => setEditing(true)} style={btnGhost}>Change</button>
+          </>
         )}
       </div>
 
-      {/* ═══ ROW 1: Profile (full width) ═══ */}
-      <div style={{ display: "flex", gap: 10, padding: "16px 16px 12px", alignItems: "flex-start" }}>
-        <img src={stats.avatarUrl} alt={stats.login}
-          style={{ width: 48, height: 48, borderRadius: "50%", border: "1.5px solid #30363d", flexShrink: 0 }} />
-        <div style={{ minWidth: 0, overflow: "hidden" }}>
-          <div style={{ fontSize: 16, fontWeight: 700, color: "#f0f6fc", lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-            {stats.name ?? stats.login}
-          </div>
-          <div style={{ fontSize: 12, fontWeight: 500, color: "#8b949e" }}>@{stats.login}</div>
-          {stats.bio && (
-            <div style={{ fontSize: 11, color: "#8b949e", marginTop: 3, lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-              {stats.bio}
+      {/* ═══ Profile ═══ */}
+      {showProfile && (
+        <>
+          <div style={{ display: "flex", gap: 10, padding: "16px 16px 12px", alignItems: "flex-start" }}>
+            <img src={stats.avatarUrl} alt={stats.login}
+              style={{ width: 48, height: 48, borderRadius: "50%", border: "1.5px solid #30363d", flexShrink: 0 }} />
+            <div style={{ minWidth: 0, overflow: "hidden" }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: "#f0f6fc", lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                {stats.name ?? stats.login}
+              </div>
+              <div style={{ fontSize: 12, fontWeight: 500, color: "#8b949e" }}>@{stats.login}</div>
+              {stats.bio && (
+                <div style={{ fontSize: 11, color: "#8b949e", marginTop: 3, lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                  {stats.bio}
+                </div>
+              )}
             </div>
-          )}
-        </div>
-      </div>
+          </div>
+          <div style={{ height: 1, background: "#30363d", margin: "0 16px" }} />
+        </>
+      )}
 
-      {/* Divider */}
-      <div style={{ height: 1, background: "#30363d", margin: "0 16px" }} />
-
-      {/* ═══ ROW 2: Stats (4 cards in a row) ═══ */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, padding: "12px 16px" }}>
+      {/* ═══ Stats ═══ */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, padding: showProfile ? "12px 16px" : "16px 16px 12px" }}>
         {[
           { label: "REPOS", value: stats.totalRepos },
           { label: "STARS", value: stats.totalStars },
@@ -143,58 +165,56 @@ export function GithubStatsBlock({ block }: { block: Block }) {
         ))}
       </div>
 
-      {/* Divider */}
-      <div style={{ height: 1, background: "#30363d", margin: "0 16px" }} />
-
-      {/* ═══ ROW 3: Languages (full width) ═══ */}
-      {stats.topLanguages.length > 0 && (
-        <div style={{ padding: "10px 16px 8px" }}>
-          <div style={{ fontSize: 10, fontWeight: 600, color: "#8b949e", textTransform: "uppercase" as const, letterSpacing: "0.6px", marginBottom: 8 }}>
-            Languages
+      {/* ═══ Languages ═══ */}
+      {showLanguages && stats.topLanguages.length > 0 && (
+        <>
+          <div style={{ height: 1, background: "#30363d", margin: "0 16px" }} />
+          <div style={{ padding: "10px 16px 8px" }}>
+            <div style={{ fontSize: 10, fontWeight: 600, color: "#8b949e", textTransform: "uppercase" as const, letterSpacing: "0.6px", marginBottom: 8 }}>
+              Languages
+            </div>
+            <div style={{ height: 6, borderRadius: 3, background: "#21262d", display: "flex", overflow: "hidden", marginBottom: 10 }}>
+              {stats.topLanguages.map((lang) => (
+                <div key={lang.name}
+                  style={{ width: `${lang.percentage}%`, background: LANG_COLORS[lang.name] ?? "#8b949e", minWidth: lang.percentage > 0 ? 3 : 0 }} />
+              ))}
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 12px" }}>
+              {stats.topLanguages.slice(0, 6).map((lang) => (
+                <div key={lang.name} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                  <div style={{ width: 6, height: 6, borderRadius: "50%", background: LANG_COLORS[lang.name] ?? "#8b949e", flexShrink: 0 }} />
+                  <span style={{ fontSize: 11, color: "#c9d1d9" }}>{lang.name}</span>
+                  <span style={{ fontSize: 11, color: "#8b949e" }}>{lang.percentage}%</span>
+                </div>
+              ))}
+            </div>
           </div>
-          {/* Bar */}
-          <div style={{ height: 6, borderRadius: 3, background: "#21262d", display: "flex", overflow: "hidden", marginBottom: 10 }}>
-            {stats.topLanguages.map((lang) => (
-              <div key={lang.name}
-                style={{ width: `${lang.percentage}%`, background: LANG_COLORS[lang.name] ?? "#8b949e", minWidth: lang.percentage > 0 ? 3 : 0 }} />
-            ))}
-          </div>
-          {/* Labels inline */}
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 12px" }}>
-            {stats.topLanguages.slice(0, 6).map((lang) => (
-              <div key={lang.name} style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                <div style={{ width: 6, height: 6, borderRadius: "50%", background: LANG_COLORS[lang.name] ?? "#8b949e", flexShrink: 0 }} />
-                <span style={{ fontSize: 11, color: "#c9d1d9" }}>{lang.name}</span>
-                <span style={{ fontSize: 11, color: "#8b949e" }}>{lang.percentage}%</span>
-              </div>
-            ))}
-          </div>
-        </div>
+        </>
       )}
 
-      {/* Divider */}
-      <div style={{ height: 1, background: "#30363d", margin: "0 16px" }} />
-
-      {/* ═══ ROW 4: Repos (3 cards in a row) ═══ */}
-      {stats.mostStarredRepos.length > 0 && (
-        <div style={{ padding: "10px 16px 14px" }}>
-          <div style={{ fontSize: 10, fontWeight: 600, color: "#8b949e", textTransform: "uppercase" as const, letterSpacing: "0.6px", marginBottom: 8 }}>
-            Most Starred
+      {/* ═══ Repos ═══ */}
+      {showRepos && stats.mostStarredRepos.length > 0 && (
+        <>
+          <div style={{ height: 1, background: "#30363d", margin: "0 16px" }} />
+          <div style={{ padding: "10px 16px 14px" }}>
+            <div style={{ fontSize: 10, fontWeight: 600, color: "#8b949e", textTransform: "uppercase" as const, letterSpacing: "0.6px", marginBottom: 8 }}>
+              Most Starred
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(stats.mostStarredRepos.length, 3)}, 1fr)`, gap: 8 }}>
+              {stats.mostStarredRepos.slice(0, 3).map((repo) => (
+                <a key={repo.name} href={repo.url} target="_blank" rel="noopener noreferrer"
+                  style={repoCardStyle}>
+                  <span style={{ fontWeight: 600, color: "#58a6ff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>
+                    {repo.name}
+                  </span>
+                  <span style={{ fontWeight: 500, color: "#8b949e", marginLeft: 6, whiteSpace: "nowrap", flexShrink: 0 }}>
+                    ★ {repo.stars}
+                  </span>
+                </a>
+              ))}
+            </div>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(stats.mostStarredRepos.length, 3)}, 1fr)`, gap: 8 }}>
-            {stats.mostStarredRepos.slice(0, 3).map((repo) => (
-              <a key={repo.name} href={repo.url} target="_blank" rel="noopener noreferrer"
-                style={repoCardStyle}>
-                <span style={{ fontWeight: 600, color: "#58a6ff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>
-                  {repo.name}
-                </span>
-                <span style={{ fontWeight: 500, color: "#8b949e", marginLeft: 6, whiteSpace: "nowrap", flexShrink: 0 }}>
-                  ★ {repo.stars}
-                </span>
-              </a>
-            ))}
-          </div>
-        </div>
+        </>
       )}
     </div>
   );
@@ -237,6 +257,12 @@ const inputStyle: React.CSSProperties = {
   outline: "none", width: 120,
 };
 
+const selectStyle: React.CSSProperties = {
+  padding: "3px 6px", fontSize: 10, borderRadius: 4,
+  border: "1px solid #30363d", background: "#161b22", color: "#8b949e",
+  outline: "none", cursor: "pointer",
+};
+
 const btnPrimary: React.CSSProperties = {
   padding: "3px 8px", fontSize: 10, fontWeight: 600, borderRadius: 4,
   border: "none", background: "#238636", color: "#fff", cursor: "pointer",
@@ -250,7 +276,6 @@ const btnGhost: React.CSSProperties = {
 function Skeleton() {
   return (
     <div style={cardStyle}>
-      {/* Profile */}
       <div style={{ display: "flex", gap: 10, padding: "16px 16px 12px" }}>
         <div style={{ width: 48, height: 48, borderRadius: "50%", background: "#21262d", flexShrink: 0 }} />
         <div>
@@ -259,7 +284,6 @@ function Skeleton() {
         </div>
       </div>
       <div style={{ height: 1, background: "#30363d", margin: "0 16px" }} />
-      {/* Stats */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, padding: "12px 16px" }}>
         {[1, 2, 3, 4].map((i) => (
           <div key={i} style={{ padding: "12px 8px", borderRadius: 6, border: "1px solid #30363d", background: "#161b22", textAlign: "center" }}>
@@ -269,7 +293,6 @@ function Skeleton() {
         ))}
       </div>
       <div style={{ height: 1, background: "#30363d", margin: "0 16px" }} />
-      {/* Languages */}
       <div style={{ padding: "10px 16px 8px" }}>
         <div style={{ width: 60, height: 8, borderRadius: 4, background: "#21262d", marginBottom: 8 }} />
         <div style={{ height: 6, borderRadius: 3, background: "#21262d", marginBottom: 10 }} />
