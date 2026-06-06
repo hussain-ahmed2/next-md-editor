@@ -52,13 +52,6 @@ function useSiteTheme(): ThemeColors {
   return prefersLight ? LIGHT : DARK;
 }
 
-function useBlockTheme(theme: string): ThemeColors {
-  const siteTheme = useSiteTheme();
-  if (theme === "light") return LIGHT;
-  if (theme === "dark") return DARK;
-  return siteTheme;
-}
-
 const VARIANTS = [
   { value: "default", label: "Default" },
   { value: "compact", label: "Compact" },
@@ -84,7 +77,7 @@ export function GithubStatsBlock({ block }: { block: Block }) {
   const username = (myBlock.props.username as string) ?? "";
   const variant = ((myBlock.props.variant as string) ?? "default") as string;
   const theme = ((myBlock.props.theme as string) ?? "auto") as string;
-  const c = useBlockTheme(theme);
+  const c = useSiteTheme();
 
   const [stats, setStats] = useState<ComputedStats | null>(null);
   const [loading, setLoading] = useState(false);
