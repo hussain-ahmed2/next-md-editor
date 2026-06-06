@@ -86,7 +86,7 @@ export const getMarkdownComponents = (): Components => {
       const codeStr = rawStr.replace(/\n$/, "");
       if (className || rawStr.includes("\n")) {
         return (
-          <div style={{ position: "relative" }}>
+          <div style={{ position: "relative", overflow: "auto" }}>
             {lang && (
               <span
                 style={{
