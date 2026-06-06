@@ -206,12 +206,17 @@ export function parseMarkdown(markdown: string): Block[] {
         if (significantChildren.length === 1) {
           const img = significantChildren[0];
           const imgUrl = img.url || "";
-          const statsMatch = imgUrl.match(/\/api\/github\/([a-zA-Z0-9-]+)\/stats\.svg$/);
+          const statsMatch = imgUrl.match(/\/api\/github\/([a-zA-Z0-9-]+)\/stats\.svg(\?.*)?$/);
           if (statsMatch) {
+            const qs = new URLSearchParams(statsMatch[2] ?? "");
             blocks.push({
               id: uuidv4(),
               type: "github-stats",
-              props: { username: statsMatch[1] },
+              props: {
+                username: statsMatch[1],
+                variant: qs.get("variant") || "default",
+                theme: qs.get("theme") || "auto",
+              },
             });
           } else {
             blocks.push({
@@ -591,9 +596,15 @@ function serializeBlock(block: Block, indentLevel: number = 0): string {
     }
     case "github-stats": {
       const username = (block.props.username as string) ?? "";
+      const variant = (block.props.variant as string) ?? "default";
+      const theme = (block.props.theme as string) ?? "auto";
       if (username) {
         const base = process.env.NEXT_PUBLIC_FRONTEND_URL ?? "";
-        text = `![GitHub Stats](${base}/api/github/${username}/stats.svg)`;
+        const params = new URLSearchParams();
+        if (variant !== "default") params.set("variant", variant);
+        if (theme !== "auto") params.set("theme", theme);
+        const qs = params.toString() ? `?${params.toString()}` : "";
+        text = `![GitHub Stats](${base}/api/github/${username}/stats.svg${qs})`;
       }
       break;
     }

@@ -167,11 +167,17 @@ export function initRegistry() {
   BlockRegistry.register({
     type: "github-stats",
     component: GithubStatsBlock,
-    defaultProps: { username: "hussain-ahmed2" },
+    defaultProps: { username: "hussain-ahmed2", variant: "default", theme: "auto" },
     serializer: (b) => {
       const username = (b.props.username as string) ?? "";
       if (!username) return "";
-      return `![GitHub Stats](/api/github/${username}/stats.svg)`;
+      const variant = (b.props.variant as string) ?? "default";
+      const theme = (b.props.theme as string) ?? "auto";
+      const params = new URLSearchParams();
+      if (variant !== "default") params.set("variant", variant);
+      if (theme !== "auto") params.set("theme", theme);
+      const qs = params.toString() ? `?${params.toString()}` : "";
+      return `![GitHub Stats](/api/github/${username}/stats.svg${qs})`;
     },
   });
 
