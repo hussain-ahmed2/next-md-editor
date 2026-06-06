@@ -61,7 +61,6 @@ function wrapText(text: string, maxChars: number): string[] {
 
 function generateSvg(stats: ComputedStats): string {
   const W = 580;
-  const H = 378;
   const PAD = 20;
   const contentW = W - PAD * 2;
 
@@ -69,28 +68,40 @@ function generateSvg(stats: ComputedStats): string {
   const lines: string[] = [];
   const l = (s: string) => lines.push(s);
 
-  l(`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">`);
+  l(`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="__H__" viewBox="0 0 ${W} __H__">`);
   l(`<defs><style>`);
+  l(`  :root {`);
+  l(`    --bg: #0d1117; --card-bg: #161b22; --border: #30363d; --bar-bg: #21262d;`);
+  l(`    --text-primary: #f0f6fc; --text-secondary: #8b949e; --text-muted: #c9d1d9;`);
+  l(`    --link: #58a6ff;`);
+  l(`  }`);
+  l(`  @media (prefers-color-scheme: light) {`);
+  l(`    :root {`);
+  l(`      --bg: #ffffff; --card-bg: #f6f8fa; --border: #d0d7de; --bar-bg: #e8e8e8;`);
+  l(`      --text-primary: #1f2328; --text-secondary: #656d76; --text-muted: #1f2328;`);
+  l(`      --link: #0969da;`);
+  l(`    }`);
+  l(`  }`);
   l(`  text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif; }`);
-  l(`  .name { font-size: 16px; font-weight: 700; fill: #f0f6fc; }`);
-  l(`  .username { font-size: 12px; font-weight: 500; fill: #8b949e; }`);
-  l(`  .bio { font-size: 11px; fill: #8b949e; }`);
-  l(`  .stat-val { font-size: 22px; font-weight: 700; fill: #f0f6fc; }`);
-  l(`  .stat-lbl { font-size: 10px; font-weight: 500; fill: #8b949e; text-transform: uppercase; }`);
-  l(`  .section { font-size: 10px; font-weight: 600; fill: #8b949e; text-transform: uppercase; letter-spacing: 0.6px; }`);
-  l(`  .lang-name { font-size: 11px; font-weight: 500; fill: #c9d1d9; }`);
-  l(`  .lang-pct { font-size: 11px; fill: #8b949e; }`);
-  l(`  .repo-name { font-size: 12px; font-weight: 600; fill: #58a6ff; }`);
-  l(`  .repo-stars { font-size: 12px; font-weight: 500; fill: #8b949e; }`);
+  l(`  .name { font-size: 16px; font-weight: 700; fill: var(--text-primary); }`);
+  l(`  .username { font-size: 12px; font-weight: 500; fill: var(--text-secondary); }`);
+  l(`  .bio { font-size: 11px; fill: var(--text-secondary); }`);
+  l(`  .stat-val { font-size: 22px; font-weight: 700; fill: var(--text-primary); }`);
+  l(`  .stat-lbl { font-size: 10px; font-weight: 500; fill: var(--text-secondary); text-transform: uppercase; }`);
+  l(`  .section { font-size: 10px; font-weight: 600; fill: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.6px; }`);
+  l(`  .lang-name { font-size: 11px; font-weight: 500; fill: var(--text-muted); }`);
+  l(`  .lang-pct { font-size: 11px; fill: var(--text-secondary); }`);
+  l(`  .repo-name { font-size: 12px; font-weight: 600; fill: var(--link); }`);
+  l(`  .repo-stars { font-size: 12px; font-weight: 500; fill: var(--text-secondary); }`);
   l(`</style></defs>`);
 
-  l(`<rect width="${W}" height="${H}" rx="8" ry="8" fill="#0d1117" stroke="#30363d" stroke-width="1"/>`);
+  l(`<rect width="${W}" height="__H__" rx="8" ry="8" fill="var(--bg)" stroke="var(--border)" stroke-width="1"/>`);
 
   // ═══ ROW 1: Profile (full width) ═══
   const avatarSize = 48;
   l(`<defs><clipPath id="a"><circle cx="${PAD + avatarSize / 2}" cy="${y + avatarSize / 2}" r="${avatarSize / 2}"/></clipPath></defs>`);
   l(`<image x="${PAD}" y="${y}" width="${avatarSize}" height="${avatarSize}" href="${esc(stats.avatarUrl)}" clip-path="url(#a)"/>`);
-  l(`<circle cx="${PAD + avatarSize / 2}" cy="${y + avatarSize / 2}" r="${avatarSize / 2}" fill="none" stroke="#30363d" stroke-width="1.5"/>`);
+  l(`<circle cx="${PAD + avatarSize / 2}" cy="${y + avatarSize / 2}" r="${avatarSize / 2}" fill="none" stroke="var(--border)" stroke-width="1.5"/>`);
 
   const nameX = PAD + avatarSize + 10;
   const displayName = stats.name ?? stats.login;
@@ -107,7 +118,7 @@ function generateSvg(stats: ComputedStats): string {
   y += 80;
 
   // ── Divider ──
-  l(`<line x1="${PAD}" y1="${y}" x2="${W - PAD}" y2="${y}" stroke="#30363d" stroke-width="1"/>`);
+  l(`<line x1="${PAD}" y1="${y}" x2="${W - PAD}" y2="${y}" stroke="var(--border)" stroke-width="1"/>`);
   y += 14;
 
   // ═══ ROW 2: Stats (4 cards in a row) ═══
@@ -123,7 +134,7 @@ function generateSvg(stats: ComputedStats): string {
 
   statsItems.forEach((item, i) => {
     const cx = PAD + i * (statCardW + statCardGap);
-    l(`<rect x="${cx}" y="${y}" width="${statCardW}" height="${statCardH}" rx="6" ry="6" fill="#161b22" stroke="#30363d" stroke-width="1"/>`);
+    l(`<rect x="${cx}" y="${y}" width="${statCardW}" height="${statCardH}" rx="6" ry="6" fill="var(--card-bg)" stroke="var(--border)" stroke-width="1"/>`);
     l(`<text x="${cx + statCardW / 2}" y="${y + 28}" text-anchor="middle" class="stat-val">${fmt(item.value)}</text>`);
     l(`<text x="${cx + statCardW / 2}" y="${y + 44}" text-anchor="middle" class="stat-lbl">${item.label}</text>`);
   });
@@ -131,7 +142,7 @@ function generateSvg(stats: ComputedStats): string {
   y += statCardH + 14;
 
   // ── Divider ──
-  l(`<line x1="${PAD}" y1="${y}" x2="${W - PAD}" y2="${y}" stroke="#30363d" stroke-width="1"/>`);
+  l(`<line x1="${PAD}" y1="${y}" x2="${W - PAD}" y2="${y}" stroke="var(--border)" stroke-width="1"/>`);
   y += 14;
 
   // ═══ ROW 3: Languages (full width) ═══
@@ -143,7 +154,7 @@ function generateSvg(stats: ComputedStats): string {
     const totalPct = stats.topLanguages.reduce((s, l) => s + l.percentage, 0);
     let bx = PAD;
 
-    l(`<rect x="${PAD}" y="${y}" width="${contentW}" height="${barH}" rx="3" ry="3" fill="#21262d"/>`);
+    l(`<rect x="${PAD}" y="${y}" width="${contentW}" height="${barH}" rx="3" ry="3" fill="var(--bar-bg)"/>`);
     stats.topLanguages.forEach((lang) => {
       const segW = Math.max((lang.percentage / totalPct) * contentW, lang.percentage > 0 ? 3 : 0);
       const color = LANG_COLORS[lang.name] ?? "#8b949e";
@@ -178,7 +189,7 @@ function generateSvg(stats: ComputedStats): string {
   }
 
   // ── Divider ──
-  l(`<line x1="${PAD}" y1="${y}" x2="${W - PAD}" y2="${y}" stroke="#30363d" stroke-width="1"/>`);
+  l(`<line x1="${PAD}" y1="${y}" x2="${W - PAD}" y2="${y}" stroke="var(--border)" stroke-width="1"/>`);
   y += 14;
 
   // ═══ ROW 4: Repos (3 cards in a row) ═══
@@ -193,11 +204,14 @@ function generateSvg(stats: ComputedStats): string {
 
     stats.mostStarredRepos.slice(0, 3).forEach((repo, i) => {
       const rx = PAD + i * (repoCardW + repoCardGap);
-      l(`<rect x="${rx}" y="${y}" width="${repoCardW}" height="${repoCardH}" rx="6" ry="6" fill="#161b22" stroke="#30363d" stroke-width="1"/>`);
+      l(`<rect x="${rx}" y="${y}" width="${repoCardW}" height="${repoCardH}" rx="6" ry="6" fill="var(--card-bg)" stroke="var(--border)" stroke-width="1"/>`);
       l(`<text x="${rx + 10}" y="${y + 22}" class="repo-name">${esc(trunc(repo.name, 16))}</text>`);
       l(`<text x="${rx + repoCardW - 10}" y="${y + 22}" text-anchor="end" class="repo-stars">★ ${repo.stars}</text>`);
     });
   }
+
+  const H = y + PAD;
+  lines[0] = lines[0].replace(/__H__/g, String(H));
 
   l(`</svg>`);
   return lines.join("\n");
