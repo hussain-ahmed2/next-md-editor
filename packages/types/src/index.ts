@@ -31,6 +31,7 @@ export type BlockType =
   | "table"
   | "image-grid"
   | "badge-group"
+  | "github-stats"
   | string;
 
 export interface Block {

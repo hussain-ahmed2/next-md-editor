@@ -17,6 +17,7 @@ import {
 	LayoutGrid,
 	Award,
 	ImageIcon,
+	GitFork,
 } from "lucide-react";
 
 interface SidebarBlock {
@@ -98,6 +99,12 @@ const BLOCK_PALETTE: SidebarBlock[] = [
 		label: "Badge Group",
 		icon: <Award size={18} />,
 		description: "Badge group with shields.io style",
+	},
+	{
+		type: "github-stats",
+		label: "GitHub Stats",
+		icon: <GitFork size={18} />,
+		description: "GitHub profile stats card",
 	},
 ];
 

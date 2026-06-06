@@ -31,8 +31,7 @@ Welcome to my GitHub profile!
 
 ## My GitHub Stats
 
-![Your Name's GitHub stats](https://github-readme-stats.vercel.app/api?username=your-username&count_private=true&show_icons=true)
-![Top Langs](https://github-readme-stats.vercel.app/api/top-langs/?username=your-username&langs_count=3)
+![GitHub Stats](/api/github/hussain-ahmed2/stats.svg)
 
 ---
 
