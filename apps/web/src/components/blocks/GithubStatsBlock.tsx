@@ -160,7 +160,7 @@ export function GithubStatsBlock({ block }: { block: Block }) {
     );
   }
 
-  const showProfile = variant === "default" || variant === "compact" || variant === "classic";
+  const showProfile = variant === "default" || variant === "classic";
   const showLanguages = variant === "default" || variant === "compact" || variant === "classic";
   const showRepos = variant === "default";
 
