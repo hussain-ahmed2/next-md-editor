@@ -591,7 +591,10 @@ function serializeBlock(block: Block, indentLevel: number = 0): string {
     }
     case "github-stats": {
       const username = (block.props.username as string) ?? "";
-      if (username) text = `![GitHub Stats](/api/github/${username}/stats.svg)`;
+      if (username) {
+        const base = process.env.NEXT_PUBLIC_FRONTEND_URL ?? "";
+        text = `![GitHub Stats](${base}/api/github/${username}/stats.svg)`;
+      }
       break;
     }
     case "badge-group": {
