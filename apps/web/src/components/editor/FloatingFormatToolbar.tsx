@@ -6,6 +6,7 @@ import { useDragOperation } from "@dnd-kit/react";
 import type { RichText, FormatFlags, Block } from "@next-md-editor/types";
 import { getSelectionRichRange, getActiveFormats, toggleRichFormat, applyRichFormat } from "@next-md-editor/markdown";
 import { LinkDialog } from "./LinkDialog";
+import { htmlToMarkdown } from "@/utils/editorShortcuts";
 
 type FormatAction = "bold" | "italic" | "code" | "strikethrough" | "link";
 
@@ -134,20 +135,26 @@ export function FloatingFormatToolbar() {
 		};
 	}, [update]);
 
-	const apply = useCallback((action: FormatAction) => {
-		const bid = blockIdRef.current;
-		if (!bid) return;
+ 	const apply = useCallback((action: FormatAction) => {
+ 		const bid = blockIdRef.current;
+ 		if (!bid) return;
 
-		if (isRichTextRef.current) {
-			if (!rangeRef.current) return;
-			const blocks = useEditorStore.getState().blocks;
-			const block = findBlockById(blocks, bid);
-			if (!block || !Array.isArray(block.props.content)) return;
-			const content = block.props.content as RichText;
-			const { start, end } = rangeRef.current;
+ 		if (isRichTextRef.current) {
+ 			if (!rangeRef.current) return;
+ 			const blocks = useEditorStore.getState().blocks;
+ 			const block = findBlockById(blocks, bid);
+ 			if (!block || !Array.isArray(block.props.content)) return;
+ 			const content = block.props.content as RichText;
+ 			let { start, end } = rangeRef.current;
 
-			let format: FormatFlags;
-			if (action === "link") {
+			// Trim leading/trailing whitespace from the selected range
+			const plainText = content.map((s) => s.text).join("");
+			while (start < end && /\s/.test(plainText[start])) start++;
+			while (end > start && /\s/.test(plainText[end - 1])) end--;
+			if (start >= end) return;
+
+ 			let format: FormatFlags;
+ 			if (action === "link") {
 				const currentUrl = (activeFormats.link as string) || "https://";
 				setLinkDialog({ url: currentUrl });
 				return;
@@ -169,6 +176,10 @@ export function FloatingFormatToolbar() {
 			const el = elementRef.current;
 			if (!el) return;
 			el.focus();
+
+			if (action === "code" || action === "bold" || action === "italic" || action === "strikethrough") {
+				trimSelectionRange();
+			}
 
 			if (action === "code") {
 				const sel = window.getSelection();
@@ -202,12 +213,32 @@ export function FloatingFormatToolbar() {
 				const currentUrl = (activeFormats.link as string) || "https://";
 				setLinkDialog({ url: currentUrl });
 				return;
-			} else if (action === "bold") {
-				document.execCommand("bold");
-			} else if (action === "italic") {
-				document.execCommand("italic");
-			} else if (action === "strikethrough") {
-				document.execCommand("strikeThrough");
+			} else if (action === "bold" || action === "italic" || action === "strikethrough") {
+				const sel = window.getSelection();
+				if (sel && sel.rangeCount) {
+					const codeParent = findAncestorCodeElement(el, sel.anchorNode);
+					if (codeParent) {
+						const wrapper = document.createElement(
+							action === "bold" ? "strong" :
+							action === "italic" ? "em" :
+							"del"
+						);
+						codeParent.parentNode!.insertBefore(wrapper, codeParent);
+						wrapper.appendChild(codeParent);
+						const range = document.createRange();
+						range.setStartAfter(wrapper);
+						range.collapse(true);
+						sel.removeAllRanges();
+						sel.addRange(range);
+						const bid = blockIdRef.current;
+						if (bid) {
+							useEditorStore.getState().updateBlock(bid, { text: htmlToMarkdown(el.innerHTML) });
+						}
+					} else {
+						const cmd = action === "strikethrough" ? "strikeThrough" : action;
+						document.execCommand(cmd);
+					}
+				}
 			}
 		}
 	}, []);
@@ -308,10 +339,10 @@ export function FloatingFormatToolbar() {
 					display: "flex",
 					gap: 1,
 					padding: "4px",
-					background: "var(--bg-surface)",
+					background: "var(--bg-elevated)",
 					border: "1px solid var(--border)",
 					borderRadius: "var(--radius-sm)",
-					boxShadow: "0 4px 20px rgba(0,0,0,0.25)",
+					boxShadow: "var(--shadow-md)",
 					userSelect: "none",
 					pointerEvents: "auto",
 				}}
@@ -367,6 +398,29 @@ export function FloatingFormatToolbar() {
 			)}
 		</div>
 	);
+}
+
+function trimSelectionRange(): void {
+  const sel = window.getSelection();
+  if (!sel || !sel.rangeCount) return;
+  const range = sel.getRangeAt(0);
+  const text = range.toString();
+  if (!text) return;
+
+  const leading = text.length - text.trimStart().length;
+  const trailing = text.length - text.trimEnd().length;
+  if (leading === 0 && trailing === 0) return;
+
+  // Only trim when start and end are in the same text node
+  if (range.startContainer === range.endContainer && range.startContainer.nodeType === Node.TEXT_NODE) {
+    const offset = range.startOffset + leading;
+    const endOffset = range.endOffset - trailing;
+    if (offset >= endOffset) return;
+    range.setStart(range.startContainer, offset);
+    range.setEnd(range.endContainer, endOffset);
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }
 }
 
 function findBlockById(blocks: Block[], id: string): Block | null {

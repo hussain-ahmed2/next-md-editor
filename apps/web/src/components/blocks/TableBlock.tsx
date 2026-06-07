@@ -114,6 +114,7 @@ export function TableBlock({ block }: { block: Block }) {
         // @ts-ignore - ref callback for map
         ref={setCellRef(rIdx, cIdx)}
         contentEditable
+        data-block-id={block.id}
         suppressContentEditableWarning
         onFocus={() => setFocusedCell({ rIdx, cIdx })}
         onBlur={(e) => handleCellBlur(rIdx, cIdx, e.currentTarget.innerHTML)}
@@ -153,7 +154,7 @@ export function TableBlock({ block }: { block: Block }) {
           textAlign: "left",
         }}>
           <thead>
-            <tr style={{ borderBottom: "2px solid var(--border)", background: "rgba(255,255,255,0.02)" }}>
+            <tr style={{ borderBottom: "2px solid var(--border)", background: "var(--bg-elevated)" }}>
               {rows[0]?.map((cell, cIdx) => renderCellContent(0, cIdx, cell, true))}
             </tr>
           </thead>
@@ -165,7 +166,7 @@ export function TableBlock({ block }: { block: Block }) {
                   key={rIdx}
                   style={{
                     borderBottom: "1px solid var(--border-subtle)",
-                    background: rIdx % 2 === 0 ? "rgba(255,255,255,0.01)" : "transparent",
+                    background: rIdx % 2 === 0 ? "var(--bg-hover)" : "transparent",
                   }}
                 >
                   {row.map((cell, cIdx) => renderCellContent(rIdx, cIdx, cell, false))}
@@ -183,7 +184,7 @@ export function TableBlock({ block }: { block: Block }) {
         alignItems: "center",
         flexWrap: "wrap",
         padding: "4px 8px",
-        background: "rgba(255,255,255,0.02)",
+        background: "var(--bg-elevated)",
         border: "1px dashed var(--border)",
         borderRadius: 6,
       }}>

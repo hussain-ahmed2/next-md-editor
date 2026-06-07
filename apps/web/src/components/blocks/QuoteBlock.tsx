@@ -87,7 +87,7 @@ export function QuoteBlock({ block }: { block: Block }) {
         style={{
           width: 4,
           borderRadius: 0,
-          background: "#30363d",
+          background: "var(--border)",
           flexShrink: 0,
           alignSelf: "stretch",
         }}
@@ -95,6 +95,7 @@ export function QuoteBlock({ block }: { block: Block }) {
       <div
         ref={ref}
         contentEditable
+        data-block-id={block.id}
         suppressContentEditableWarning
         onFocus={() => setIsFocused(true)}
         onBlur={handleBlur}
@@ -115,7 +116,7 @@ export function QuoteBlock({ block }: { block: Block }) {
           flex: 1,
           fontSize: "15px",
           lineHeight: 1.6,
-          color: "#8b949e",
+          color: "var(--text-secondary)",
           fontStyle: "normal",
           outline: "none",
           minHeight: "1.6em",

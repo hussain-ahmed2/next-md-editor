@@ -12,17 +12,25 @@ export function htmlToMarkdown(html: string): string {
 
   let text = html;
 
+  // Helper: extract whitespace from formatted content, place it outside markers
+  const wrapTrim = (content: string, marker: string): string => {
+    const leading = content.match(/^\s*/)?.[0] ?? "";
+    const trailing = content.match(/\s*$/)?.[0] ?? "";
+    const inner = content.trim();
+    return inner ? `${leading}${marker}${inner}${marker}${trailing}` : content;
+  };
+
   // 1. Convert bold structures
-  text = text.replace(/<(strong|b)>(.*?)<\/\1>/gi, "**$2**");
+  text = text.replace(/<(strong|b)>(.*?)<\/\1>/gi, (_, _tag, c) => wrapTrim(c, "**"));
 
   // 2. Convert italic structures
-  text = text.replace(/<(em|i)>(.*?)<\/\1>/gi, "*$2*");
+  text = text.replace(/<(em|i)>(.*?)<\/\1>/gi, (_, _tag, c) => wrapTrim(c, "*"));
 
   // 3. Convert strikethrough
-  text = text.replace(/<(del|s|strike)>(.*?)<\/\1>/gi, "~~$2~~");
+  text = text.replace(/<(del|s|strike)>(.*?)<\/\1>/gi, (_, _tag, c) => wrapTrim(c, "~~"));
 
   // 4. Convert inline code blocks
-  text = text.replace(/<code[^>]*>(.*?)<\/code>/gi, "`$1`");
+  text = text.replace(/<code[^>]*>(.*?)<\/code>/gi, (_, c) => wrapTrim(c, "`"));
 
   // 5. Convert hyperlink structures
   text = text.replace(/<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/gi, "[$2]($1)");

@@ -35,21 +35,31 @@ const LIGHT: ThemeColors = {
 };
 
 function useSiteTheme(theme: string = "auto"): ThemeColors {
-  const [prefersLight, setPrefersLight] = useState(() =>
-    typeof window !== "undefined"
-      ? window.matchMedia("(prefers-color-scheme: light)").matches
-      : false,
-  );
+  const getTheme = useCallback(() => {
+    if (theme === "light") return "light";
+    if (theme === "dark") return "dark";
+    const dataTheme = document.documentElement.dataset.theme;
+    if (dataTheme === "light") return "light";
+    if (dataTheme === "dark") return "dark";
+    return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+  }, [theme]);
+
+  const [mode, setMode] = useState<"light" | "dark">(() => {
+    if (typeof window === "undefined") return "dark";
+    return getTheme();
+  });
 
   useEffect(() => {
+    const update = () => setMode(getTheme());
+    update();
     const mq = window.matchMedia("(prefers-color-scheme: light)");
-    const handler = (e: MediaQueryListEvent) => setPrefersLight(e.matches);
-    mq.addEventListener("change", handler);
-    setPrefersLight(mq.matches);
-    return () => mq.removeEventListener("change", handler);
-  }, []);
+    mq.addEventListener("change", update);
+    const observer = new MutationObserver(update);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => { mq.removeEventListener("change", update); observer.disconnect(); };
+  }, [getTheme]);
 
-  return prefersLight ? LIGHT : DARK;
+  return mode === "light" ? LIGHT : DARK;
 }
 
 const VARIANTS = [

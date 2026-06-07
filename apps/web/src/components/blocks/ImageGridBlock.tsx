@@ -108,7 +108,7 @@ export function ImageGridBlock({ block }: { block: Block }) {
         padding: "12px",
         borderRadius: "var(--radius-lg)",
         border: "1px solid var(--border-subtle)",
-        background: "rgba(255, 255, 255, 0.01)",
+        background: "var(--bg-surface)",
         display: "flex",
         flexDirection: "column",
         gap: 12,

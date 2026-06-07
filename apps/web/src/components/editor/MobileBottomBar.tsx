@@ -17,7 +17,7 @@ export function MobileBottomBar() {
         display: "flex",
         justifyContent: "space-around",
         alignItems: "center",
-        boxShadow: "0 -2px 10px rgba(0, 0, 0, 0.05)",
+        boxShadow: "var(--shadow-sm)",
         zIndex: 9999,
         flexShrink: 0,
       }}

@@ -144,6 +144,7 @@ export function HeadingBlock({ block }: { block: Block }) {
       <div
         ref={ref}
         contentEditable
+        data-block-id={block.id}
         suppressContentEditableWarning
         onFocus={() => setIsFocused(true)}
         onBlur={handleBlur}

@@ -88,11 +88,6 @@ export function useEditorPersistence() {
   // Global Undo / Redo keyboard shortcuts
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
-      const activeEl = document.activeElement as HTMLElement | null;
-      if (activeEl && activeEl.contentEditable === "true") {
-        return;
-      }
-
       const isMeta = e.ctrlKey || e.metaKey;
       if (isMeta && e.key.toLowerCase() === "z") {
         e.preventDefault();
