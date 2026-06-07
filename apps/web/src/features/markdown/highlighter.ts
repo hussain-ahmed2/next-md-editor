@@ -9,7 +9,7 @@ marked.use({
       return `<a href="${href}" target="_blank" rel="noopener noreferrer" style="color:#58a6ff;text-decoration:none;font-weight:500;">${text}</a>`;
     },
     codespan({ text }: { text: string }) {
-      return `<code style="background:rgba(110,118,129,0.3);padding:2px 4px;border-radius:4px;font-family:ui-monospace,SFMono-Regular,SF Mono,Menlo,Consolas,monospace;font-size:85%;color:#e6edf3;">${text}</code>`;
+      return `<code style="padding:2px 4px;border-radius:4px;font-family:ui-monospace,SFMono-Regular,SF Mono,Menlo,Consolas,monospace;font-size:85%;">${text}</code>`;
     },
   },
 });

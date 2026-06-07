@@ -308,10 +308,10 @@ export function FloatingFormatToolbar() {
 					display: "flex",
 					gap: 1,
 					padding: "4px",
-					background: "var(--bg-surface)",
+					background: "var(--bg-elevated)",
 					border: "1px solid var(--border)",
 					borderRadius: "var(--radius-sm)",
-					boxShadow: "0 4px 20px rgba(0,0,0,0.25)",
+					boxShadow: "var(--shadow-md)",
 					userSelect: "none",
 					pointerEvents: "auto",
 				}}

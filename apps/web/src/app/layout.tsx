@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import "github-markdown-css/github-markdown.css";
+import { HighlightThemeSync } from "@/components/HighlightThemeSync";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -82,7 +83,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }}
         />
       </head>
-      <body>{children}</body>
+      <body><HighlightThemeSync />{children}</body>
     </html>
   );
 }

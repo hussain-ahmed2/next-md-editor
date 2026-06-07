@@ -29,7 +29,7 @@ export function EditorToolbar() {
           width: 28,
           height: 28,
           borderRadius: 8,
-          background: "linear-gradient(135deg, var(--accent), #238636)",
+          background: "linear-gradient(135deg, var(--accent), var(--accent-hover))",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",

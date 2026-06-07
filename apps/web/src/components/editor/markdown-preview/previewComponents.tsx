@@ -96,7 +96,7 @@ export const getMarkdownComponents = (): Components => {
                   fontSize: 10,
                   fontWeight: 600,
                   textTransform: "uppercase",
-                  color: "var(--color-prettylights-syntax-comment, #8b949e)",
+                  color: "var(--text-muted)",
                   userSelect: "none",
                 }}
               >
@@ -168,11 +168,11 @@ export const getTableComponents = (isImageGrid: boolean, hasHiddenCaptions: bool
               if (!imgEl) return null;
               const p = imgEl.props as any;
               return (
-                <div key={ci} style={{ display: "flex", flexDirection: "column", borderRadius: 6, border: "1px solid #30363d", overflow: "hidden" }}>
+                <div key={ci} style={{ display: "flex", flexDirection: "column", borderRadius: 6, border: "1px solid var(--border)", overflow: "hidden" }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={p.src} alt={p.alt || "Image"} style={{ width: "100%", aspectRatio: "16/10", objectFit: "cover", display: "block" }} />
                   {!hasHiddenCaptions && (
-                    <div style={{ padding: "8px 10px", fontSize: 11, fontWeight: 600, color: "#8b949e", textAlign: "center", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", background: "rgba(255,255,255,0.03)", borderTop: "1px solid #30363d" }}>
+                    <div style={{ padding: "8px 10px", fontSize: 11, fontWeight: 600, color: "var(--text-secondary)", textAlign: "center", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", background: "var(--bg-elevated)", borderTop: "1px solid var(--border)" }}>
                       {p.alt || "Untitled Image"}
                     </div>
                   )}

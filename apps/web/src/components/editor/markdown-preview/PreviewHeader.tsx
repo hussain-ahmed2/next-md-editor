@@ -21,8 +21,8 @@ export function PreviewHeader({
         alignItems: "center",
         justifyContent: "space-between",
         padding: "8px 14px",
-        background: "#161b22",
-        borderBottom: "1px solid #30363d",
+        background: "var(--bg-surface)",
+        borderBottom: "1px solid var(--border)",
         height: 44,
         flexShrink: 0,
       }}
@@ -33,22 +33,22 @@ export function PreviewHeader({
           alignItems: "center",
           gap: 8,
           fontSize: 12.5,
-          color: "#c9d1d9",
+          color: "var(--text-primary)",
           fontWeight: 500,
         }}
       >
-        <FileText size={14} style={{ color: "#7d8590" }} />
+        <FileText size={14} style={{ color: "var(--text-muted)" }} />
         <span>document.md</span>
-        <span style={{ color: "#484f58", userSelect: "none" }}>|</span>
-        <span style={{ fontSize: 11.5, color: "#8b949e" }}>{blockCount} blocks</span>
+        <span style={{ color: "var(--border)", userSelect: "none" }}>|</span>
+        <span style={{ fontSize: 11.5, color: "var(--text-secondary)" }}>{blockCount} blocks</span>
       </div>
       <div
         style={{
           display: "flex",
-          border: "1px solid #30363d",
+          border: "1px solid var(--border)",
           borderRadius: 6,
           overflow: "hidden",
-          background: "#0d1117",
+          background: "var(--bg-base)",
           padding: 2,
         }}
       >
@@ -62,8 +62,8 @@ export function PreviewHeader({
               fontWeight: 600,
               borderRadius: 4,
               border: "none",
-              background: activeTab === tab ? "#21262d" : "transparent",
-              color: activeTab === tab ? "#c9d1d9" : "#8b949e",
+              background: activeTab === tab ? "var(--bg-elevated)" : "transparent",
+              color: activeTab === tab ? "var(--text-primary)" : "var(--text-muted)",
               cursor: "pointer",
               transition: "all 0.1s ease",
               textTransform: "capitalize",

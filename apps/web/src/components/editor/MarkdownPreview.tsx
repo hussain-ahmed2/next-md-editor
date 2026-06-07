@@ -85,8 +85,8 @@ export function MarkdownPreview({ scrollRef }: { scrollRef?: React.Ref<HTMLDivEl
 					flex: 1,
 					display: "flex",
 					flexDirection: "column",
-					background: "#0d1117",
-					border: "1px solid #30363d",
+					background: "var(--bg-base)",
+					border: "1px solid var(--border)",
 					borderRadius: 6,
 					overflow: "hidden",
 				}}
@@ -100,7 +100,7 @@ export function MarkdownPreview({ scrollRef }: { scrollRef?: React.Ref<HTMLDivEl
 								alignItems: "center",
 								justifyContent: "center",
 								height: "100%",
-								color: "#8b949e",
+								color: "var(--text-muted)",
 								fontSize: 13,
 								fontStyle: "italic",
 								textAlign: "center",
@@ -116,7 +116,7 @@ export function MarkdownPreview({ scrollRef }: { scrollRef?: React.Ref<HTMLDivEl
 								fontSize: 13,
 								lineHeight: 1.6,
 								fontFamily: FONT_MONO,
-								color: "#c9d1d9",
+								color: "var(--text-primary)",
 								whiteSpace: "pre-wrap",
 								wordBreak: "break-word",
 							}}

@@ -35,9 +35,9 @@ export function CodeBlock({ block }: { block: Block }) {
   return (
     <div style={{
       borderRadius: 6,
-      border: "1px solid #30363d",
+      border: "1px solid var(--border)",
       overflow: "hidden",
-      background: "#161b22",
+      background: "var(--bg-surface)",
     }}>
       {/* Code header */}
       <div style={{
@@ -45,8 +45,8 @@ export function CodeBlock({ block }: { block: Block }) {
         alignItems: "center",
         justifyContent: "space-between",
         padding: "6px 12px",
-        borderBottom: "1px solid #30363d",
-        background: "rgba(0,0,0,0.15)",
+        borderBottom: "1px solid var(--border)",
+        background: "var(--bg-elevated)",
       }}>
         <div style={{ display: "flex", gap: 6 }}>
           <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#f87171", display: "inline-block" }} />
@@ -90,7 +90,7 @@ export function CodeBlock({ block }: { block: Block }) {
             fontFamily: "var(--font-mono)",
             fontSize: 13,
             lineHeight: 1.7,
-            color: "#e6edf3",
+            color: "var(--text-primary)",
             whiteSpace: "pre-wrap",
             wordBreak: "break-word",
             boxSizing: "border-box",

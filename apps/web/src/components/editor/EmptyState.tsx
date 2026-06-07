@@ -34,7 +34,7 @@ export function EmptyState() {
           height: 64,
           borderRadius: 20,
           background: "var(--accent-muted)",
-          border: "1px solid rgba(108,126,255,0.2)",
+          border: "1px solid var(--border)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -77,7 +77,7 @@ export function EmptyState() {
               padding: "16px 12px",
               borderRadius: "var(--radius-md)",
               border: "1px solid var(--border-subtle)",
-              background: "rgba(255,255,255,0.01)",
+              background: "var(--bg-surface)",
               cursor: "pointer",
               textAlign: "center",
               transition: "all 0.15s ease",
@@ -87,7 +87,7 @@ export function EmptyState() {
               e.currentTarget.style.borderColor = "var(--border)";
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.background = "rgba(255,255,255,0.01)";
+              e.currentTarget.style.background = "var(--bg-surface)";
               e.currentTarget.style.borderColor = "var(--border-subtle)";
             }}
           >

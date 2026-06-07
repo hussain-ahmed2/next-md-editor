@@ -155,7 +155,7 @@ export function ImageBlock({ block }: { block: Block }) {
             borderRadius: "var(--radius-md)",
             overflow: "hidden",
             border: "1px solid var(--border-subtle)",
-            background: "rgba(255, 255, 255, 0.02)",
+            background: "var(--bg-surface)",
           }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -188,7 +188,7 @@ export function ImageBlock({ block }: { block: Block }) {
               display: "flex",
               alignItems: "center",
               gap: 4,
-              boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
+              boxShadow: "var(--shadow-sm)",
               backdropFilter: "blur(4px)",
               fontFamily: "var(--font-sans)",
             }}
