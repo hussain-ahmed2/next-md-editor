@@ -63,9 +63,8 @@
   list-style: revert;
 }
 
-/* Inline code inside .markdown-body: override base.css background to match GitHub */
+/* Inline code inside .markdown-body: match GitHub — github-markdown-css handles background per theme */
 .markdown-body :not(pre) > code {
-  background: var(--bgColor-muted, #eff1f3);
   border-radius: 6px;
   padding: 0.2em 0.4em;
 }
