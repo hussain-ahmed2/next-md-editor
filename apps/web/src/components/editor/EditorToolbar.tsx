@@ -7,6 +7,7 @@ import { ModeToggle } from "./toolbar/ModeToggle";
 import { TemplateMenu } from "./toolbar/TemplateMenu";
 import { FileActions } from "./toolbar/FileActions";
 import { Divider } from "./toolbar/ToolbarButton";
+import { ThemeToggle } from "./toolbar/ThemeToggle";
 
 export function EditorToolbar() {
   const saveStatus = useUIStore((s) => s.saveStatus);
@@ -73,6 +74,7 @@ export function EditorToolbar() {
         <Divider />
         <TemplateMenu />
         <ModeToggle />
+        <ThemeToggle />
         <FileActions />
       </div>
     </header>
