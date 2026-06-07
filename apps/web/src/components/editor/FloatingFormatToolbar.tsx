@@ -134,20 +134,26 @@ export function FloatingFormatToolbar() {
 		};
 	}, [update]);
 
-	const apply = useCallback((action: FormatAction) => {
-		const bid = blockIdRef.current;
-		if (!bid) return;
+ 	const apply = useCallback((action: FormatAction) => {
+ 		const bid = blockIdRef.current;
+ 		if (!bid) return;
 
-		if (isRichTextRef.current) {
-			if (!rangeRef.current) return;
-			const blocks = useEditorStore.getState().blocks;
-			const block = findBlockById(blocks, bid);
-			if (!block || !Array.isArray(block.props.content)) return;
-			const content = block.props.content as RichText;
-			const { start, end } = rangeRef.current;
+ 		if (isRichTextRef.current) {
+ 			if (!rangeRef.current) return;
+ 			const blocks = useEditorStore.getState().blocks;
+ 			const block = findBlockById(blocks, bid);
+ 			if (!block || !Array.isArray(block.props.content)) return;
+ 			const content = block.props.content as RichText;
+ 			let { start, end } = rangeRef.current;
 
-			let format: FormatFlags;
-			if (action === "link") {
+			// Trim leading/trailing whitespace from the selected range
+			const plainText = content.map((s) => s.text).join("");
+			while (start < end && /\s/.test(plainText[start])) start++;
+			while (end > start && /\s/.test(plainText[end - 1])) end--;
+			if (start >= end) return;
+
+ 			let format: FormatFlags;
+ 			if (action === "link") {
 				const currentUrl = (activeFormats.link as string) || "https://";
 				setLinkDialog({ url: currentUrl });
 				return;
@@ -169,6 +175,10 @@ export function FloatingFormatToolbar() {
 			const el = elementRef.current;
 			if (!el) return;
 			el.focus();
+
+			if (action === "code" || action === "bold" || action === "italic" || action === "strikethrough") {
+				trimSelectionRange();
+			}
 
 			if (action === "code") {
 				const sel = window.getSelection();
@@ -367,6 +377,29 @@ export function FloatingFormatToolbar() {
 			)}
 		</div>
 	);
+}
+
+function trimSelectionRange(): void {
+  const sel = window.getSelection();
+  if (!sel || !sel.rangeCount) return;
+  const range = sel.getRangeAt(0);
+  const text = range.toString();
+  if (!text) return;
+
+  const leading = text.length - text.trimStart().length;
+  const trailing = text.length - text.trimEnd().length;
+  if (leading === 0 && trailing === 0) return;
+
+  // Only trim when start and end are in the same text node
+  if (range.startContainer === range.endContainer && range.startContainer.nodeType === Node.TEXT_NODE) {
+    const offset = range.startOffset + leading;
+    const endOffset = range.endOffset - trailing;
+    if (offset >= endOffset) return;
+    range.setStart(range.startContainer, offset);
+    range.setEnd(range.endContainer, endOffset);
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }
 }
 
 function findBlockById(blocks: Block[], id: string): Block | null {
