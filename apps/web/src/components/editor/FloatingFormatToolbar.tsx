@@ -6,6 +6,7 @@ import { useDragOperation } from "@dnd-kit/react";
 import type { RichText, FormatFlags, Block } from "@next-md-editor/types";
 import { getSelectionRichRange, getActiveFormats, toggleRichFormat, applyRichFormat } from "@next-md-editor/markdown";
 import { LinkDialog } from "./LinkDialog";
+import { htmlToMarkdown } from "@/utils/editorShortcuts";
 
 type FormatAction = "bold" | "italic" | "code" | "strikethrough" | "link";
 
@@ -212,12 +213,32 @@ export function FloatingFormatToolbar() {
 				const currentUrl = (activeFormats.link as string) || "https://";
 				setLinkDialog({ url: currentUrl });
 				return;
-			} else if (action === "bold") {
-				document.execCommand("bold");
-			} else if (action === "italic") {
-				document.execCommand("italic");
-			} else if (action === "strikethrough") {
-				document.execCommand("strikeThrough");
+			} else if (action === "bold" || action === "italic" || action === "strikethrough") {
+				const sel = window.getSelection();
+				if (sel && sel.rangeCount) {
+					const codeParent = findAncestorCodeElement(el, sel.anchorNode);
+					if (codeParent) {
+						const wrapper = document.createElement(
+							action === "bold" ? "strong" :
+							action === "italic" ? "em" :
+							"del"
+						);
+						codeParent.parentNode!.insertBefore(wrapper, codeParent);
+						wrapper.appendChild(codeParent);
+						const range = document.createRange();
+						range.setStartAfter(wrapper);
+						range.collapse(true);
+						sel.removeAllRanges();
+						sel.addRange(range);
+						const bid = blockIdRef.current;
+						if (bid) {
+							useEditorStore.getState().updateBlock(bid, { text: htmlToMarkdown(el.innerHTML) });
+						}
+					} else {
+						const cmd = action === "strikethrough" ? "strikeThrough" : action;
+						document.execCommand(cmd);
+					}
+				}
 			}
 		}
 	}, []);
