@@ -21,6 +21,7 @@
     "turbo": "latest"
   },
   "dependencies": {
+    "@microsoft/clarity": "^1.0.2",
     "@tailwindcss/postcss": "^4.3.0",
     "rehype-raw": "^7.0.0"
   }

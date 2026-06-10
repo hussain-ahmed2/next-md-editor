@@ -4,6 +4,7 @@ import "./globals.css";
 import "github-markdown-css/github-markdown-dark.css";
 import { HighlightThemeSync } from "@/components/HighlightThemeSync";
 import { GithubMarkdownThemeSync } from "@/components/GithubMarkdownThemeSync";
+import { ClarityProvider } from "@/lib/clarity-provider";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -84,7 +85,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }}
         />
       </head>
-      <body><HighlightThemeSync /><GithubMarkdownThemeSync />{children}</body>
+      <body>
+        <ClarityProvider>
+          <HighlightThemeSync />
+          <GithubMarkdownThemeSync />
+          {children}
+        </ClarityProvider>
+      </body>
     </html>
   );
 }
