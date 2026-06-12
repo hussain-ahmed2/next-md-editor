@@ -1,254 +1,239 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { useEditorStore } from "@next-md-editor/editor-core";
-import type { Block } from "@next-md-editor/types";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { v4 as uuidv4 } from "uuid";
-import { renderInlineMarkdown } from "@/features/markdown/highlighter";
+import { useEditorStore } from "@next-md-editor/editor-core";
+import { getDomTextOffset, restoreDomRange } from "@next-md-editor/markdown";
+import type { Block } from "@next-md-editor/types";
 import { useBlockFocus } from "@/hooks/useBlockFocus";
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-/**
- * Display pass only — walk every <li>, run renderInlineMarkdown on its
- * inline text so the editor shows **bold** → <strong>bold</strong>.
- * Nested ul/ol are detached and re-attached so innerHTML replacement
- * doesn't blow them away.
- *
- * We NEVER read back from a DOM that has passed through here.
- * saveToStore() always re-reads the live DOM via normalizeListForStorage.
- */
-function renderListMarkdown(container: HTMLDivElement) {
-	const lis = container.querySelectorAll("li");
-	lis.forEach((li) => {
-		const subLists: ChildNode[] = [];
-		let rawHtml = "";
-
-		Array.from(li.childNodes).forEach((node) => {
-			const el = node as Element;
-			if (el.nodeName === "UL" || el.nodeName === "OL") {
-				subLists.push(node);
-			} else {
-				rawHtml += node.nodeType === Node.TEXT_NODE ? (node.textContent ?? "") : (el.outerHTML ?? "");
-			}
-		});
-
-		li.innerHTML = hasHtmlTags(rawHtml) ? rawHtml : renderInlineMarkdown(rawHtml);
-		subLists.forEach((sl) => li.appendChild(sl));
-	});
-}
-
-/** Quick check: does the string contain any HTML tag? */
-function hasHtmlTags(s: string): boolean {
-	return /<[a-zA-Z\/][^>]*>/.test(s);
-}
-
-/**
- * Save pass — clone the container and collect each <li>'s inline content
- * preserving real HTML tags (<strong>, <em>, <code>, <a> etc.) exactly
- * as the browser rendered them. Nested lists are preserved untouched.
- *
- * The serializer's inlineHtmlToMarkdown() will later convert these tags
- * back to **bold**, *italic*, `code` etc. for the markdown output,
- * which ReactMarkdown then parses natively.
- */
-function normalizeListForStorage(container: HTMLDivElement): string {
-	const clone = container.cloneNode(true) as HTMLDivElement;
-	const lis = clone.querySelectorAll("li");
-
-	lis.forEach((li) => {
-		const subLists: Node[] = [];
-		let inlineHtml = "";
-
-		Array.from(li.childNodes).forEach((node) => {
-			const el = node as Element;
-			if (el.nodeName === "UL" || el.nodeName === "OL") {
-				subLists.push(node.cloneNode(true));
-			} else {
-				inlineHtml += node.nodeType === Node.TEXT_NODE ? (node.textContent ?? "") : (el.outerHTML ?? "");
-			}
-		});
-
-		li.innerHTML = inlineHtml;
-		subLists.forEach((sl) => li.appendChild(sl));
-	});
-
-	return clone.innerHTML;
-}
-
-// ── Component ─────────────────────────────────────────────────────────────────
+import { itemsToHtml, htmlToItems, defaultItems } from "./listBlockUtils";
+import type { ListItemData } from "./listBlockUtils";
 
 export function ListBlock({ block }: { block: Block }) {
-	const blocks = useEditorStore((s) => s.blocks);
-	const addBlock = useEditorStore((s) => s.addBlock);
-	const removeBlocks = useEditorStore((s) => s.removeBlocks);
-	const updateBlock = useEditorStore((s) => s.updateBlock);
-	const selectBlock = useEditorStore((s) => s.selectBlock);
-	const selectedBlockIds = useEditorStore((s) => s.selectedBlockIds);
+  const blocks = useEditorStore((s) => s.blocks);
+  const addBlock = useEditorStore((s) => s.addBlock);
+  const removeBlocks = useEditorStore((s) => s.removeBlocks);
+  const updateBlock = useEditorStore((s) => s.updateBlock);
+  const selectBlock = useEditorStore((s) => s.selectBlock);
+  const selectedBlockIds = useEditorStore((s) => s.selectedBlockIds);
 
-	const myBlock = blocks.find((b) => b.id === block.id) ?? block;
-	const styleType = (myBlock.props.style as "bullet" | "numbered") ?? "bullet";
-	const html =
-		(myBlock.props.html as string) ??
-		(styleType === "bullet" ? "<ul><li>Item 1</li></ul>" : "<ol><li>Item 1</li></ol>");
+  const myBlock = blocks.find((b) => b.id === block.id) ?? block;
+  const styleType = (myBlock.props.style as "bullet" | "numbered") ?? "bullet";
 
-	const [isFocused, setIsFocused] = useState(false);
-	const ref = useRef<HTMLDivElement>(null);
+  const items: ListItemData[] = useMemo(() => {
+    if (Array.isArray(myBlock.props.items)) {
+      return myBlock.props.items as ListItemData[];
+    }
+    const html = (myBlock.props.html as string) ?? "";
+    if (html) {
+      const parsed = htmlToItems(html);
+      if (parsed.length > 0) return parsed;
+    }
+    return defaultItems();
+  }, [myBlock.props.items, myBlock.props.html]);
 
-	const lastStoredRef = useRef<string>(html);
+  const [isFocused, setIsFocused] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const isSyncingRef = useRef(false);
 
-	// ── Focus sync ──────────────────────────────────────────────────────────────
-	useBlockFocus(ref, block.id, selectedBlockIds);
+  useBlockFocus(ref, block.id, selectedBlockIds);
 
-	// ── DOM sync ────────────────────────────────────────────────────────────────
-	useEffect(() => {
-		const el = ref.current;
-		if (!el) return;
+  // Sync store changes to DOM
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
 
-		const isFocusedNow = document.activeElement === el;
-		const isEmpty = el.innerHTML.trim() === "" || el.innerHTML === "<br>";
+    const newHtml = itemsToHtml(items, styleType);
+    if (el.innerHTML === newHtml) return;
 
-		if (isFocusedNow && !isEmpty) {
-			if (html !== lastStoredRef.current) {
-				el.innerHTML = html;
-				renderListMarkdown(el);
-				lastStoredRef.current = html;
-			}
-		} else {
-			el.innerHTML = html;
-			renderListMarkdown(el);
-			lastStoredRef.current = html;
-		}
-	}, [html]);
+    const isFocusedNow = document.activeElement === el;
+    let savedStart = -1;
+    let savedEnd = -1;
+    if (isFocusedNow) {
+      const sel = window.getSelection();
+      if (sel && sel.rangeCount > 0 && sel.anchorNode && sel.focusNode && el.contains(sel.anchorNode) && el.contains(sel.focusNode)) {
+        savedStart = getDomTextOffset(el, sel.anchorNode, sel.anchorOffset);
+        savedEnd = getDomTextOffset(el, sel.focusNode, sel.focusOffset);
+      }
+    }
 
-	// ── Save to store ───────────────────────────────────────────────────────────
-	function saveToStore() {
-		if (!ref.current) return;
-		const normalized = normalizeListForStorage(ref.current);
-		lastStoredRef.current = normalized;
-		updateBlock(block.id, { html: normalized });
-	}
+    isSyncingRef.current = true;
+    el.innerHTML = newHtml;
+    isSyncingRef.current = false;
 
-	const handleInput = () => saveToStore();
+    if (savedStart >= 0) {
+      const totalLen = el.textContent?.length ?? 0;
+      restoreDomRange(el, Math.min(savedStart, totalLen), Math.min(savedEnd, totalLen));
+    }
+  }, [items, styleType]);
 
-	const handleBlur = () => {
-		setIsFocused(false);
-		saveToStore();
-	};
+  const saveToStore = () => {
+    const el = ref.current;
+    if (!el) return;
+    const newItems = htmlToItems(el.innerHTML);
+    if (newItems.length === 0) return;
+    if (areItemsEqual(newItems, items)) return;
+    updateBlock(block.id, { items: newItems, html: undefined });
+  };
 
-	// ── Keyboard ────────────────────────────────────────────────────────────────
-	const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-		if (e.key === "Tab") {
-			e.preventDefault();
-			document.execCommand(e.shiftKey ? "outdent" : "indent", false);
-			saveToStore();
-			return;
-		}
+  const handleInput = () => {
+    if (isSyncingRef.current) return;
+    saveToStore();
+  };
 
-		if (e.key === "Enter") {
-			const selection = window.getSelection();
-			if (selection && selection.rangeCount > 0) {
-				const range = selection.getRangeAt(0);
-				let node: Node | null = range.startContainer;
+  const handleBlur = () => {
+    setIsFocused(false);
+    saveToStore();
+  };
 
-				while (node && node !== ref.current) {
-					if (node.nodeName === "LI") {
-						const li = node as HTMLLIElement;
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === "Enter") {
+      const sel = window.getSelection();
+      if (!sel || !sel.rangeCount) return;
 
-						if (li.textContent?.trim() === "") {
-							const allLis = ref.current?.querySelectorAll("li") ?? [];
-							const isLastLi = allLis[allLis.length - 1] === li;
-							const isNested = li.parentNode?.parentNode !== ref.current;
+      const range = sel.getRangeAt(0);
+      let node: Node | null = range.startContainer;
 
-							if (isNested) {
-								e.preventDefault();
-								document.execCommand("outdent", false);
-								saveToStore();
-								return;
-							}
+      while (node && node !== ref.current) {
+        if (node.nodeName === "LI") {
+          const li = node as HTMLLIElement;
 
-							if (allLis.length > 1 && isLastLi) {
-								e.preventDefault();
-								li.parentNode?.removeChild(li);
-								saveToStore();
+          if (li.textContent?.trim() === "") {
+            const allLis = ref.current?.querySelectorAll("li") ?? [];
+            const isNested = li.parentNode?.parentNode !== ref.current;
+            const isLastLi = allLis[allLis.length - 1] === li;
 
-								const nextBlockId = uuidv4();
-								const curIndex = blocks.findIndex((b) => b.id === block.id);
-								addBlock({ id: nextBlockId, type: "paragraph", props: { text: "" } }, curIndex + 1);
-								setTimeout(() => selectBlock(nextBlockId), 10);
-								return;
-							}
-						}
-						break;
-					}
-					node = node.parentNode;
-				}
-			}
-		}
+            if (isNested) {
+              e.preventDefault();
+              document.execCommand("outdent");
+              saveToStore();
+              return;
+            }
 
-		if (e.key === "Backspace") {
-			const selection = window.getSelection();
-			if (selection && selection.rangeCount > 0) {
-				const range = selection.getRangeAt(0);
-				let node: Node | null = range.startContainer;
+            if (allLis.length > 1 && isLastLi) {
+              e.preventDefault();
+              const newItems = htmlToItems(ref.current!.innerHTML);
+              const reduced = newItems.slice(0, -1);
+              updateBlock(block.id, {
+                items: reduced.length > 0 ? reduced : defaultItems(),
+                html: undefined,
+              });
 
-				while (node && node !== ref.current) {
-					if (node.nodeName === "LI") {
-						const li = node as HTMLLIElement;
-						const preRange = range.cloneRange();
-						preRange.selectNodeContents(li);
-						preRange.setEnd(range.startContainer, range.startOffset);
-						const isAtStart = preRange.toString().length === 0;
-						const isNested = li.parentNode?.parentNode !== ref.current;
+              const nextBlockId = uuidv4();
+              const curIndex = blocks.findIndex((b) => b.id === block.id);
+              addBlock({ id: nextBlockId, type: "paragraph", props: { content: [] } }, curIndex + 1);
+              setTimeout(() => selectBlock(nextBlockId), 10);
+              return;
+            }
+          }
+          break;
+        }
+        node = node.parentNode;
+      }
+    }
 
-						if (isAtStart && isNested) {
-							e.preventDefault();
-							document.execCommand("outdent", false);
-							saveToStore();
-							return;
-						}
-						break;
-					}
-					node = node.parentNode;
-				}
-			}
+    if (e.key === "Tab") {
+      e.preventDefault();
+      document.execCommand(e.shiftKey ? "outdent" : "indent");
+      saveToStore();
+      return;
+    }
 
-			if ((ref.current?.textContent?.trim() ?? "") === "") {
-				e.preventDefault();
-				removeBlocks([block.id]);
-				return;
-			}
-		}
-	};
+    if (e.key === "Backspace") {
+      const sel = window.getSelection();
+      if (sel && sel.rangeCount > 0) {
+        const range = sel.getRangeAt(0);
+        let node: Node | null = range.startContainer;
 
-	return (
-		<div
-			style={{
-				position: "relative",
-				padding: "4px 8px",
-				borderRadius: "var(--radius-md)",
-				background: isFocused ? "var(--bg-elevated)" : "transparent",
-				transition: "background 0.2s",
-			}}
-		>
-			<div
-				ref={ref}
-				contentEditable
-				suppressContentEditableWarning
-				data-block-id={block.id}
-				onFocus={() => setIsFocused(true)}
-				onBlur={handleBlur}
-				onInput={handleInput}
-				onKeyDown={handleKeyDown}
-				style={{
-					outline: "none",
-					fontSize: "15px",
-					lineHeight: "1.7",
-					color: "var(--text-primary)",
-					minHeight: "24px",
-				}}
-				className="rich-list-content"
-			/>
-		</div>
-	);
+        while (node && node !== ref.current) {
+          if (node.nodeName === "LI") {
+            const li = node as HTMLLIElement;
+            const preRange = range.cloneRange();
+            preRange.selectNodeContents(li);
+            preRange.setEnd(range.startContainer, range.startOffset);
+            const isAtStart = preRange.toString().length === 0;
+            const isNested = li.parentNode?.parentNode !== ref.current;
+
+            if (isAtStart && isNested) {
+              e.preventDefault();
+              document.execCommand("outdent");
+              saveToStore();
+              return;
+            }
+            break;
+          }
+          node = node.parentNode;
+        }
+      }
+
+      if ((ref.current?.textContent?.trim() ?? "") === "") {
+        e.preventDefault();
+        removeBlocks([block.id]);
+        return;
+      }
+    }
+  };
+
+  return (
+    <div
+      style={{
+        position: "relative",
+        padding: "4px 8px",
+        borderRadius: "var(--radius-md)",
+        background: isFocused ? "var(--bg-elevated)" : "transparent",
+        transition: "background 0.2s",
+      }}
+    >
+      <div
+        ref={ref}
+        contentEditable
+        suppressContentEditableWarning
+        data-block-id={block.id}
+        onFocus={() => setIsFocused(true)}
+        onBlur={handleBlur}
+        onInput={handleInput}
+        onKeyDown={handleKeyDown}
+        style={{
+          outline: "none",
+          fontSize: "15px",
+          lineHeight: "1.7",
+          color: "var(--text-primary)",
+          minHeight: "24px",
+        }}
+        className="rich-list-content"
+      />
+    </div>
+  );
+}
+
+function areItemsEqual(a: ListItemData[], b: ListItemData[]): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (!areListItemsEqual(a[i], b[i])) return false;
+  }
+  return true;
+}
+
+function areListItemsEqual(a: ListItemData, b: ListItemData): boolean {
+  if (!areRichTextEqual(a.content, b.content)) return false;
+  const ac = a.children;
+  const bc = b.children;
+  if (!ac !== !bc) return false;
+  if (ac && bc) return areItemsEqual(ac, bc);
+  return true;
+}
+
+function areRichTextEqual(a: import("@next-md-editor/types").RichText, b: import("@next-md-editor/types").RichText): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    const sa = a[i];
+    const sb = b[i];
+    if (sa.text !== sb.text) return false;
+    if (sa.bold !== sb.bold) return false;
+    if (sa.italic !== sb.italic) return false;
+    if (sa.code !== sb.code) return false;
+    if (sa.strikethrough !== sb.strikethrough) return false;
+    if (sa.link !== sb.link) return false;
+  }
+  return true;
 }

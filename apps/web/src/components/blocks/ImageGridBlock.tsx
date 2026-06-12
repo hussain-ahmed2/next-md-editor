@@ -20,7 +20,6 @@ export function ImageGridBlock({ block }: { block: Block }) {
 
   const images = (block.props.images as GridImage[]) ?? DEFAULT_IMAGES;
   const cols = (block.props.cols as number) ?? 2;
-  const showCaptions = (block.props.showCaptions as boolean) ?? true;
 
   const [editingImageId, setEditingImageId] = useState<string | null>(null);
   const [inputUrl, setInputUrl] = useState("");
@@ -33,7 +32,6 @@ export function ImageGridBlock({ block }: { block: Block }) {
     updateBlock(block.id, {
       cols: newCols,
       images,
-      showCaptions,
     });
   };
 
@@ -46,7 +44,6 @@ export function ImageGridBlock({ block }: { block: Block }) {
     updateBlock(block.id, {
       cols,
       images: [...images, newImage],
-      showCaptions,
     });
   };
 
@@ -56,7 +53,6 @@ export function ImageGridBlock({ block }: { block: Block }) {
     updateBlock(block.id, {
       cols,
       images: filtered.length ? filtered : DEFAULT_IMAGES,
-      showCaptions,
     });
   };
 
@@ -76,7 +72,6 @@ export function ImageGridBlock({ block }: { block: Block }) {
     updateBlock(block.id, {
       cols,
       images: updated,
-      showCaptions,
     });
     setEditingImageId(null);
   };
@@ -116,15 +111,7 @@ export function ImageGridBlock({ block }: { block: Block }) {
     >
       <ImageGridControls
         cols={cols}
-        showCaptions={showCaptions}
         onUpdateCols={handleUpdateCols}
-        onUpdateShowCaptions={(show) =>
-          updateBlock(block.id, {
-            cols,
-            images,
-            showCaptions: show,
-          })
-        }
         onAddImage={handleAddImage}
       />
 
@@ -153,7 +140,6 @@ export function ImageGridBlock({ block }: { block: Block }) {
           <ImageGridItem
             key={img.id}
             img={img}
-            showCaptions={showCaptions}
             onStartEdit={handleStartEdit}
             onRemove={handleRemoveImage}
           />

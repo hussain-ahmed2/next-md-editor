@@ -5,17 +5,13 @@ import { LayoutGrid, Plus } from "lucide-react";
 
 interface ImageGridControlsProps {
   cols: number;
-  showCaptions: boolean;
   onUpdateCols: (cols: number) => void;
-  onUpdateShowCaptions: (show: boolean) => void;
   onAddImage: () => void;
 }
 
 export function ImageGridControls({
   cols,
-  showCaptions,
   onUpdateCols,
-  onUpdateShowCaptions,
   onAddImage,
 }: ImageGridControlsProps) {
   return (
@@ -52,44 +48,6 @@ export function ImageGridControls({
         className="image-grid-actions"
         style={{ display: "flex", alignItems: "center", gap: 16 }}
       >
-        {/* Show Captions Toggle */}
-        <label
-          className="image-grid-captions-label"
-          onClick={(e) => e.stopPropagation()}
-          onMouseDown={(e) => e.stopPropagation()}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-            cursor: "pointer",
-            userSelect: "none",
-          }}
-        >
-          <input
-            type="checkbox"
-            checked={showCaptions}
-            onChange={(e) => onUpdateShowCaptions(e.target.checked)}
-            onClick={(e) => e.stopPropagation()}
-            onMouseDown={(e) => e.stopPropagation()}
-            style={{
-              width: 14,
-              height: 14,
-              accentColor: "var(--accent)",
-              cursor: "pointer",
-            }}
-          />
-          <span
-            style={{
-              fontSize: 10,
-              fontWeight: 700,
-              color: "var(--text-muted)",
-              fontFamily: "var(--font-mono)",
-            }}
-          >
-            CAPTIONS
-          </span>
-        </label>
-
         {/* Custom Column Stepper */}
         <div
           className="image-grid-cols-wrapper"

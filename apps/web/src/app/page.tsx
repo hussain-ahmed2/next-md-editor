@@ -116,10 +116,7 @@ export default function EditorPage() {
         >
           <SourceEditor />
           {previewOpen && (
-            <>
-              <ResizeBar pane="preview" />
-              <MarkdownPreview />
-            </>
+            <MarkdownPreview />
           )}
         </div>
       ) : (
@@ -144,10 +141,7 @@ export default function EditorPage() {
                 <ResizeBar pane="sidebar" />
                 <EditorCanvas scrollRef={canvasScrollRef} />
                 {previewOpen && (
-                  <>
-                    <ResizeBar pane="preview" />
-                    <MarkdownPreview scrollRef={previewScrollRef} />
-                  </>
+                  <MarkdownPreview scrollRef={previewScrollRef} />
                 )}
               </>
             )}

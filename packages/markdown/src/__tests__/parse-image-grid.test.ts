@@ -26,7 +26,6 @@ describe("parseMarkdown — image grid", () => {
     expect(grid).toBeDefined();
     expect(grid.type).toBe("image-grid");
     expect(grid.props.cols).toBe(3);
-    expect(grid.props.showCaptions).toBe(true);
     expect(grid.props.images).toHaveLength(3);
     expect(grid.props.images[0].url).toBe(FLUID);
     expect(grid.props.images[0].alt).toBe("Fluid abstract shapes");
@@ -34,35 +33,6 @@ describe("parseMarkdown — image grid", () => {
     expect(grid.props.images[1].alt).toBe("Glossy 3D composition");
     expect(grid.props.images[2].url).toBe(ARCH);
     expect(grid.props.images[2].alt).toBe("Architectural patterns");
-  });
-
-  it("respects <!-- captions:hidden -->", () => {
-    const md = `<!-- image-grid -->
-<!-- captions:hidden -->
-
-| &nbsp; | &nbsp; |
-| --- | --- |
-| ![A](${FLUID}) | ![B](${GLOSSY}) |`;
-
-    const blocks = parseMarkdown(md);
-    const grid = findImageGrid(blocks);
-
-    expect(grid).toBeDefined();
-    expect(grid.props.showCaptions).toBe(false);
-  });
-
-  it("defaults showCaptions to true when no captions comment", () => {
-    const md = `<!-- image-grid -->
-
-| &nbsp; |
-| --- |
-| ![A](${FLUID}) |`;
-
-    const blocks = parseMarkdown(md);
-    const grid = findImageGrid(blocks);
-
-    expect(grid).toBeDefined();
-    expect(grid.props.showCaptions).toBe(true);
   });
 
   it("parses a 2-col grid with 4 images (2 rows)", () => {
@@ -180,30 +150,11 @@ describe("parseMarkdown — image grid", () => {
     expect(grid).toBeDefined();
     expect(grid.type).toBe("image-grid");
     expect(grid.props.cols).toBe(2);
-    expect(grid.props.showCaptions).toBe(true);
     expect(grid.props.images).toHaveLength(2);
     expect(grid.props.images[0].url).toBe(FLUID);
     expect(grid.props.images[0].alt).toBe("Fluid abstract shapes");
     expect(grid.props.images[1].url).toBe(GLOSSY);
     expect(grid.props.images[1].alt).toBe("Glossy 3D composition");
-  });
-
-  it("parses new-style format with captions hidden", () => {
-    const md = `<!-- image-grid -->
-<!-- captions:hidden -->
-
-<table>
-<tr>
-<td><img src="${FLUID}" alt="A" /></td>
-</tr>
-</table>`;
-
-    const blocks = parseMarkdown(md);
-    const grid = findImageGrid(blocks);
-
-    expect(grid).toBeDefined();
-    expect(grid.props.showCaptions).toBe(false);
-    expect(grid.props.images).toHaveLength(1);
   });
 
   it("parses new-style 5 images in 3 cols", () => {

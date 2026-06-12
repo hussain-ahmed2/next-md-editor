@@ -6,14 +6,12 @@ import type { GridImage } from "./types";
 
 interface ImageGridItemProps {
   img: GridImage;
-  showCaptions: boolean;
   onStartEdit: (img: GridImage, e: React.MouseEvent) => void;
   onRemove: (id: string, e: React.MouseEvent) => void;
 }
 
 export function ImageGridItem({
   img,
-  showCaptions,
   onStartEdit,
   onRemove,
 }: ImageGridItemProps) {
@@ -27,15 +25,14 @@ export function ImageGridItem({
         background: "var(--bg-surface)",
         display: "flex",
         flexDirection: "column",
-        aspectRatio: showCaptions ? undefined : "16/10",
+        aspectRatio: "16/10",
       }}
     >
       <div
         style={{
           position: "relative",
           width: "100%",
-          aspectRatio: showCaptions ? "16/10" : "100%",
-          height: showCaptions ? undefined : "100%",
+          height: "100%",
           overflow: "hidden",
         }}
       >
@@ -106,25 +103,7 @@ export function ImageGridItem({
         </div>
       </div>
 
-      {/* Bottom Caption Label Text */}
-      {showCaptions && (
-        <div
-          style={{
-            padding: "8px 10px",
-            background: "var(--bg-elevated)",
-            borderTop: "1px solid var(--border-subtle)",
-            fontSize: 11,
-            fontWeight: 600,
-            color: "var(--text-secondary)",
-            textAlign: "center",
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-          }}
-        >
-          {img.alt || "Untitled Image"}
-        </div>
-      )}
+
     </div>
   );
 }

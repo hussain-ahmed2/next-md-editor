@@ -20,30 +20,22 @@ function makeGrid(overrides: Partial<Block["props"]> = {}): Block {
         { id: "i2", url: GLOSSY, alt: "Glossy 3D composition" },
         { id: "i3", url: ARCH, alt: "Architectural patterns" },
       ],
-      showCaptions: true,
       ...overrides,
     },
   };
 }
 
 describe("serializeMarkdown — image grid", () => {
-  it("serializes a basic 3-col grid with captions visible", () => {
+  it("serializes a basic 3-col grid", () => {
     const md = serializeMarkdown([makeGrid()]);
 
     expect(hasImageGridMarker(md)).toBe(true);
-    expect(md).not.toContain("<!-- captions:hidden -->");
     expect(md).toContain('<img src="' + FLUID + '" alt="Fluid abstract shapes" />');
     expect(md).toContain('<img src="' + GLOSSY + '" alt="Glossy 3D composition" />');
     expect(md).toContain('<img src="' + ARCH + '" alt="Architectural patterns" />');
     expect(md).toContain("<table>");
     expect(md).toContain("<tr>");
     expect(md).toContain("<td>");
-  });
-
-  it("adds <!-- captions:hidden --> when showCaptions is false", () => {
-    const md = serializeMarkdown([makeGrid({ showCaptions: false })]);
-
-    expect(md).toContain("<!-- captions:hidden -->");
   });
 
   it("serializes a 2-col grid", () => {
