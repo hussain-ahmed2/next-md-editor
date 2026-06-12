@@ -130,7 +130,7 @@ export const getMarkdownComponents = (): Components => {
   };
 };
 
-export const getTableComponents = (isImageGrid: boolean, hasHiddenCaptions: boolean): Components => {
+export const getTableComponents = (isImageGrid: boolean): Components => {
   if (!isImageGrid) {
     return {};
   }
@@ -171,11 +171,6 @@ export const getTableComponents = (isImageGrid: boolean, hasHiddenCaptions: bool
                 <div key={ci} style={{ display: "flex", flexDirection: "column", borderRadius: 6, border: "1px solid var(--border)", overflow: "hidden" }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={p.src} alt={p.alt || "Image"} style={{ width: "100%", aspectRatio: "16/10", objectFit: "cover", display: "block" }} />
-                  {!hasHiddenCaptions && (
-                    <div style={{ padding: "8px 10px", fontSize: 11, fontWeight: 600, color: "var(--text-secondary)", textAlign: "center", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", background: "var(--bg-elevated)", borderTop: "1px solid var(--border)" }}>
-                      {p.alt || "Untitled Image"}
-                    </div>
-                  )}
                 </div>
               );
             })

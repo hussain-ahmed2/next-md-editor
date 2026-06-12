@@ -69,7 +69,6 @@ export function parseMarkdown(markdown: string): Block[] {
     if (node.type === "html") {
       const val = ((node as any).value ?? "").trim();
       if (val === "<!-- image-grid -->") {
-        let showCaptions = true;
         const images: { id: string; url: string; alt: string }[] = [];
         let consumed = 0;
 
@@ -77,12 +76,6 @@ export function parseMarkdown(markdown: string): Block[] {
           const next = tree.children[j];
           if (next.type !== "html") break;
           const html = ((next as any).value ?? "").trim();
-
-          if (html === "<!-- captions:hidden -->") {
-            showCaptions = false;
-            consumed++;
-            continue;
-          }
 
           const imgRegex = /<img\s+[^>]*src="([^"]+)"[^>]*\/?>/gi;
           let match: RegExpExecArray | null;
@@ -121,7 +114,6 @@ export function parseMarkdown(markdown: string): Block[] {
             props: {
               cols,
               images,
-              showCaptions,
             },
           });
           skipCount = consumed;
@@ -144,36 +136,74 @@ export function parseMarkdown(markdown: string): Block[] {
       if (val === "<!-- badge-group -->") {
         const badges: any[] = [];
         let consumed = 0;
+        let alignment = "left";
 
-        for (let j = i + 1; j < tree.children.length; j++) {
-          const next = tree.children[j];
-          if (next.type !== "paragraph") break;
-
-          const images = (next as any).children?.filter(
-            (c: any) => c.type === "image" && typeof c.url === "string" && isBadgeUrl(c.url),
-          ) ?? [];
-          if (images.length === 0) break;
-
-          for (const img of images) {
-            const badgeUrl = img.url;
-            const badgeUrlPart = badgeUrl.replace("https://img.shields.io/badge/", "");
-            const [labelColorPart, queryString = ""] = badgeUrlPart.split("?");
-            const parts = labelColorPart.split("-");
-            const color = parts.pop() ?? "000000";
-            const text = decodeURIComponent(parts.join("-").replace(/--/g, " "));
-
-            const logoMatch = queryString.match(/logo=([^&]+)/i);
-            const logo = logoMatch ? decodeURIComponent(logoMatch[1]) : "";
-
-            badges.push({
-              id: Math.random().toString(36).substring(7),
-              text,
-              color,
-              logo,
-              url: badgeUrl,
-            });
+        // Check for HTML format with alignment: <div style="text-align:center"> with <img> tags
+        const nextHtml = i + 1 < tree.children.length ? tree.children[i + 1] : null;
+        if (nextHtml?.type === "html") {
+          const htmlVal = ((nextHtml as any).value ?? "").trim();
+          const alignMatch = htmlVal.match(/text-align:\s*(center|right)/i);
+          if (alignMatch) {
+            alignment = alignMatch[1].toLowerCase();
+            const imgRegex = /<img\s+[^>]*src="([^"]+)"[^>]*alt="([^"]*)"/gi;
+            let match;
+            while ((match = imgRegex.exec(htmlVal)) !== null) {
+              const url = match[1];
+              const text = match[2];
+              let color = "000000";
+              let logo = "";
+              const badgeUrlPart = url.replace("https://img.shields.io/badge/", "");
+              if (badgeUrlPart !== url) {
+                const [labelColorPart, queryString = ""] = badgeUrlPart.split("?");
+                const parts = labelColorPart.split("-");
+                color = parts.pop() ?? "000000";
+                const logoMatch = queryString.match(/logo=([^&]+)/i);
+                logo = logoMatch ? decodeURIComponent(logoMatch[1]) : "";
+              }
+              badges.push({
+                id: Math.random().toString(36).substring(7),
+                text,
+                color,
+                logo,
+                url,
+              });
+            }
+            if (badges.length > 0) consumed = 1;
           }
-          consumed++;
+        }
+
+        // Fall back to old paragraph-based parsing
+        if (badges.length === 0) {
+          for (let j = i + 1; j < tree.children.length; j++) {
+            const next = tree.children[j];
+            if (next.type !== "paragraph") break;
+
+            const images = (next as any).children?.filter(
+              (c: any) => c.type === "image" && typeof c.url === "string" && isBadgeUrl(c.url),
+            ) ?? [];
+            if (images.length === 0) break;
+
+            for (const img of images) {
+              const badgeUrl = img.url;
+              const badgeUrlPart = badgeUrl.replace("https://img.shields.io/badge/", "");
+              const [labelColorPart, queryString = ""] = badgeUrlPart.split("?");
+              const parts = labelColorPart.split("-");
+              const color = parts.pop() ?? "000000";
+              const text = decodeURIComponent(parts.join("-").replace(/--/g, " "));
+
+              const logoMatch = queryString.match(/logo=([^&]+)/i);
+              const logo = logoMatch ? decodeURIComponent(logoMatch[1]) : "";
+
+              badges.push({
+                id: Math.random().toString(36).substring(7),
+                text,
+                color,
+                logo,
+                url: badgeUrl,
+              });
+            }
+            consumed++;
+          }
         }
 
         if (badges.length > 0) {
@@ -182,7 +212,7 @@ export function parseMarkdown(markdown: string): Block[] {
             type: "badge-group",
             props: {
               badges,
-              alignment: "left",
+              alignment,
             },
           });
           skipCount = consumed;
@@ -268,8 +298,7 @@ export function parseMarkdown(markdown: string): Block[] {
               type: "image-grid",
               props: {
                 cols: images.length,
-                images,
-                showCaptions: true,
+            images,
               },
             });
           }
@@ -358,18 +387,12 @@ function nodeToBlock(node: any, markdown: string): Block | null {
       if (!parsedRows.length) return null;
 
       if (isImageGrid(parsedRows)) {
-        let showCaptions = true;
-        if (node.position) {
-          const beforeTable = markdown.slice(Math.max(0, node.position.start.offset - 500), node.position.start.offset);
-          if (beforeTable.includes("<!-- captions:hidden -->")) showCaptions = false;
-        }
         return {
           id: uuidv4(),
           type: "image-grid",
           props: {
             cols: Math.max(1, ...parsedRows.map((r: string[]) => r.length)),
             images: extractGridImages(parsedRows),
-            showCaptions,
           },
         };
       }
@@ -474,7 +497,7 @@ function isImageGrid(rows: string[][]): boolean {
   for (const row of rows) {
     for (const cell of row) {
       const c = cell.trim();
-      if (!c || c === "&nbsp;" || c === "<!-- image-grid -->" || c === "<!-- captions:hidden -->") continue;
+      if (!c || c === "&nbsp;" || c === "<!-- image-grid -->") continue;
       nonEmptyCount++;
       if (/^!\[.*?\]\(.*?\)$/.test(c) || /<img\s+[^>]*src=/i.test(c)) imageCount++;
     }
@@ -487,7 +510,6 @@ function extractGridImages(rows: string[][]): { id: string; url: string; alt: st
   for (const row of rows) {
     for (const cell of row) {
       const c = cell.trim();
-      if (c === "<!-- captions:hidden -->") continue;
       const md = c.match(/^!\[(.*?)\]\((.*?)\)$/);
       if (md) {
         images.push({ id: Math.random().toString(36).substring(7), url: md[2], alt: md[1] });
@@ -510,6 +532,26 @@ function escapeHtml(str: string): string {
 }
 
 // ── Serialize: blocks → markdown ─────────────────────────────────────────────
+
+function serializeListItem(
+  item: Record<string, unknown>,
+  prefix: string,
+  indent: number = 0,
+): string {
+  const content = item.content as RichText | undefined;
+  const children = item.children as Array<Record<string, unknown>> | undefined;
+  const inlineMd = content ? richTextToMarkdown(content) : "";
+  const pad = "  ".repeat(indent);
+  let result = pad + prefix + " " + inlineMd;
+  if (children && children.length > 0) {
+    result +=
+      "\n" +
+      children
+        .map((child) => serializeListItem(child, prefix, indent + 1))
+        .join("\n");
+  }
+  return result;
+}
 
 function serializeBlock(block: Block, indentLevel: number = 0): string {
   const indent = "  ".repeat(indentLevel);
@@ -562,19 +604,25 @@ function serializeBlock(block: Block, indentLevel: number = 0): string {
     }
     case "bullet-list":
     case "numbered-list": {
-      const html = (block.props.html as string) ?? "";
-      text = htmlToMarkdown(html);
+      const items = block.props.items as Array<Record<string, unknown>> | undefined;
+      if (items && items.length > 0) {
+        const ordered = block.type === "numbered-list";
+        text = items
+          .map((item) => serializeListItem(item, ordered ? "1." : "-"))
+          .join("\n");
+      } else {
+        const html = (block.props.html as string) ?? "";
+        text = htmlToMarkdown(html);
+      }
       break;
     }
     case "image-grid": {
       const images = (block.props.images as any[]) ?? [];
       const cols = (block.props.cols as number) ?? 2;
       if (!images.length) break;
-      const showCaptions = (block.props.showCaptions as boolean) ?? true;
 
       const parts: string[] = [];
       parts.push("<!-- image-grid -->");
-      if (!showCaptions) parts.push("<!-- captions:hidden -->");
 
       const imageRows: string[][] = [];
       let cur: string[] = [];
@@ -610,22 +658,32 @@ function serializeBlock(block: Block, indentLevel: number = 0): string {
     }
     case "badge-group": {
       const badges = (block.props.badges as any[]) ?? [];
+      const alignment = (block.props.alignment as string) ?? "left";
       if (!badges.length) break;
       const parts: string[] = [];
       parts.push("<!-- badge-group -->");
-      const badgeLines = badges
-        .map(
-          (badge) => {
-            if (badge.url) {
-              return `![image](${badge.url})`;
-            }
-            const color = badge.color.replace("#", "");
-            const logo = badge.logo ? `&logo=${encodeURIComponent(badge.logo)}&logoColor=white` : "";
-            return `![image](https://img.shields.io/badge/${encodeURIComponent(badge.text.replace(/-/g, "--"))}-${color}?style=for-the-badge${logo})`;
-          },
-        )
-        .join("\n");
-      parts.push(badgeLines);
+
+      const badgeImgs = badges.map((badge: any) => {
+        if (badge.url) return `![image](${badge.url})`;
+        const color = badge.color.replace("#", "");
+        const logo = badge.logo ? `&logo=${encodeURIComponent(badge.logo)}&logoColor=white` : "";
+        return `![image](https://img.shields.io/badge/${encodeURIComponent(badge.text.replace(/-/g, "--"))}-${color}?style=for-the-badge${logo})`;
+      });
+
+      if (alignment === "left") {
+        parts.push(badgeImgs.join("\n"));
+      } else {
+        const htmlImgs = badges.map((badge: any) => {
+          if (badge.url) {
+            return `<img src="${badge.url}" alt="${badge.text}" />`;
+          }
+          const color = badge.color.replace("#", "");
+          const logo = badge.logo ? `&logo=${encodeURIComponent(badge.logo)}&logoColor=white` : "";
+          return `<img src="https://img.shields.io/badge/${encodeURIComponent(badge.text.replace(/-/g, "--"))}-${color}?style=for-the-badge${logo}" alt="${badge.text}" />`;
+        }).join("\n");
+        parts.push(`<div style="text-align:${alignment}">\n${htmlImgs}\n</div>`);
+      }
+
       text = parts.join("\n\n");
       break;
     }

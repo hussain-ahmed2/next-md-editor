@@ -198,6 +198,7 @@ export function FloatingFormatToolbar() {
 						newRange.collapse(true);
 						sel.removeAllRanges();
 						sel.addRange(newRange);
+						el.dispatchEvent(new Event("input", { bubbles: true }));
 					}
 				} else {
 					range.deleteContents();
@@ -208,6 +209,7 @@ export function FloatingFormatToolbar() {
 					range.collapse(true);
 					sel.removeAllRanges();
 					sel.addRange(range);
+					el.dispatchEvent(new Event("input", { bubbles: true }));
 				}
 			} else if (action === "link") {
 				const currentUrl = (activeFormats.link as string) || "https://";
@@ -234,6 +236,7 @@ export function FloatingFormatToolbar() {
 						if (bid) {
 							useEditorStore.getState().updateBlock(bid, { text: htmlToMarkdown(el.innerHTML) });
 						}
+						el.dispatchEvent(new Event("input", { bubbles: true }));
 					} else {
 						const cmd = action === "strikethrough" ? "strikeThrough" : action;
 						document.execCommand(cmd);
@@ -281,6 +284,7 @@ export function FloatingFormatToolbar() {
 				range.collapse(true);
 				sel.removeAllRanges();
 				sel.addRange(range);
+				el.dispatchEvent(new Event("input", { bubbles: true }));
 			}
 			setLinkDialog(null);
 			setVisible(false);

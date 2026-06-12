@@ -48,41 +48,6 @@ describe("image grid round-trip", () => {
     expect(grid.props.images[2].alt).toBe("Architectural patterns");
   });
 
-  it("preserves showCaptions through round-trip", () => {
-    const original = `<!-- image-grid -->
-<!-- captions:hidden -->
-
-| &nbsp; | &nbsp; |
-| --- | --- |
-| ![A](${FLUID}) | ![B](${GLOSSY}) |`;
-
-    const blocks = parseMarkdown(original);
-    const serialized = serializeMarkdown(blocks);
-    const parsed = parseMarkdown(serialized);
-    const grid = parsed.find((b) => b.type === "image-grid");
-
-    expect(grid).toBeDefined();
-    expect(grid.props.showCaptions).toBe(false);
-  });
-
-  it("preserves captions visible by default through round-trip", () => {
-    const original = `<!-- image-grid -->
-
-| &nbsp; |
-| --- |
-| ![A](${FLUID}) |`;
-
-    const blocks = parseMarkdown(original);
-    const serialized = serializeMarkdown(blocks);
-
-    expect(serialized).not.toContain("<!-- captions:hidden -->");
-
-    const parsed = parseMarkdown(serialized);
-    const grid = parsed.find((b) => b.type === "image-grid");
-    expect(grid.props.showCaptions).toBe(true);
-  });
-
-
   it("round-trips 5 images in 3 cols correctly", () => {
     const original = `<!-- image-grid -->
 

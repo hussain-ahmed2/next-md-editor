@@ -5,7 +5,6 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
 import { useEditorStore } from "@next-md-editor/editor-core";
-import { useUIStore } from "@/store/uiStore";
 import { serializeToMarkdown } from "@/features/markdown/serializer";
 import { PreviewHeader } from "./markdown-preview/PreviewHeader";
 import { FONT_MONO, getMarkdownComponents, getTableComponents } from "./markdown-preview/previewComponents";
@@ -23,28 +22,23 @@ export function MarkdownPreview({ scrollRef }: { scrollRef?: React.Ref<HTMLDivEl
 	}, [markdown]);
 
 	const [activeTab, setActiveTab] = useState<"preview" | "raw">("preview");
-	const isMobile = useUIStore((s) => s.isMobile);
-	const previewWidth = useUIStore((s) => s.previewWidth);
-	const width = isMobile ? undefined : (previewWidth ?? 360);
 
 	const isImageGrid = debouncedMarkdown.includes("<!-- image-grid -->");
-	const hasHiddenCaptions = debouncedMarkdown.includes("<!-- captions:hidden -->");
 
 	const markdownComponents = useMemo(() => getMarkdownComponents(), []);
 	const tableComponents = useMemo(
-		() => getTableComponents(isImageGrid, hasHiddenCaptions),
-		[isImageGrid, hasHiddenCaptions],
+		() => getTableComponents(isImageGrid),
+		[isImageGrid],
 	);
 
 	return (
 		<aside
 			style={{
-				width,
+				flex: 1,
 				background: "var(--bg-surface)",
 				borderLeft: "1px solid var(--border-subtle)",
 				display: "flex",
 				flexDirection: "column",
-				flexShrink: 0,
 				overflow: "hidden",
 				padding: "16px",
 				gap: 12,

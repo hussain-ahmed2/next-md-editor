@@ -102,13 +102,13 @@ export function initRegistry() {
   BlockRegistry.register({
     type: "bullet-list",
     component: ListBlock,
-    defaultProps: { style: "bullet", html: "<ul><li>Item 1</li></ul>" },
+    defaultProps: { style: "bullet", items: [{ content: [{ text: "Item 1" }] }] },
   });
 
   BlockRegistry.register({
     type: "numbered-list",
     component: ListBlock,
-    defaultProps: { style: "numbered", html: "<ol><li>Item 1</li></ol>" },
+    defaultProps: { style: "numbered", items: [{ content: [{ text: "Item 1" }] }] },
   });
 
   BlockRegistry.register({
