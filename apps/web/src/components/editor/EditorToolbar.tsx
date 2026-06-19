@@ -1,20 +1,23 @@
 "use client";
 
-import { CheckCheck, Loader2 } from "lucide-react";
+import { useCallback, useState } from "react";
+import { CheckCheck, Loader2, ListTree } from "lucide-react";
 import { useUIStore } from "@/store/uiStore";
 import { useEditorStore } from "@next-md-editor/editor-core";
 import { UndoRedoButtons } from "./toolbar/UndoRedoButtons";
 import { ModeToggle } from "./toolbar/ModeToggle";
 import { TemplateMenu } from "./toolbar/TemplateMenu";
 import { FileActions } from "./toolbar/FileActions";
-import { Divider } from "./toolbar/ToolbarButton";
+import { Divider, ToolbarButton } from "./toolbar/ToolbarButton";
 import { ThemeToggle } from "./toolbar/ThemeToggle";
 import { getDocStats } from "@/features/document-stats";
+import { TableOfContents } from "./TableOfContents";
 
 export function EditorToolbar() {
   const saveStatus = useUIStore((s) => s.saveStatus);
   const blocks = useEditorStore((s) => s.blocks);
   const stats = getDocStats(blocks);
+  const [tocOpen, setTocOpen] = useState(false);
 
   return (
     <header className="toolbar-header" style={{
@@ -86,6 +89,55 @@ export function EditorToolbar() {
         <Divider />
         <TemplateMenu />
         <ModeToggle />
+        <div style={{ position: "relative" }}>
+          <ToolbarButton
+            onClick={() => setTocOpen((o) => !o)}
+            tooltip="Table of contents"
+          >
+            <ListTree size={14} />
+          </ToolbarButton>
+          {tocOpen && (
+            <>
+              <div
+                style={{
+                  position: "fixed",
+                  inset: 0,
+                  zIndex: 99,
+                }}
+                onClick={() => setTocOpen(false)}
+              />
+              <div
+                style={{
+                  position: "absolute",
+                  top: "calc(100% + 4px)",
+                  right: 0,
+                  zIndex: 100,
+                  width: 240,
+                  maxHeight: 360,
+                  overflow: "auto",
+                  background: "var(--bg-elevated)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "var(--radius-md)",
+                  boxShadow: "var(--shadow-lg)",
+                }}
+              >
+                <div
+                  style={{
+                    padding: "8px 16px 4px",
+                    fontSize: 10,
+                    fontWeight: 700,
+                    color: "var(--text-muted)",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.08em",
+                  }}
+                >
+                  Table of Contents
+                </div>
+                <TableOfContents onClose={() => setTocOpen(false)} />
+              </div>
+            </>
+          )}
+        </div>
         <ThemeToggle />
         <FileActions />
       </div>
