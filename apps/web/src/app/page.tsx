@@ -6,10 +6,9 @@ import { EditorCanvas } from "@/components/editor/EditorCanvas";
 import { SourceEditor } from "@/components/editor/SourceEditor";
 import { MarkdownPreview } from "@/components/editor/MarkdownPreview";
 import { useCallback, useEffect, useState } from "react";
+import { flushSync } from "react-dom";
 import { DragDropProvider, DragOverlay, DragStartEvent } from "@dnd-kit/react";
 import { useUIStore } from "@/store/uiStore";
-import { useEditorStore, BlockRegistry } from "@next-md-editor/editor-core";
-import { v4 as uuidv4 } from "uuid";
 
 // Custom hooks
 import { useEditorPersistence } from "@/hooks/useEditorPersistence";
@@ -39,6 +38,7 @@ export default function EditorPage() {
   const setIsMobile = useUIStore((s) => s.setIsMobile);
   const mobileTab = useUIStore((s) => s.mobileTab);
   const previewOpen = useUIStore((s) => s.previewOpen);
+  const previewRatio = useUIStore((s) => s.previewRatio);
   const editorMode = useUIStore((s) => s.editorMode);
   const isResizingSidebar = useUIStore((s) => s.isResizingSidebar);
   const isResizingPreview = useUIStore((s) => s.isResizingPreview);
@@ -46,27 +46,24 @@ export default function EditorPage() {
   // Initialize and run persistence side effects
   useEditorPersistence();
 
-  const addBlock = useEditorStore((s) => s.addBlock);
   const setMobileTab = useUIStore((s) => s.setMobileTab);
 
   // Only two things needed from the hook now
-  const { sensors, handleDragEnd } = useDragAndDrop();
+  const { sensors, handleDragEnd, setPendingMobileDragType } = useDragAndDrop();
 
   const handleDragStart = useCallback(
     (event: DragStartEvent) => {
       if (!isMobile) return;
       const source = event.operation.source;
       if (!source?.data?.isSidebarItem) return;
-      const type = source.data.type as string;
-      const def = BlockRegistry.get(type);
-      addBlock({
-        id: uuidv4(),
-        type,
-        props: { ...(def?.defaultProps ?? {}) },
+      // Store the type in a ref so handleDragEnd can read it after the source is destroyed
+      setPendingMobileDragType(source.data.type as string);
+      // flushSync prevents the click handler from also firing (duplicate block)
+      flushSync(() => {
+        setMobileTab("editor");
       });
-      setMobileTab("editor");
     },
-    [isMobile, addBlock, setMobileTab],
+    [isMobile, setMobileTab, setPendingMobileDragType],
   );
 
   const { refA: canvasScrollRef, refB: previewScrollRef } = useSynchronizedScroll();
@@ -136,11 +133,29 @@ export default function EditorPage() {
             position: "relative",
           }}
         >
-          <SourceEditor />
-          {previewOpen && (
+          <div
+            style={{
+              flex: `${Math.round((1 - previewRatio) * 100)} 1 0`,
+              display: "flex",
+              overflow: "hidden",
+              minWidth: 0,
+            }}
+          >
+            <SourceEditor />
+          </div>
+          {!isMobile && previewOpen && (
             <>
               <ResizeBar pane="preview" />
-              <MarkdownPreview />
+              <div
+                style={{
+                  flex: `${Math.round(previewRatio * 100)} 1 0`,
+                  display: "flex",
+                  overflow: "hidden",
+                  minWidth: 0,
+                }}
+              >
+                <MarkdownPreview />
+              </div>
             </>
           )}
         </div>

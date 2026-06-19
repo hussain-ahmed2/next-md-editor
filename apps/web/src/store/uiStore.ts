@@ -90,7 +90,9 @@ export const useUIStore = create<UIState>((set, get) => ({
     const parent = (mouseDownEvent.target as HTMLElement).parentElement;
     if (!parent) return;
     const parentWidth = parent.getBoundingClientRect().width;
-    const remainingWidth = parentWidth - get().sidebarWidth - 16;
+    const isSourceMode = get().editorMode === "source";
+    const hasSidebar = !isSourceMode && !get().isMobile;
+    const remainingWidth = parentWidth - (hasSidebar ? get().sidebarWidth : 0) - 16;
 
     const doResize = (mouseMoveEvent: MouseEvent) => {
       const deltaX = mouseMoveEvent.clientX - startX;
