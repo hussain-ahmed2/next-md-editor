@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 import { useEditorStore, BlockRegistry } from "@next-md-editor/editor-core";
 import { v4 as uuidv4 } from "uuid";
 import { DragEndEvent, DragDropManager } from "@dnd-kit/react";
@@ -21,15 +21,76 @@ export function useDragAndDrop() {
   const addBlock = useEditorStore((s) => s.addBlock);
   const selectedBlockIds = useEditorStore((s) => s.selectedBlockIds);
 
+  // Carries the sidebar block type across the tab switch on mobile.
+  // onDragStart stores the type here, then flushSync removes the sidebar.
+  // onDragEnd reads from here since the original drag source is gone.
+  const pendingMobileDragType = useRef<string | null>(null);
+
+  const setPendingMobileDragType = useCallback((type: string | null) => {
+    pendingMobileDragType.current = type;
+  }, []);
+
   const handleDragEnd = useCallback(
     (event: DragEndEvent, manager?: DragDropManager) => {
       const { operation, canceled } = event;
       const source = operation.source;
       const target = operation.target;
 
+      // ── Mobile sidebar drag (source destroyed by tab switch) ─────────────
+      if (pendingMobileDragType.current) {
+        const type = pendingMobileDragType.current;
+        pendingMobileDragType.current = null;
+        if (canceled) return;
+
+        const def = BlockRegistry.get(type);
+        const newBlock = {
+          id: uuidv4(),
+          type,
+          props: { ...(def?.defaultProps ?? {}) },
+        };
+
+        if (!target) {
+          addBlock(newBlock);
+          return;
+        }
+
+        const cursorY = operation.position.current.y;
+        const targetId = target.id as string;
+        let insertIdx = blocks.length;
+
+        if (targetId === CANVAS_ROOT_ID) {
+          if (blocks.length > 0) {
+            for (let i = 0; i < blocks.length; i++) {
+              const d = manager?.registry.droppables.get(blocks[i].id);
+              const rect = d?.shape?.boundingRectangle ?? d?.element?.getBoundingClientRect();
+              if (rect && cursorY < rect.top + rect.height / 2) {
+                insertIdx = i;
+                break;
+              }
+            }
+          } else {
+            insertIdx = 0;
+          }
+        } else if (targetId.startsWith("placeholder-") && isSortable(target)) {
+          insertIdx = target.index;
+        } else {
+          const idx = blocks.findIndex((b) => b.id === targetId);
+          if (idx !== -1) {
+            insertIdx = idx;
+            const rect = target.shape?.boundingRectangle ?? target.element?.getBoundingClientRect();
+            if (rect) {
+              if (cursorY > rect.top + rect.height / 2) insertIdx++;
+            }
+          }
+        }
+
+        addBlock(newBlock, insertIdx);
+        return;
+      }
+
       if (!source || canceled) return;
 
-      // ── Sidebar → canvas drop ─────────────────────────────────────────────
+      // ── Desktop sidebar → canvas drop ────────────────────────────────────
       if (source.data?.isSidebarItem === true) {
         if (!target) return;
 
@@ -95,5 +156,5 @@ export function useDragAndDrop() {
     [blocks, addBlock, moveBlocks, selectedBlockIds],
   );
 
-  return { sensors: SENSORS, handleDragEnd };
+  return { sensors: SENSORS, handleDragEnd, setPendingMobileDragType };
 }

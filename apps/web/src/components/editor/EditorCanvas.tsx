@@ -1,6 +1,7 @@
 "use client";
 
 import { useEditorStore } from "@next-md-editor/editor-core";
+import { useUIStore } from "@/store/uiStore";
 import { BlockRenderer } from "./BlockRenderer";
 import { useDroppable, useDragOperation, useDragDropMonitor, useDragDropManager } from "@dnd-kit/react";
 import type { DragOverEvent, DragEndEvent } from "@dnd-kit/react";
@@ -14,6 +15,8 @@ export const CANVAS_ROOT_ID = "canvas-root";
 
 export function EditorCanvas({ scrollRef }: { scrollRef?: React.Ref<HTMLDivElement> }) {
   const blocks = useEditorStore((s) => s.blocks);
+  const previewRatio = useUIStore((s) => s.previewRatio);
+  const isMobile = useUIStore((s) => s.isMobile);
   const manager = useDragDropManager();
 
   // Keep a stable ref so the memoized monitor handlers always see current blocks
@@ -121,12 +124,12 @@ export function EditorCanvas({ scrollRef }: { scrollRef?: React.Ref<HTMLDivEleme
       ref={setRef}
       className="editor-canvas-container"
       style={{
-        flex: 1,
+        flex: `${Math.round((1 - previewRatio) * 100)} 1 0`,
         overflow: "auto",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        padding: "60px 48px",
+        padding: isMobile ? "32px 16px" : "60px 48px",
         background: "var(--bg-base)",
       }}
     >

@@ -92,7 +92,7 @@ export function GithubStatsBlock({ block }: { block: Block }) {
   const [stats, setStats] = useState<ComputedStats | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [editing, setEditing] = useState(false);
+  const [editing, setEditing] = useState(!username);
   const [inputUsername, setInputUsername] = useState(username);
 
   useEffect(() => {

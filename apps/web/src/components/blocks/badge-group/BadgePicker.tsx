@@ -79,6 +79,7 @@ export function BadgePicker({
         right: 0,
         zIndex: 100,
         width: 320,
+        maxWidth: "calc(100vw - 32px)",
         maxHeight: 400,
         background: "var(--bg-elevated)",
         border: "1px solid var(--border)",

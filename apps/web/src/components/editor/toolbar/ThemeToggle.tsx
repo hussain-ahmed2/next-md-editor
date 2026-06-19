@@ -2,29 +2,17 @@
 
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
+import { ToolbarButton } from "./ToolbarButton";
 
 export function ThemeToggle() {
   const { theme, toggle } = useTheme();
 
   return (
-    <button
+    <ToolbarButton
       onClick={toggle}
-      title={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        width: 30,
-        height: 30,
-        borderRadius: "var(--radius-sm)",
-        border: "1px solid var(--border)",
-        background: "transparent",
-        color: "var(--text-secondary)",
-        cursor: "pointer",
-        transition: "all 0.15s ease",
-      }}
+      tooltip={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
     >
-      {theme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
-    </button>
+      {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
+    </ToolbarButton>
   );
 }

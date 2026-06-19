@@ -13,7 +13,7 @@ export function EditorToolbar() {
   const saveStatus = useUIStore((s) => s.saveStatus);
 
   return (
-    <header style={{
+    <header className="toolbar-header" style={{
       display: "flex",
       alignItems: "center",
       justifyContent: "space-between",
@@ -38,7 +38,7 @@ export function EditorToolbar() {
           color: "#fff",
           boxShadow: "0 2px 8px var(--accent-glow)",
         }}>M</div>
-        <span style={{ fontWeight: 700, fontSize: 15, color: "var(--text-primary)", letterSpacing: "-0.01em" }}>
+        <span className="app-name" style={{ fontWeight: 700, fontSize: 15, color: "var(--text-primary)", letterSpacing: "-0.01em" }}>
           next-md-editor
         </span>
       </div>

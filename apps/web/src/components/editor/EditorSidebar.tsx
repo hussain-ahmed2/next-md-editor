@@ -115,6 +115,7 @@ function DraggableSidebarItem({ b, handleAdd }: { b: SidebarBlock; handleAdd: (t
 			isSidebarItem: true,
 			type: b.type,
 			label: b.label,
+			icon: b.icon,
 		},
 	});
 

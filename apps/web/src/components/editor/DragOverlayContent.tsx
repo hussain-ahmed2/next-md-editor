@@ -15,24 +15,62 @@ export function DragOverlayContent() {
 
   // ── Sidebar item overlay ──────────────────────────────────────────────────
   if (source.data?.isSidebarItem === true) {
+    const label = source.data.label as string;
+    const icon = source.data.icon as React.ReactNode;
     return (
       <div
         style={{
-          padding: "8px 16px",
-          background: "var(--accent)",
-          color: "white",
-          borderRadius: "var(--radius-md)",
-          fontSize: 13,
-          fontWeight: 600,
-          boxShadow: "var(--shadow-lg)",
-          cursor: "grabbing",
-          pointerEvents: "none",
           display: "flex",
           alignItems: "center",
-          gap: 8,
+          gap: 10,
+          padding: "8px 14px 8px 10px",
+          background: "var(--bg-elevated)",
+          border: "1px solid var(--accent)",
+          borderRadius: "var(--radius-lg)",
+          boxShadow: "0 8px 24px rgba(0,0,0,0.18), 0 0 0 1px var(--accent)",
+          transform: "rotate(-3deg)",
+          cursor: "grabbing",
+          pointerEvents: "none",
+          userSelect: "none",
+          width: "max-content",
         }}
       >
-        Adding {source.data.label as string}...
+        <span
+          style={{
+            width: 30,
+            height: 30,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            borderRadius: "var(--radius-sm)",
+            background: "var(--accent-muted)",
+            color: "var(--accent)",
+          }}
+        >
+          {icon}
+        </span>
+        <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", lineHeight: 1.2 }}>
+            {label}
+          </span>
+          <span style={{ fontSize: 11, color: "var(--text-muted)", lineHeight: 1.2 }}>
+            Drop to insert
+          </span>
+        </div>
+        <span
+          style={{
+            fontSize: 10,
+            fontWeight: 700,
+            color: "white",
+            background: "var(--accent)",
+            borderRadius: "var(--radius-full)",
+            padding: "1px 7px",
+            lineHeight: "16px",
+            marginLeft: 2,
+          }}
+        >
+          +
+        </span>
       </div>
     );
   }
