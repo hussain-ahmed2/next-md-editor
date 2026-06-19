@@ -2,15 +2,19 @@
 
 import { CheckCheck, Loader2 } from "lucide-react";
 import { useUIStore } from "@/store/uiStore";
+import { useEditorStore } from "@next-md-editor/editor-core";
 import { UndoRedoButtons } from "./toolbar/UndoRedoButtons";
 import { ModeToggle } from "./toolbar/ModeToggle";
 import { TemplateMenu } from "./toolbar/TemplateMenu";
 import { FileActions } from "./toolbar/FileActions";
 import { Divider } from "./toolbar/ToolbarButton";
 import { ThemeToggle } from "./toolbar/ThemeToggle";
+import { getDocStats } from "@/features/document-stats";
 
 export function EditorToolbar() {
   const saveStatus = useUIStore((s) => s.saveStatus);
+  const blocks = useEditorStore((s) => s.blocks);
+  const stats = getDocStats(blocks);
 
   return (
     <header className="toolbar-header" style={{
@@ -64,6 +68,14 @@ export function EditorToolbar() {
           <>
             <CheckCheck size={13} style={{ color: "var(--success)" }} />
             <span className="save-status-label" style={{ color: "var(--text-secondary)", opacity: 0.8, fontWeight: 500 }}>Saved to browser</span>
+          </>
+        )}
+        {stats.words > 0 && (
+          <>
+            <span style={{ color: "var(--text-muted)", margin: "0 2px" }}>·</span>
+            <span style={{ color: "var(--text-muted)", fontSize: 11, whiteSpace: "nowrap" }}>
+              {stats.words} words · {stats.readingTime}
+            </span>
           </>
         )}
       </div>
