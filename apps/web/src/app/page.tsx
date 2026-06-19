@@ -171,9 +171,15 @@ export default function EditorPage() {
           >
             {isMobile ? (
               <>
-                {mobileTab === "blocks" && <EditorSidebar />}
-                {mobileTab === "editor" && <EditorCanvas scrollRef={canvasScrollRef} />}
-                {mobileTab === "preview" && <MarkdownPreview scrollRef={previewScrollRef} />}
+                <div style={{ display: mobileTab === "blocks" ? "flex" : "none", flex: 1, overflow: "hidden" }}>
+                  <EditorSidebar />
+                </div>
+                <div style={{ display: mobileTab === "editor" ? "flex" : "none", flex: 1, overflow: "hidden" }}>
+                  <EditorCanvas scrollRef={canvasScrollRef} />
+                </div>
+                <div style={{ display: mobileTab === "preview" ? "flex" : "none", flex: 1, overflow: "hidden" }}>
+                  <MarkdownPreview scrollRef={previewScrollRef} />
+                </div>
               </>
             ) : (
               <>
