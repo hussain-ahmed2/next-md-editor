@@ -4,7 +4,7 @@ import { create } from "zustand";
 
 interface UIState {
   sidebarWidth: number;
-  previewWidth: number;
+  previewRatio: number;
   isResizingSidebar: boolean;
   isResizingPreview: boolean;
   mobileTab: "blocks" | "editor" | "preview";
@@ -15,7 +15,7 @@ interface UIState {
   sourceText: string;
 
   setSidebarWidth: (width: number) => void;
-  setPreviewWidth: (width: number) => void;
+  setPreviewRatio: (ratio: number) => void;
   setIsResizingSidebar: (isResizing: boolean) => void;
   setIsResizingPreview: (isResizing: boolean) => void;
   setMobileTab: (tab: "blocks" | "editor" | "preview") => void;
@@ -31,7 +31,7 @@ interface UIState {
 
 export const useUIStore = create<UIState>((set, get) => ({
   sidebarWidth: 220,
-  previewWidth: 360,
+  previewRatio: 0.5,
   isResizingSidebar: false,
   isResizingPreview: false,
   mobileTab: "editor",
@@ -42,7 +42,7 @@ export const useUIStore = create<UIState>((set, get) => ({
   sourceText: "",
 
   setSidebarWidth: (width) => set({ sidebarWidth: width }),
-  setPreviewWidth: (width) => set({ previewWidth: width }),
+  setPreviewRatio: (ratio) => set({ previewRatio: ratio }),
   setIsResizingSidebar: (isResizing) => set({ isResizingSidebar: isResizing }),
   setIsResizingPreview: (isResizing) => set({ isResizingPreview: isResizing }),
   setMobileTab: (tab) => set({ mobileTab: tab }),
@@ -85,13 +85,15 @@ export const useUIStore = create<UIState>((set, get) => ({
   startResizePreview: (mouseDownEvent) => {
     mouseDownEvent.preventDefault();
     set({ isResizingPreview: true });
-    const startX = mouseDownEvent.clientX;
-    const startWidth = get().previewWidth;
+    const parent = (mouseDownEvent.target as HTMLElement).parentElement;
+    if (!parent) return;
+    const parentRect = parent.getBoundingClientRect();
 
     const doResize = (mouseMoveEvent: MouseEvent) => {
-      const deltaX = mouseMoveEvent.clientX - startX;
-      const newWidth = Math.max(200, Math.min(1000, startWidth - deltaX));
-      set({ previewWidth: newWidth });
+      const endX = parentRect.right;
+      const previewPx = endX - mouseMoveEvent.clientX;
+      const ratio = Math.max(0.2, Math.min(0.8, previewPx / parentRect.width));
+      set({ previewRatio: ratio });
     };
 
     const stopResize = () => {
