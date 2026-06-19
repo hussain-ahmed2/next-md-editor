@@ -99,6 +99,9 @@ export function useEditorPersistence() {
       } else if (isMeta && e.key.toLowerCase() === "y") {
         e.preventDefault();
         redo();
+      } else if (isMeta && e.key.toLowerCase() === "f") {
+        e.preventDefault();
+        useUIStore.getState().setSearchOpen(true);
       }
     };
 

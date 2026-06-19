@@ -6,7 +6,6 @@ import { BlockRenderer } from "./BlockRenderer";
 import { useDroppable, useDragOperation, useDragDropMonitor, useDragDropManager } from "@dnd-kit/react";
 import type { DragOverEvent, DragEndEvent } from "@dnd-kit/react";
 import { SortableBlock } from "./SortableBlock";
-import { FloatingFormatToolbar } from "./FloatingFormatToolbar";
 import { BlockRegistry } from "@next-md-editor/editor-core";
 import { useState, useRef, useMemo, useCallback } from "react";
 import { EmptyState } from "./EmptyState";
@@ -45,6 +44,8 @@ export function EditorCanvas({ scrollRef }: { scrollRef?: React.Ref<HTMLDivEleme
 
   // Local state for the visual insert indicator — computed by the monitor below
   const [insertIndex, setInsertIndex] = useState<number | null>(null);
+  const selectedBlockIds = useEditorStore((s) => s.selectedBlockIds);
+  const focusedBlockId = selectedBlockIds.length > 0 ? selectedBlockIds[selectedBlockIds.length - 1] : null;
 
   // ── useDragDropMonitor: react to drag events without prop drilling ─────────
   // handlers is memoized with [manager] deps so it stays stable.
@@ -149,6 +150,7 @@ export function EditorCanvas({ scrollRef }: { scrollRef?: React.Ref<HTMLDivEleme
                 block={block}
                 isPlaceholder={isPlaceholder}
                 index={blockIdx}
+                showToolbar={block.id === focusedBlockId}
               >
                 <BlockRenderer block={block} />
               </SortableBlock>
@@ -156,7 +158,6 @@ export function EditorCanvas({ scrollRef }: { scrollRef?: React.Ref<HTMLDivEleme
           })}
         </div>
       </div>
-      <FloatingFormatToolbar />
     </main>
   );
 }

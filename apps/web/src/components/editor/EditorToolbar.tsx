@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useState } from "react";
-import { CheckCheck, Loader2, ListTree } from "lucide-react";
+import { useCallback, useRef, useState } from "react";
+import { CheckCheck, Loader2, ListTree, Search } from "lucide-react";
 import { useUIStore } from "@/store/uiStore";
 import { useEditorStore } from "@next-md-editor/editor-core";
 import { UndoRedoButtons } from "./toolbar/UndoRedoButtons";
@@ -10,7 +10,10 @@ import { TemplateMenu } from "./toolbar/TemplateMenu";
 import { FileActions } from "./toolbar/FileActions";
 import { Divider, ToolbarButton } from "./toolbar/ToolbarButton";
 import { ThemeToggle } from "./toolbar/ThemeToggle";
+import { EmojiPicker } from "./EmojiPicker";
 import { getDocStats } from "@/features/document-stats";
+import { insertEmoji } from "@/utils/insert-emoji";
+import { getDomTextOffset } from "@next-md-editor/markdown";
 import { TableOfContents } from "./TableOfContents";
 
 export function EditorToolbar() {
@@ -18,6 +21,9 @@ export function EditorToolbar() {
   const blocks = useEditorStore((s) => s.blocks);
   const stats = getDocStats(blocks);
   const [tocOpen, setTocOpen] = useState(false);
+  const [emojiPicker, setEmojiPicker] = useState(false);
+  const emojiBtnRef = useRef<HTMLButtonElement>(null);
+  const emojiSelRef = useRef<{ el: HTMLElement; start: number; end: number } | null>(null);
 
   return (
     <header className="toolbar-header" style={{
@@ -86,6 +92,12 @@ export function EditorToolbar() {
       {/* Actions */}
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
         <UndoRedoButtons />
+        <ToolbarButton
+          onClick={() => useUIStore.getState().setSearchOpen(true)}
+          tooltip="Search in document (Ctrl+F)"
+        >
+          <Search size={14} />
+        </ToolbarButton>
         <Divider />
         <TemplateMenu />
         <ModeToggle />
@@ -136,6 +148,67 @@ export function EditorToolbar() {
                 <TableOfContents onClose={() => setTocOpen(false)} />
               </div>
             </>
+          )}
+        </div>
+        <div style={{ position: "relative", display: "flex" }}>
+          <ToolbarButton
+            onClick={() => {
+              const ce = document.querySelector<HTMLElement>("[contenteditable]");
+              if (ce) {
+                const sel = window.getSelection();
+                if (sel && sel.rangeCount > 0 && ce.contains(sel.anchorNode as Node)) {
+                  const start = getDomTextOffset(ce, sel.anchorNode!, sel.anchorOffset);
+                  const end = sel.focusNode ? getDomTextOffset(ce, sel.focusNode, sel.focusOffset) : start;
+                  emojiSelRef.current = { el: ce, start, end };
+                }
+              }
+              setEmojiPicker((p) => !p);
+            }}
+            onMouseDown={(e) => e.preventDefault()}
+            tooltip="Insert emoji"
+          >
+            <span ref={emojiBtnRef} style={{ fontSize: 16, lineHeight: 1 }}>😊</span>
+          </ToolbarButton>
+          {emojiPicker && (
+            <EmojiPicker
+              onSelect={(emoji) => {
+                const saved = emojiSelRef.current;
+                if (saved) {
+                  const { el, start } = saved;
+                  const range = document.createRange();
+                  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+                  let pos = 0;
+                  let node: Node | null;
+                  let targetNode: Node | null = null;
+                  let targetOffset = 0;
+                  while ((node = walker.nextNode())) {
+                    const len = node.textContent?.length ?? 0;
+                    if (pos + len >= start) {
+                      targetNode = node;
+                      targetOffset = start - pos;
+                      break;
+                    }
+                    pos += len;
+                  }
+                  if (targetNode) {
+                    range.setStart(targetNode, targetOffset);
+                    range.collapse(true);
+                    const sel = window.getSelection();
+                    if (sel) {
+                      sel.removeAllRanges();
+                      sel.addRange(range);
+                    }
+                    document.execCommand("insertText", false, emoji);
+                    el.dispatchEvent(new Event("input", { bubbles: true }));
+                  }
+                } else {
+                  insertEmoji(emoji);
+                }
+                setEmojiPicker(false);
+              }}
+              onClose={() => setEmojiPicker(false)}
+              buttonRef={emojiBtnRef}
+            />
           )}
         </div>
         <ThemeToggle />

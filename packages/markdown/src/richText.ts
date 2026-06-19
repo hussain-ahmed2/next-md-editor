@@ -278,11 +278,11 @@ function restoreDomRange(
 
   while ((node = walker.nextNode())) {
     const len = node.textContent?.length ?? 0;
-    if (!startNode && pos + len > startOffset) {
+    if (!startNode && pos + len >= startOffset) {
       startNode = node;
       startNodeOffset = startOffset - pos;
     }
-    if (!endNode && pos + len > endOffset) {
+    if (!endNode && pos + len >= endOffset) {
       endNode = node;
       endNodeOffset = endOffset - pos;
     }

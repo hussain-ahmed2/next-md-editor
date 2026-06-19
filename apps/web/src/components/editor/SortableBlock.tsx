@@ -7,6 +7,7 @@ import { useState } from "react";
 import { DragHandle } from "./sortable-block/DragHandle";
 import { DeleteButton } from "./sortable-block/DeleteButton";
 import { PlaceholderBlock } from "./sortable-block/PlaceholderBlock";
+import { BlockToolbar } from "./FloatingFormatToolbar";
 
 export function SortableBlock({
   id,
@@ -14,6 +15,7 @@ export function SortableBlock({
   children,
   isPlaceholder,
   index,
+  showToolbar,
 }: {
   id: string;
   block?: Block;
@@ -21,6 +23,7 @@ export function SortableBlock({
   isPlaceholder?: boolean;
   /** Position of this item within the sortable list — required by @dnd-kit/react */
   index: number;
+  showToolbar?: boolean;
 }) {
   const { ref, handleRef, isDragging } = useSortable({ id, index });
 
@@ -84,7 +87,10 @@ export function SortableBlock({
         <DeleteButton onDelete={handleDelete} />
       )}
 
-      <div style={{ padding: "6px 12px" }}>{children}</div>
+      <div style={{ padding: "6px 12px" }}>
+        {showToolbar && <BlockToolbar blockId={id} />}
+        {children}
+      </div>
     </div>
   );
 }
