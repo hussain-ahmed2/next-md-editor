@@ -5,9 +5,11 @@ import { EditorSidebar } from "@/components/editor/EditorSidebar";
 import { EditorCanvas } from "@/components/editor/EditorCanvas";
 import { SourceEditor } from "@/components/editor/SourceEditor";
 import { MarkdownPreview } from "@/components/editor/MarkdownPreview";
-import { useEffect, useState } from "react";
-import { DragDropProvider, DragOverlay } from "@dnd-kit/react";
+import { useCallback, useEffect, useState } from "react";
+import { DragDropProvider, DragOverlay, DragStartEvent } from "@dnd-kit/react";
 import { useUIStore } from "@/store/uiStore";
+import { useEditorStore, BlockRegistry } from "@next-md-editor/editor-core";
+import { v4 as uuidv4 } from "uuid";
 
 // Custom hooks
 import { useEditorPersistence } from "@/hooks/useEditorPersistence";
@@ -44,8 +46,28 @@ export default function EditorPage() {
   // Initialize and run persistence side effects
   useEditorPersistence();
 
+  const addBlock = useEditorStore((s) => s.addBlock);
+  const setMobileTab = useUIStore((s) => s.setMobileTab);
+
   // Only two things needed from the hook now
   const { sensors, handleDragEnd } = useDragAndDrop();
+
+  const handleDragStart = useCallback(
+    (event: DragStartEvent) => {
+      if (!isMobile) return;
+      const source = event.operation.source;
+      if (!source?.data?.isSidebarItem) return;
+      const type = source.data.type as string;
+      const def = BlockRegistry.get(type);
+      addBlock({
+        id: uuidv4(),
+        type,
+        props: { ...(def?.defaultProps ?? {}) },
+      });
+      setMobileTab("editor");
+    },
+    [isMobile, addBlock, setMobileTab],
+  );
 
   const { refA: canvasScrollRef, refB: previewScrollRef } = useSynchronizedScroll();
 
@@ -123,7 +145,7 @@ export default function EditorPage() {
           )}
         </div>
       ) : (
-        <DragDropProvider sensors={sensors} onDragEnd={handleDragEnd}>
+        <DragDropProvider sensors={sensors} onDragEnd={handleDragEnd} onDragStart={handleDragStart}>
           <div
             style={{
               display: "flex",
