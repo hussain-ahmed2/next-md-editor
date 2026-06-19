@@ -18,6 +18,7 @@ import {
 	Award,
 	ImageIcon,
 	GitFork,
+	ChevronDown,
 } from "lucide-react";
 
 interface SidebarBlock {
@@ -105,6 +106,12 @@ const BLOCK_PALETTE: SidebarBlock[] = [
 		label: "GitHub Stats",
 		icon: <GitFork size={18} />,
 		description: "GitHub profile stats card",
+	},
+	{
+		type: "collapsible",
+		label: "Collapsible",
+		icon: <ChevronDown size={18} />,
+		description: "Expandable details section",
 	},
 ];
 

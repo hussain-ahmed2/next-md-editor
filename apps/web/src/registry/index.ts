@@ -11,6 +11,7 @@ import { ListBlock } from "@/components/blocks/ListBlock";
 import { ImageGridBlock } from "@/components/blocks/ImageGridBlock";
 import { BadgeGroupBlock } from "@/components/blocks/BadgeGroupBlock";
 import { GithubStatsBlock } from "@/components/blocks/GithubStatsBlock";
+import { CollapsibleBlock } from "@/components/blocks/CollapsibleBlock";
 
 export function initRegistry() {
   BlockRegistry.register({
@@ -209,6 +210,17 @@ export function initRegistry() {
         }
       }
       return lines.join("\n");
+    },
+  });
+
+  BlockRegistry.register({
+    type: "collapsible",
+    component: CollapsibleBlock,
+    defaultProps: { summary: "Click to expand", content: "", open: false },
+    serializer: (b) => {
+      const summary = (b.props.summary as string) ?? "";
+      const content = (b.props.content as string) ?? "";
+      return `<details${b.props.open ? " open" : ""}>\n<summary>${summary}</summary>\n\n${content}\n\n</details>`;
     },
   });
 }

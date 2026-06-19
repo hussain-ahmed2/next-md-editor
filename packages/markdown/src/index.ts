@@ -132,6 +132,27 @@ export function parseMarkdown(markdown: string): Block[] {
         continue;
       }
 
+      // Detect collapsible: <details> HTML block
+      const detailsMatch = val.match(/^<details\s*(open)?>([\s\S]*)<\/details>$/i);
+      if (detailsMatch) {
+        const inner = detailsMatch[2].trim();
+        const summaryMatch = inner.match(/<summary>([\s\S]*)<\/summary>/i);
+        const summary = summaryMatch ? summaryMatch[1].trim() : "Details";
+        const content = summaryMatch
+          ? inner.replace(/<summary>[\s\S]*<\/summary>/i, "").trim()
+          : inner;
+        blocks.push({
+          id: uuidv4(),
+          type: "collapsible",
+          props: {
+            summary,
+            content,
+            open: detailsMatch[1]?.trim() === "open",
+          },
+        });
+        continue;
+      }
+
       // Detect badge-group: <!-- badge-group --> followed by ![image](url) markdown
       if (val === "<!-- badge-group -->") {
         const badges: any[] = [];
@@ -685,6 +706,13 @@ function serializeBlock(block: Block, indentLevel: number = 0): string {
       }
 
       text = parts.join("\n\n");
+      break;
+    }
+    case "collapsible": {
+      const summary = (block.props.summary as string) ?? "";
+      const content = (block.props.content as string) ?? "";
+      const open = (block.props.open as boolean) ?? false;
+      text = `<details${open ? " open" : ""}>\n<summary>${summary}</summary>\n\n${content}\n\n</details>`;
       break;
     }
   }

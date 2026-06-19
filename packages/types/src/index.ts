@@ -32,6 +32,7 @@ export type BlockType =
   | "image-grid"
   | "badge-group"
   | "github-stats"
+  | "collapsible"
   | string;
 
 export interface Block {
