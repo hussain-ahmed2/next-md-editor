@@ -16,6 +16,7 @@ export const CANVAS_ROOT_ID = "canvas-root";
 export function EditorCanvas({ scrollRef }: { scrollRef?: React.Ref<HTMLDivElement> }) {
   const blocks = useEditorStore((s) => s.blocks);
   const previewRatio = useUIStore((s) => s.previewRatio);
+  const isMobile = useUIStore((s) => s.isMobile);
   const manager = useDragDropManager();
 
   // Keep a stable ref so the memoized monitor handlers always see current blocks
@@ -128,7 +129,7 @@ export function EditorCanvas({ scrollRef }: { scrollRef?: React.Ref<HTMLDivEleme
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        padding: "60px 48px",
+        padding: isMobile ? "32px 16px" : "60px 48px",
         background: "var(--bg-base)",
       }}
     >

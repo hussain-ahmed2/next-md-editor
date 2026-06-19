@@ -106,10 +106,13 @@ export function FloatingFormatToolbar() {
 
 		const selRect = sel.getRangeAt(0).getBoundingClientRect();
 		const h = toolbarRef.current?.offsetHeight ?? 40;
+		const vv = window.visualViewport;
+		const viewportWidth = vv?.width ?? window.innerWidth;
+		const viewportTop = vv?.offsetTop ?? 0;
 		let top = selRect.top - h - 8;
 		let left = selRect.left + selRect.width / 2;
-		if (top < 8) top = selRect.bottom + 8;
-		const maxLeft = window.innerWidth - 20;
+		if (top < viewportTop + 8) top = selRect.bottom + 8;
+		const maxLeft = viewportWidth - 20;
 		if (left > maxLeft) left = maxLeft;
 		if (left < 20) left = 20;
 
@@ -128,10 +131,12 @@ export function FloatingFormatToolbar() {
 		document.addEventListener("selectionchange", update);
 		window.addEventListener("scroll", update, true);
 		window.addEventListener("resize", update);
+		window.visualViewport?.addEventListener("resize", update);
 		return () => {
 			document.removeEventListener("selectionchange", update);
 			window.removeEventListener("scroll", update, true);
 			window.removeEventListener("resize", update);
+			window.visualViewport?.removeEventListener("resize", update);
 		};
 	}, [update]);
 
