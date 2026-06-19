@@ -85,15 +85,17 @@ export const useUIStore = create<UIState>((set, get) => ({
   startResizePreview: (mouseDownEvent) => {
     mouseDownEvent.preventDefault();
     set({ isResizingPreview: true });
+    const startX = mouseDownEvent.clientX;
+    const startRatio = get().previewRatio;
     const parent = (mouseDownEvent.target as HTMLElement).parentElement;
     if (!parent) return;
-    const parentRect = parent.getBoundingClientRect();
+    const parentWidth = parent.getBoundingClientRect().width;
+    const remainingWidth = parentWidth - get().sidebarWidth - 16;
 
     const doResize = (mouseMoveEvent: MouseEvent) => {
-      const endX = parentRect.right;
-      const previewPx = endX - mouseMoveEvent.clientX;
-      const ratio = Math.max(0.2, Math.min(0.8, previewPx / parentRect.width));
-      set({ previewRatio: ratio });
+      const deltaX = mouseMoveEvent.clientX - startX;
+      const newRatio = Math.max(0.2, Math.min(0.8, startRatio - deltaX / remainingWidth));
+      set({ previewRatio: newRatio });
     };
 
     const stopResize = () => {
