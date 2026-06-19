@@ -22,13 +22,14 @@ export function ToolbarButton({
   return (
     <button
       id={id}
+      className="toolbar-btn"
       onClick={onClick}
       title={tooltip}
       style={{
         display: "flex",
         alignItems: "center",
         gap: 5,
-        padding: "5px 10px",
+        padding: "5px 8px",
         borderRadius: "var(--radius-sm)",
         border: `1px solid ${primary ? "transparent" : active ? "var(--accent)" : "var(--border)"}`,
         background: primary
@@ -39,6 +40,7 @@ export function ToolbarButton({
         color: primary ? "#fff" : active ? "var(--accent)" : "var(--text-secondary)",
         fontSize: 12.5,
         fontWeight: 500,
+        flexShrink: 0,
         cursor: "pointer",
         transition: "all 0.15s ease",
         fontFamily: "var(--font-sans)",

@@ -17,6 +17,7 @@ export function ThemeToggle() {
         width: 30,
         height: 30,
         borderRadius: "var(--radius-sm)",
+        flexShrink: 0,
         border: "1px solid var(--border)",
         background: "transparent",
         color: "var(--text-secondary)",

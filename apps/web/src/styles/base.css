@@ -73,4 +73,7 @@ html, body {
 @media (max-width: 767px) {
   .btn-label { display: none; }
   .save-status-label { display: none; }
+  .toolbar-header { padding: 0 8px !important; }
+  .toolbar-btn { padding: 5px 6px !important; }
+  .app-name { display: none; }
 }
