@@ -2,327 +2,194 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useEditorStore } from "@next-md-editor/editor-core";
-import { useDragOperation } from "@dnd-kit/react";
 import type { RichText, FormatFlags, Block } from "@next-md-editor/types";
-import { getSelectionRichRange, getActiveFormats, toggleRichFormat, applyRichFormat } from "@next-md-editor/markdown";
+import { getSelectionRichRange, getActiveFormats, toggleRichFormat, getDomTextOffset } from "@next-md-editor/markdown";
 import { LinkDialog } from "./LinkDialog";
-import { htmlToMarkdown } from "@/utils/editorShortcuts";
+import { EmojiPicker } from "./EmojiPicker";
+import { insertEmoji } from "@/utils/insert-emoji";
 
 type FormatAction = "bold" | "italic" | "code" | "strikethrough" | "link";
 
-export function FloatingFormatToolbar() {
-	const [visible, setVisible] = useState(false);
-	const [pos, setPos] = useState({ top: 0, left: 0 });
+function findBlockById(blocks: Block[], id: string): Block | undefined {
+  for (const block of blocks) {
+    if (block.id === id) return block;
+    if (block.children) {
+      const found = findBlockById(block.children, id);
+      if (found) return found;
+    }
+  }
+  return undefined;
+}
+
+interface BlockToolbarProps {
+  blockId: string;
+}
+
+export function BlockToolbar({ blockId }: BlockToolbarProps) {
 	const [activeFormats, setActiveFormats] = useState<FormatFlags>({});
 	const [linkDialog, setLinkDialog] = useState<{ url: string } | null>(null);
+	const [emojiPicker, setEmojiPicker] = useState(false);
+	const emojiBtnRef = useRef<HTMLButtonElement>(null);
 	const toolbarRef = useRef<HTMLDivElement>(null);
-	const containerRef = useRef<HTMLDivElement>(null);
-	const blockIdRef = useRef<string | null>(null);
 	const rangeRef = useRef<{ start: number; end: number } | null>(null);
-	const elementRef = useRef<HTMLElement | null>(null);
-	const isRichTextRef = useRef(false);
+	const savedSelRef = useRef<{ el: HTMLElement; start: number; end: number } | null>(null);
 
-	// Hide toolbar while a DnD drag is in progress — dragging causes phantom
-	// selectionchange events that make the toolbar flicker after a drop.
-	const { source: dragSource } = useDragOperation();
-	const isDragging = dragSource !== null;
+	const getContentEditable = useCallback(() => {
+		return document.querySelector<HTMLElement>(`[contenteditable][data-block-id="${blockId}"]`);
+	}, [blockId]);
 
-	// Reset link dialog state when the toolbar becomes invisible
-	useEffect(() => {
-		if (!visible) {
-			setLinkDialog(null);
-		}
-	}, [visible]);
-
-	const update = useCallback(() => {
-		// Suppress updates while a DnD drag is in flight
-		if (isDragging) {
-			setVisible(false);
-			return;
-		}
-		// If the user is currently interacting with the LinkDialog or toolbar,
-		// do not hide or reset the toolbar.
-		if (
-			containerRef.current &&
-			document.activeElement &&
-			containerRef.current.contains(document.activeElement)
-		) {
-			return;
-		}
+	const updateFormats = useCallback(() => {
+		const el = getContentEditable();
+		if (!el) return;
 
 		const sel = window.getSelection();
-		if (!sel || sel.isCollapsed || !sel.rangeCount) {
-			setVisible(false);
-			return;
-		}
-
-		let el: Node | null = sel.anchorNode;
-		let contentEditable: HTMLElement | null = null;
-		while (el) {
-			if (el instanceof HTMLElement && el.isContentEditable && el.hasAttribute("data-block-id")) {
-				contentEditable = el;
-				break;
-			}
-			el = el.parentNode;
-		}
-		if (!contentEditable) {
-			setVisible(false);
-			return;
-		}
-
-		const bid = contentEditable.getAttribute("data-block-id");
-		if (!bid) {
-			setVisible(false);
-			return;
-		}
-
-		elementRef.current = contentEditable;
-		blockIdRef.current = bid;
+		if (!sel || !sel.rangeCount) return;
 
 		const blocks = useEditorStore.getState().blocks;
-		const block = findBlockById(blocks, bid);
-
-		if (block && Array.isArray(block.props.content)) {
-			isRichTextRef.current = true;
-			const content = block.props.content as RichText;
-			const range = getSelectionRichRange(content, contentEditable);
-			if (!range || range.start >= range.end) {
-				setVisible(false);
-				return;
-			}
-			const formats = getActiveFormats(content, range.start);
-			setActiveFormats(formats);
-			rangeRef.current = range;
-		} else {
-			isRichTextRef.current = false;
-			rangeRef.current = null;
-			setActiveFormats({
-				bold: document.queryCommandState("bold"),
-				italic: document.queryCommandState("italic"),
-				strikethrough: document.queryCommandState("strikeThrough"),
-				code: isInsideCodeElement(contentEditable),
-			});
+		const block = findBlockById(blocks, blockId);
+		if (!block || !Array.isArray(block.props.content)) return;
+		const content = block.props.content as RichText;
+		const richRange = getSelectionRichRange(content, el);
+		if (richRange) {
+			rangeRef.current = { start: richRange.start, end: richRange.end };
+			setActiveFormats(getActiveFormats(content, richRange.start));
 		}
-
-		const selRect = sel.getRangeAt(0).getBoundingClientRect();
-		const h = toolbarRef.current?.offsetHeight ?? 40;
-		const vv = window.visualViewport;
-		const viewportWidth = vv?.width ?? window.innerWidth;
-		const viewportTop = vv?.offsetTop ?? 0;
-		let top = selRect.top - h - 8;
-		let left = selRect.left + selRect.width / 2;
-		if (top < viewportTop + 8) top = selRect.bottom + 8;
-		const maxLeft = viewportWidth - 20;
-		if (left > maxLeft) left = maxLeft;
-		if (left < 20) left = 20;
-
-		setPos({ top, left });
-		setVisible(true);
-	}, [isDragging]);
-
-	// Immediately hide toolbar when drag starts
-	useEffect(() => {
-		if (isDragging) {
-			setVisible(false);
-		}
-	}, [isDragging]);
+	}, [blockId, getContentEditable]);
 
 	useEffect(() => {
-		document.addEventListener("selectionchange", update);
-		window.addEventListener("scroll", update, true);
-		window.addEventListener("resize", update);
-		window.visualViewport?.addEventListener("resize", update);
-		return () => {
-			document.removeEventListener("selectionchange", update);
-			window.removeEventListener("scroll", update, true);
-			window.removeEventListener("resize", update);
-			window.visualViewport?.removeEventListener("resize", update);
+		updateFormats();
+	}, [updateFormats]);
+
+	useEffect(() => {
+		const handleSelectionChange = () => {
+			if (!getContentEditable()) return;
+			updateFormats();
 		};
-	}, [update]);
+		document.addEventListener("selectionchange", handleSelectionChange);
+		return () => document.removeEventListener("selectionchange", handleSelectionChange);
+	}, [updateFormats, getContentEditable]);
 
- 	const apply = useCallback((action: FormatAction) => {
- 		const bid = blockIdRef.current;
- 		if (!bid) return;
-
- 		if (isRichTextRef.current) {
- 			if (!rangeRef.current) return;
- 			const blocks = useEditorStore.getState().blocks;
- 			const block = findBlockById(blocks, bid);
- 			if (!block || !Array.isArray(block.props.content)) return;
- 			const content = block.props.content as RichText;
- 			let { start, end } = rangeRef.current;
-
-			// Trim leading/trailing whitespace from the selected range
-			const plainText = content.map((s) => s.text).join("");
-			while (start < end && /\s/.test(plainText[start])) start++;
-			while (end > start && /\s/.test(plainText[end - 1])) end--;
-			if (start >= end) return;
-
- 			let format: FormatFlags;
- 			if (action === "link") {
-				const currentUrl = (activeFormats.link as string) || "https://";
-				setLinkDialog({ url: currentUrl });
-				return;
-			} else if (action === "code") {
-				format = { code: true };
-			} else if (action === "bold") {
-				format = { bold: true };
-			} else if (action === "italic") {
-				format = { italic: true };
-			} else if (action === "strikethrough") {
-				format = { strikethrough: true };
-			} else {
-				return;
-			}
-
-			const newContent = toggleRichFormat(content, start, end, format);
-			useEditorStore.getState().updateBlock(bid, { content: newContent });
-		} else {
-			const el = elementRef.current;
+	const apply = useCallback(
+		(action: FormatAction) => {
+			const el = getContentEditable();
 			if (!el) return;
-			el.focus();
 
-			if (action === "code" || action === "bold" || action === "italic" || action === "strikethrough") {
-				trimSelectionRange();
-			}
+			const blocks = useEditorStore.getState().blocks;
+			const block = findBlockById(blocks, blockId);
+			if (!block || !Array.isArray(block.props.content)) return;
+			const content = block.props.content as RichText;
 
-			if (action === "code") {
-				const sel = window.getSelection();
-				if (!sel || !sel.rangeCount) return;
-				const range = sel.getRangeAt(0);
-				const text = range.toString();
-				if (!text) return;
+			const sel = window.getSelection();
+			if (!sel || !sel.rangeCount) return;
+			const richRange = getSelectionRichRange(content, el);
+			if (!richRange) return;
 
-				if (isInsideCodeElement(elementRef.current!)) {
-					const codeEl = findAncestorCodeElement(elementRef.current!, sel.anchorNode);
-					if (codeEl && codeEl.parentNode) {
-						const txt = document.createTextNode(codeEl.textContent || "");
-						codeEl.parentNode.replaceChild(txt, codeEl);
-						const newRange = document.createRange();
-						newRange.setStartAfter(txt);
-						newRange.collapse(true);
-						sel.removeAllRanges();
-						sel.addRange(newRange);
-						el.dispatchEvent(new Event("input", { bubbles: true }));
-					}
-				} else {
-					range.deleteContents();
-					const code = document.createElement("code");
-					code.textContent = text;
-					range.insertNode(code);
-					range.setStartAfter(code);
-					range.collapse(true);
-					sel.removeAllRanges();
-					sel.addRange(range);
-					el.dispatchEvent(new Event("input", { bubbles: true }));
-				}
-			} else if (action === "link") {
-				const currentUrl = (activeFormats.link as string) || "https://";
-				setLinkDialog({ url: currentUrl });
+			const efEnd = Math.max(richRange.start + 1, richRange.end);
+
+			if (action === "link") {
+				setLinkDialog({ url: getActiveFormats(content, richRange.start).link || "https://" });
 				return;
-			} else if (action === "bold" || action === "italic" || action === "strikethrough") {
-				const sel = window.getSelection();
-				if (sel && sel.rangeCount) {
-					const codeParent = findAncestorCodeElement(el, sel.anchorNode);
-					if (codeParent) {
-						const wrapper = document.createElement(
-							action === "bold" ? "strong" :
-							action === "italic" ? "em" :
-							"del"
-						);
-						codeParent.parentNode!.insertBefore(wrapper, codeParent);
-						wrapper.appendChild(codeParent);
-						const range = document.createRange();
-						range.setStartAfter(wrapper);
-						range.collapse(true);
-						sel.removeAllRanges();
-						sel.addRange(range);
-						const bid = blockIdRef.current;
-						if (bid) {
-							useEditorStore.getState().updateBlock(bid, { text: htmlToMarkdown(el.innerHTML) });
-						}
-						el.dispatchEvent(new Event("input", { bubbles: true }));
-					} else {
-						const cmd = action === "strikethrough" ? "strikeThrough" : action;
-						document.execCommand(cmd);
-					}
-				}
 			}
-		}
-	}, []);
+
+			rangeRef.current = { start: richRange.start, end: efEnd };
+			useEditorStore.getState().updateBlock(blockId, {
+				content: toggleRichFormat(content, richRange.start, efEnd, { [action]: true }),
+			});
+		},
+		[blockId, getContentEditable],
+	);
 
 	const applyLink = useCallback(
 		(url: string) => {
-			const bid = blockIdRef.current;
-			if (!bid || !url) return;
+			const blocks = useEditorStore.getState().blocks;
+			const block = findBlockById(blocks, blockId);
+			if (!block || !Array.isArray(block.props.content)) return;
+			const content = block.props.content as RichText;
 
-			if (isRichTextRef.current) {
-				if (!rangeRef.current) return;
-				const blocks = useEditorStore.getState().blocks;
-				const block = findBlockById(blocks, bid);
-				if (!block || !Array.isArray(block.props.content)) return;
-				const content = block.props.content as RichText;
-				const { start, end } = rangeRef.current;
+			const el = getContentEditable();
+			if (!el) return;
+			const sel = window.getSelection();
+			if (!sel || !sel.rangeCount) return;
+			const richRange = getSelectionRichRange(content, el);
+			if (!richRange) return;
 
-				const isEdit = !!activeFormats.link;
-				const newContent = isEdit
-					? applyRichFormat(content, start, end, { link: url })
-					: toggleRichFormat(content, start, end, { link: url });
-				useEditorStore.getState().updateBlock(bid, { content: newContent });
-			} else {
-				const el = elementRef.current;
-				if (!el) return;
-				el.focus();
-
-				const sel = window.getSelection();
-				if (!sel || !sel.rangeCount) return;
-				const range = sel.getRangeAt(0);
-				const selectedText = range.toString();
-				if (!selectedText) return;
-
-				range.deleteContents();
-				const anchor = document.createElement("a");
-				anchor.href = url;
-				anchor.textContent = selectedText;
-				range.insertNode(anchor);
-				range.setStartAfter(anchor);
-				range.collapse(true);
-				sel.removeAllRanges();
-				sel.addRange(range);
-				el.dispatchEvent(new Event("input", { bubbles: true }));
-			}
+			useEditorStore.getState().updateBlock(blockId, {
+				content: toggleRichFormat(content, richRange.start, Math.max(richRange.start + 1, richRange.end), { link: url }),
+			});
 			setLinkDialog(null);
-			setVisible(false);
 		},
-		[activeFormats.link],
+		[blockId, getContentEditable],
 	);
 
 	const removeLink = useCallback(() => {
-		const bid = blockIdRef.current;
-		if (!bid) return;
-
-		if (isRichTextRef.current) {
-			if (!rangeRef.current) return;
-			const blocks = useEditorStore.getState().blocks;
-			const block = findBlockById(blocks, bid);
-			if (!block || !Array.isArray(block.props.content)) return;
-			const content = block.props.content as RichText;
-			const { start, end } = rangeRef.current;
-			const newContent = toggleRichFormat(content, start, end, { link: activeFormats.link || "https://" });
-			useEditorStore.getState().updateBlock(bid, { content: newContent });
-		}
+		const blocks = useEditorStore.getState().blocks;
+		const block = findBlockById(blocks, blockId);
+		if (!block || !Array.isArray(block.props.content) || !rangeRef.current) return;
+		const content = block.props.content as RichText;
+		const { start, end } = rangeRef.current;
+		useEditorStore.getState().updateBlock(blockId, {
+			content: toggleRichFormat(content, start, end, { link: activeFormats.link || "https://" }),
+		});
 		setLinkDialog(null);
-		setVisible(false);
-	}, [activeFormats.link]);
+	}, [blockId, activeFormats.link]);
 
-	if (!visible) return null;
+	const handleEmoji = useCallback((emoji: string) => {
+		setEmojiPicker(false);
+		const saved = savedSelRef.current;
+		if (saved) {
+			const { el, start, end } = saved;
+			const range = document.createRange();
+			const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+			let pos = 0;
+			let node: Node | null;
+			let targetNode: Node | null = null;
+			let targetOffset = 0;
+			while ((node = walker.nextNode())) {
+				const len = node.textContent?.length ?? 0;
+				if (pos + len >= start) {
+					targetNode = node;
+					targetOffset = start - pos;
+					break;
+				}
+				pos += len;
+			}
+			if (targetNode) {
+				range.setStart(targetNode, targetOffset);
+				range.collapse(true);
+				const sel = window.getSelection();
+				if (sel) {
+					sel.removeAllRanges();
+					sel.addRange(range);
+				}
+				document.execCommand("insertText", false, emoji);
+				el.dispatchEvent(new Event("input", { bubbles: true }));
+			}
+		} else {
+			insertEmoji(emoji);
+		}
+	}, []);
+
+	const handleEmojiClick = useCallback(() => {
+		const el = getContentEditable();
+		if (el) {
+			const sel = window.getSelection();
+			if (sel && sel.rangeCount > 0 && el.contains(sel.anchorNode as Node)) {
+				const start = getDomTextOffset(el, sel.anchorNode!, sel.anchorOffset);
+				const end = sel.focusNode ? getDomTextOffset(el, sel.focusNode, sel.focusOffset) : start;
+				savedSelRef.current = { el, start, end };
+			} else {
+				savedSelRef.current = null;
+			}
+		}
+		setEmojiPicker((p) => !p);
+	}, [getContentEditable]);
 
 	const buttons: { action: FormatAction; label: React.ReactNode }[] = [
-		{ action: "bold", label: <strong style={{ fontSize: 14, letterSpacing: 0 }}>B</strong> },
-		{ action: "italic", label: <em style={{ fontSize: 14 }}>I</em> },
-		{ action: "code", label: <code style={{ fontSize: 13 }}>{`\`\`\``}</code> },
-		{ action: "strikethrough", label: <del style={{ fontSize: 14 }}>S</del> },
-		{ action: "link", label: <span style={{ fontSize: 12 }}>Link</span> },
+		{ action: "bold", label: <strong style={{ fontSize: 13, letterSpacing: 0 }}>B</strong> },
+		{ action: "italic", label: <em style={{ fontSize: 13 }}>I</em> },
+		{ action: "code", label: <code style={{ fontSize: 12 }}>{`\`\`\``}</code> },
+		{ action: "strikethrough", label: <del style={{ fontSize: 13 }}>S</del> },
+		{ action: "link", label: <span style={{ fontSize: 11 }}>Link</span> },
 	];
 
 	const hasFormat = (action: FormatAction): boolean => {
@@ -335,27 +202,18 @@ export function FloatingFormatToolbar() {
 	};
 
 	return (
-		<div ref={containerRef} style={{ display: "contents" }}>
+		<>
 			<div
 				ref={toolbarRef}
-				contentEditable={false}
-				style={{
-					position: "fixed",
-					top: pos.top,
-					left: pos.left,
-					transform: "translateX(-50%)",
-					zIndex: 9999,
-					display: "flex",
-					gap: 1,
-					padding: "4px",
-					background: "var(--bg-elevated)",
-					border: "1px solid var(--border)",
-					borderRadius: "var(--radius-sm)",
-					boxShadow: "var(--shadow-md)",
-					userSelect: "none",
-					pointerEvents: "auto",
-				}}
 				onMouseDown={(e) => e.preventDefault()}
+				style={{
+					display: "flex",
+					alignItems: "center",
+					gap: 2,
+					padding: "4px 0 8px",
+					marginBottom: 8,
+					borderBottom: "1px solid var(--border-subtle)",
+				}}
 			>
 				{buttons.map(({ action, label }) => {
 					const active = hasFormat(action);
@@ -368,10 +226,10 @@ export function FloatingFormatToolbar() {
 								background: active ? "var(--accent)" : "transparent",
 								border: "none",
 								borderRadius: 4,
-								padding: "4px 8px",
+								padding: "3px 7px",
 								cursor: "pointer",
 								color: active ? "#fff" : "var(--text-secondary)",
-								fontSize: 13,
+								fontSize: 12,
 								fontWeight: 500,
 								transition: "all 0.12s",
 							}}
@@ -392,72 +250,54 @@ export function FloatingFormatToolbar() {
 						</button>
 					);
 				})}
+				<div style={{ width: 1, height: 16, background: "var(--border-subtle)", margin: "0 4px" }} />
+				<div style={{ position: "relative", display: "inline-flex" }}>
+					<button
+						ref={emojiBtnRef}
+						onClick={handleEmojiClick}
+						title="Emoji"
+						style={{
+							background: emojiPicker ? "var(--accent)" : "transparent",
+							border: "none",
+							borderRadius: 4,
+							padding: "3px 7px",
+							cursor: "pointer",
+							color: emojiPicker ? "#fff" : "var(--text-secondary)",
+							fontSize: 15,
+							lineHeight: 1,
+							transition: "all 0.12s",
+						}}
+						onMouseEnter={(e) => {
+							if (!emojiPicker) {
+								e.currentTarget.style.background = "var(--bg-elevated)";
+								e.currentTarget.style.color = "var(--text-primary)";
+							}
+						}}
+						onMouseLeave={(e) => {
+							if (!emojiPicker) {
+								e.currentTarget.style.background = "transparent";
+								e.currentTarget.style.color = "var(--text-secondary)";
+							}
+						}}
+					>
+						😊
+					</button>
+					{emojiPicker && <EmojiPicker onSelect={handleEmoji} onClose={() => setEmojiPicker(false)} buttonRef={emojiBtnRef} />}
+				</div>
 			</div>
-			{linkDialog && (
-				<LinkDialog
-					initialUrl={linkDialog.url}
-					position={{ top: pos.top - 50, left: pos.left }}
-					onApply={applyLink}
-					onRemove={activeFormats.link ? removeLink : undefined}
-					onCancel={() => {
-						setLinkDialog(null);
-						setVisible(false);
-					}}
-				/>
-			)}
-		</div>
+			{linkDialog && (() => {
+				const tr = toolbarRef.current?.getBoundingClientRect();
+				const linkPos = tr ? { top: tr.bottom + 4, left: tr.left + tr.width / 2 } : { top: 80, left: window.innerWidth / 2 };
+				return (
+					<LinkDialog
+						initialUrl={linkDialog.url}
+						position={linkPos}
+						onApply={applyLink}
+						onRemove={activeFormats.link ? removeLink : undefined}
+						onCancel={() => setLinkDialog(null)}
+					/>
+				);
+			})()}
+		</>
 	);
-}
-
-function trimSelectionRange(): void {
-  const sel = window.getSelection();
-  if (!sel || !sel.rangeCount) return;
-  const range = sel.getRangeAt(0);
-  const text = range.toString();
-  if (!text) return;
-
-  const leading = text.length - text.trimStart().length;
-  const trailing = text.length - text.trimEnd().length;
-  if (leading === 0 && trailing === 0) return;
-
-  // Only trim when start and end are in the same text node
-  if (range.startContainer === range.endContainer && range.startContainer.nodeType === Node.TEXT_NODE) {
-    const offset = range.startOffset + leading;
-    const endOffset = range.endOffset - trailing;
-    if (offset >= endOffset) return;
-    range.setStart(range.startContainer, offset);
-    range.setEnd(range.endContainer, endOffset);
-    sel.removeAllRanges();
-    sel.addRange(range);
-  }
-}
-
-function findBlockById(blocks: Block[], id: string): Block | null {
-	for (const b of blocks) {
-		if (b.id === id) return b;
-		if (b.children) {
-			const found = findBlockById(b.children, id);
-			if (found) return found;
-		}
-	}
-	return null;
-}
-
-function findAncestorCodeElement(root: HTMLElement, node: Node | null): HTMLElement | null {
-	while (node && node !== root) {
-		if (node instanceof HTMLElement && node.tagName === "CODE") return node;
-		node = node.parentNode;
-	}
-	return null;
-}
-
-function isInsideCodeElement(root: HTMLElement): boolean {
-	const sel = window.getSelection();
-	if (!sel || !sel.rangeCount) return false;
-	let node: Node | null = sel.anchorNode;
-	while (node && node !== root) {
-		if (node instanceof HTMLElement && node.tagName === "CODE") return true;
-		node = node.parentNode;
-	}
-	return false;
 }

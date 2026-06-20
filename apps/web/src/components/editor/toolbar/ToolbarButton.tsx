@@ -9,6 +9,7 @@ interface ToolbarButtonProps {
   active?: boolean;
   id?: string;
   tooltip?: string;
+  onMouseDown?: (e: React.MouseEvent) => void;
 }
 
 export function ToolbarButton({
@@ -18,12 +19,14 @@ export function ToolbarButton({
   active,
   id,
   tooltip,
+  onMouseDown,
 }: ToolbarButtonProps) {
   return (
     <button
       id={id}
       className="toolbar-btn"
       onClick={onClick}
+      onMouseDown={onMouseDown}
       title={tooltip}
       style={{
         display: "flex",
@@ -40,6 +43,8 @@ export function ToolbarButton({
         color: primary ? "#fff" : active ? "var(--accent)" : "var(--text-secondary)",
         fontSize: 12.5,
         fontWeight: 500,
+        height: 28,
+        boxSizing: "border-box",
         flexShrink: 0,
         cursor: "pointer",
         transition: "all 0.15s ease",

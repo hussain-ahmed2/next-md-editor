@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useContext, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { useEditorStore } from "@next-md-editor/editor-core";
 import { BlockRegistry } from "@next-md-editor/editor-core";
@@ -8,13 +8,9 @@ import type { Block, RichText } from "@next-md-editor/types";
 import {
   richTextToHtml,
   htmlToRichText,
-  richTextLength,
   richTextPlainText,
   markdownToRichText,
-  getDomTextOffset,
-  restoreDomRange,
   getSelectionRichRange,
-  toggleRichFormat,
   applyRichFormat,
 } from "@next-md-editor/markdown";
 import { SlashCommandMenu } from "@/components/editor/SlashCommandMenu";
@@ -51,45 +47,39 @@ export function ParagraphBlock({ block }: { block: Block }) {
   // Auto-focus synchronization when block is selected
   useBlockFocus(ref, block.id, selectedBlockIds);
 
-  // Sync store changes to DOM — preserves caret position
+  // Sync store changes to DOM when they differ (e.g. on undo/redo)
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-
-    const newHtml = richTextToHtml(content);
-    if (el.innerHTML === newHtml) return;
-
-    const isFocusedNow = document.activeElement === el;
-    let savedStart = -1;
-    let savedEnd = -1;
-    if (isFocusedNow) {
+    const expectedHtml = richTextToHtml(content);
+    if (el.innerHTML === expectedHtml) return;
+    el.innerHTML = expectedHtml;
+    if (document.activeElement === el) {
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      range.collapse(false);
       const sel = window.getSelection();
-      if (sel && sel.rangeCount > 0 && sel.anchorNode && sel.focusNode && el.contains(sel.anchorNode) && el.contains(sel.focusNode)) {
-        savedStart = getDomTextOffset(el, sel.anchorNode, sel.anchorOffset);
-        savedEnd = getDomTextOffset(el, sel.focusNode, sel.focusOffset);
+      if (sel) {
+        sel.removeAllRanges();
+        sel.addRange(range);
       }
     }
+  }, [content]);
 
-    el.innerHTML = newHtml;
-
-    if (savedStart >= 0) {
-      const len = richTextLength(content);
-      restoreDomRange(el, Math.min(savedStart, len), Math.min(savedEnd, len));
-    }
-  }, [content, ref]);
-
-  // When entering focus, ensure content is rendered and caret at end
+  // When entering focus, snap caret to end
   useEffect(() => {
     if (isFocused && ref.current) {
-      const html = richTextToHtml(content);
-      if (ref.current.innerHTML !== html) {
-        ref.current.innerHTML = html;
-      }
+      ref.current.innerHTML = richTextToHtml(content);
+      const range = document.createRange();
+      range.selectNodeContents(ref.current);
+      range.collapse(false);
       const sel = window.getSelection();
-      if (sel && sel.rangeCount > 0 && ref.current.contains(sel.anchorNode)) return;
-      restoreDomRange(ref.current, richTextLength(content), richTextLength(content));
+      if (sel) {
+        sel.removeAllRanges();
+        sel.addRange(range);
+      }
     }
-  }, [isFocused, content]);
+  }, [isFocused]);
 
   const handleInput = useCallback(
     (e: React.FormEvent<HTMLDivElement>) => {
@@ -105,7 +95,6 @@ export function ParagraphBlock({ block }: { block: Block }) {
         setSlashMenuOpen(false);
       }
 
-      // For RichText blocks, store htmlToRichText result
       const newContent = htmlToRichText(e.currentTarget.innerHTML);
       updateBlock(block.id, { content: newContent });
     },
@@ -182,8 +171,6 @@ export function ParagraphBlock({ block }: { block: Block }) {
         }
       }
 
-
-
       // Ctrl+K / Cmd+K for link
       const hasMeta = e.ctrlKey || e.metaKey;
       if (hasMeta && e.key.toLowerCase() === "k") {
@@ -247,6 +234,13 @@ export function ParagraphBlock({ block }: { block: Block }) {
           minHeight: "1.75em",
         }}
         data-placeholder="Start typing…"
+        {...(!isFocused
+          ? {
+              dangerouslySetInnerHTML: {
+                __html: richTextToHtml(content) || "",
+              },
+            }
+          : {})}
       />
       {slashMenu}
       {linkDialog && (

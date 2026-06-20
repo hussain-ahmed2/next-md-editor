@@ -3,6 +3,7 @@
 import React from "react";
 import type { Components } from "react-markdown";
 import { highlightCodeHtml } from "@/features/markdown/highlighter";
+import { MermaidPreview } from "./MermaidPreview";
 import { CALLOUT_TYPES } from "@/constants/calloutTypes";
 
 export const FONT_MONO = "ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace";
@@ -84,6 +85,9 @@ export const getMarkdownComponents = (): Components => {
       const lang = (className ?? "").replace("language-", "");
       const rawStr = String(children);
       const codeStr = rawStr.replace(/\n$/, "");
+      if (lang === "mermaid") {
+        return <MermaidPreview code={codeStr} />;
+      }
       if (className || rawStr.includes("\n")) {
         return (
           <div style={{ position: "relative", overflow: "auto" }}>

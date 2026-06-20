@@ -11,7 +11,7 @@ const POPULAR_LANGUAGES = [
   "bash", "shell", "powershell", "sql", "html", "css", "json", "yaml",
   "markdown", "dockerfile", "graphql", "sass", "less", "lua", "perl",
   "r", "dart", "elixir", "haskell", "clojure", "zig", "solidity",
-  "xml", "toml", "ini", "diff", "nginx",
+  "xml", "toml", "ini", "diff", "nginx", "mermaid",
 ];
 
 export function CodeBlock({ block }: { block: Block }) {

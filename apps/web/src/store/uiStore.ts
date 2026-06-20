@@ -13,6 +13,8 @@ interface UIState {
   saveStatus: "saving" | "saved" | "idle";
   editorMode: "canvas" | "source";
   sourceText: string;
+  isSearchOpen: boolean;
+  searchQuery: string;
 
   setSidebarWidth: (width: number) => void;
   setPreviewRatio: (ratio: number) => void;
@@ -27,6 +29,8 @@ interface UIState {
   startResizePreview: (mouseDownEvent: React.MouseEvent) => void;
   setEditorMode: (mode: "canvas" | "source") => void;
   setSourceText: (text: string) => void;
+  setSearchOpen: (open: boolean) => void;
+  setSearchQuery: (query: string) => void;
 }
 
 export const useUIStore = create<UIState>((set, get) => ({
@@ -40,6 +44,8 @@ export const useUIStore = create<UIState>((set, get) => ({
   saveStatus: "idle",
   editorMode: "canvas",
   sourceText: "",
+  isSearchOpen: false,
+  searchQuery: "",
 
   setSidebarWidth: (width) => set({ sidebarWidth: width }),
   setPreviewRatio: (ratio) => set({ previewRatio: ratio }),
@@ -51,6 +57,8 @@ export const useUIStore = create<UIState>((set, get) => ({
   setSaveStatus: (status) => set({ saveStatus: status }),
   setEditorMode: (mode) => set({ editorMode: mode }),
   setSourceText: (text) => set({ sourceText: text }),
+  setSearchOpen: (open) => set({ isSearchOpen: open }),
+  setSearchQuery: (query) => set({ searchQuery: query }),
   togglePreview: () => {
     const { isMobile, mobileTab, previewOpen } = get();
     if (isMobile) {
