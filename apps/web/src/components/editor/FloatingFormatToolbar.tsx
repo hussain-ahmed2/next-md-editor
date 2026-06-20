@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useEditorStore } from "@next-md-editor/editor-core";
-import type { RichText, FormatFlags, Block } from "@next-md-editor/types";
-import { getSelectionRichRange, getActiveFormats, toggleRichFormat, getDomTextOffset } from "@next-md-editor/markdown";
+import type { Block } from "@next-md-editor/types";
+import { getDomTextOffset } from "@next-md-editor/markdown";
 import { Brain } from "lucide-react";
 import { LinkDialog } from "./LinkDialog";
 import { EmojiPicker } from "./EmojiPicker";
@@ -23,6 +23,30 @@ function findBlockById(blocks: Block[], id: string): Block | undefined {
   return undefined;
 }
 
+function getParentLinkUrl(sel: Selection | null): string | null {
+  if (!sel || !sel.rangeCount) return null;
+  const node = sel.anchorNode;
+  if (!node) return null;
+  let el: Element | null = node.nodeType === Node.ELEMENT_NODE ? node as Element : node.parentElement;
+  while (el && el.getAttribute("contenteditable") !== "true") {
+    if (el.tagName === "A") return (el as HTMLAnchorElement).getAttribute("href");
+    el = el.parentElement;
+  }
+  return null;
+}
+
+function isInCodeElement(sel: Selection | null): boolean {
+  if (!sel || !sel.rangeCount) return false;
+  const node = sel.anchorNode;
+  if (!node) return false;
+  let el: Element | null = node.nodeType === Node.ELEMENT_NODE ? node as Element : node.parentElement;
+  while (el && el.getAttribute("contenteditable") !== "true") {
+    if (el.tagName === "CODE" || el.tagName === "PRE") return true;
+    el = el.parentElement;
+  }
+  return false;
+}
+
 interface BlockToolbarProps {
   blockId: string;
 }
@@ -32,13 +56,13 @@ export function BlockToolbar({ blockId }: BlockToolbarProps) {
 	const isTextBlock = b && TEXT_BLOCK_TYPES.has(b.type);
 	if (!isTextBlock) return null;
 
-	const [activeFormats, setActiveFormats] = useState<FormatFlags>({});
+	const [activeFormats, setActiveFormats] = useState<Record<string, boolean>>({});
+	const [linkUrl, setLinkUrl] = useState<string | null>(null);
 	const [linkDialog, setLinkDialog] = useState<{ url: string } | null>(null);
 	const [emojiPicker, setEmojiPicker] = useState(false);
 	const [aiDialogOpen, setAiDialogOpen] = useState(false);
 	const emojiBtnRef = useRef<HTMLButtonElement>(null);
 	const toolbarRef = useRef<HTMLDivElement>(null);
-	const rangeRef = useRef<{ start: number; end: number } | null>(null);
 	const savedSelRef = useRef<{ el: HTMLElement; start: number; end: number } | null>(null);
 
 	const getContentEditable = useCallback(() => {
@@ -47,21 +71,18 @@ export function BlockToolbar({ blockId }: BlockToolbarProps) {
 
 	const updateFormats = useCallback(() => {
 		const el = getContentEditable();
-		if (!el) return;
-
+		if (!el || document.activeElement !== el) return;
 		const sel = window.getSelection();
 		if (!sel || !sel.rangeCount) return;
 
-		const blocks = useEditorStore.getState().blocks;
-		const block = findBlockById(blocks, blockId);
-		if (!block || !Array.isArray(block.props.content)) return;
-		const content = block.props.content as RichText;
-		const richRange = getSelectionRichRange(content, el);
-		if (richRange) {
-			rangeRef.current = { start: richRange.start, end: richRange.end };
-			setActiveFormats(getActiveFormats(content, richRange.start));
-		}
-	}, [blockId, getContentEditable]);
+		setActiveFormats({
+			bold: document.queryCommandState("bold"),
+			italic: document.queryCommandState("italic"),
+			strikethrough: document.queryCommandState("strikeThrough"),
+			code: isInCodeElement(sel),
+		});
+		setLinkUrl(getParentLinkUrl(sel));
+	}, [getContentEditable]);
 
 	useEffect(() => {
 		updateFormats();
@@ -76,69 +97,58 @@ export function BlockToolbar({ blockId }: BlockToolbarProps) {
 		return () => document.removeEventListener("selectionchange", handleSelectionChange);
 	}, [updateFormats, getContentEditable]);
 
-	const apply = useCallback(
-		(action: FormatAction) => {
-			const el = getContentEditable();
-			if (!el) return;
+	const apply = useCallback((action: FormatAction) => {
+		const el = getContentEditable();
+		if (!el) return;
 
-			const blocks = useEditorStore.getState().blocks;
-			const block = findBlockById(blocks, blockId);
-			if (!block || !Array.isArray(block.props.content)) return;
-			const content = block.props.content as RichText;
-
-			const sel = window.getSelection();
-			if (!sel || !sel.rangeCount) return;
-			const richRange = getSelectionRichRange(content, el);
-			if (!richRange) return;
-
-			const efEnd = Math.max(richRange.start + 1, richRange.end);
-
-			if (action === "link") {
-				setLinkDialog({ url: getActiveFormats(content, richRange.start).link || "https://" });
+		switch (action) {
+			case "bold":
+				document.execCommand("bold");
+				break;
+			case "italic":
+				document.execCommand("italic");
+				break;
+			case "strikethrough":
+				document.execCommand("strikeThrough");
+				break;
+			case "code":
+				const sel = window.getSelection();
+				if (sel && sel.rangeCount > 0 && !sel.getRangeAt(0).collapsed) {
+					if (isInCodeElement(sel)) {
+						document.execCommand("insertHTML", false, sel.toString());
+					} else {
+						document.execCommand("insertHTML", false, "<code>" + sel.toString() + "</code>");
+					}
+				} else {
+					return;
+				}
+				break;
+			case "link":
+				setLinkDialog({ url: linkUrl || "https://" });
 				return;
-			}
+		}
 
-			rangeRef.current = { start: richRange.start, end: efEnd };
-			useEditorStore.getState().updateBlock(blockId, {
-				content: toggleRichFormat(content, richRange.start, efEnd, { [action]: true }),
-			});
-		},
-		[blockId, getContentEditable],
-	);
+		el.dispatchEvent(new Event("input", { bubbles: true }));
+	}, [getContentEditable, linkUrl]);
 
-	const applyLink = useCallback(
-		(url: string) => {
-			const blocks = useEditorStore.getState().blocks;
-			const block = findBlockById(blocks, blockId);
-			if (!block || !Array.isArray(block.props.content)) return;
-			const content = block.props.content as RichText;
-
-			const el = getContentEditable();
-			if (!el) return;
-			const sel = window.getSelection();
-			if (!sel || !sel.rangeCount) return;
-			const richRange = getSelectionRichRange(content, el);
-			if (!richRange) return;
-
-			useEditorStore.getState().updateBlock(blockId, {
-				content: toggleRichFormat(content, richRange.start, Math.max(richRange.start + 1, richRange.end), { link: url }),
-			});
-			setLinkDialog(null);
-		},
-		[blockId, getContentEditable],
-	);
+	const applyLink = useCallback((url: string) => {
+		const el = getContentEditable();
+		if (!el) return;
+		document.execCommand("unlink");
+		if (url) {
+			document.execCommand("createLink", false, url);
+		}
+		el.dispatchEvent(new Event("input", { bubbles: true }));
+		setLinkDialog(null);
+	}, [getContentEditable]);
 
 	const removeLink = useCallback(() => {
-		const blocks = useEditorStore.getState().blocks;
-		const block = findBlockById(blocks, blockId);
-		if (!block || !Array.isArray(block.props.content) || !rangeRef.current) return;
-		const content = block.props.content as RichText;
-		const { start, end } = rangeRef.current;
-		useEditorStore.getState().updateBlock(blockId, {
-			content: toggleRichFormat(content, start, end, { link: activeFormats.link || "https://" }),
-		});
+		const el = getContentEditable();
+		if (!el) return;
+		document.execCommand("unlink");
+		el.dispatchEvent(new Event("input", { bubbles: true }));
 		setLinkDialog(null);
-	}, [blockId, activeFormats.link]);
+	}, [getContentEditable]);
 
 	const handleEmoji = useCallback((emoji: string) => {
 		setEmojiPicker(false);
@@ -200,12 +210,8 @@ export function BlockToolbar({ blockId }: BlockToolbarProps) {
 	];
 
 	const hasFormat = (action: FormatAction): boolean => {
-		if (action === "bold") return !!activeFormats.bold;
-		if (action === "italic") return !!activeFormats.italic;
-		if (action === "code") return !!activeFormats.code;
-		if (action === "strikethrough") return !!activeFormats.strikethrough;
-		if (action === "link") return !!activeFormats.link;
-		return false;
+		if (action === "link") return !!linkUrl;
+		return !!activeFormats[action];
 	};
 
 	return (
@@ -335,7 +341,7 @@ export function BlockToolbar({ blockId }: BlockToolbarProps) {
 						initialUrl={linkDialog.url}
 						position={linkPos}
 						onApply={applyLink}
-						onRemove={activeFormats.link ? removeLink : undefined}
+						onRemove={linkUrl ? removeLink : undefined}
 						onCancel={() => setLinkDialog(null)}
 					/>
 				);
