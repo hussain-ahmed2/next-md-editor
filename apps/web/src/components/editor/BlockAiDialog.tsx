@@ -16,7 +16,7 @@ type DialogState = "input" | "streaming" | "done" | "error";
 
 export const TEXT_BLOCK_TYPES = new Set([
   "heading", "paragraph", "quote", "code", "bullet-list", "numbered-list",
-  "callout", "collapsible",
+  "callout", "collapsible", "table",
 ]);
 
 function getBlockContentText(block: Block): string {

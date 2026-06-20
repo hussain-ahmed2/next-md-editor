@@ -104,6 +104,9 @@ function toggleRichFormat(
       return { text: s.text, code: !s.code } as RichTextSpan;
     }
     if (allAlreadySet) {
+      if (format.link && format.link !== s.link) {
+        return { ...s, ...format, text: s.text };
+      }
       return { text: s.text } as RichTextSpan;
     }
     return { ...s, ...format, text: s.text };
