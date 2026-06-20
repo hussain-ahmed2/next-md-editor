@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback } from "react";
 import { Sparkles, Square, RotateCw, FileDown, X } from "lucide-react";
-import { useEditorStore } from "@next-md-editor/editor-core";
+import { useEditorStore, BlockRegistry } from "@next-md-editor/editor-core";
 import { parseMarkdown } from "@/features/markdown/serializer";
 import { v4 as uuidv4 } from "uuid";
 import type { Block } from "@next-md-editor/types";
@@ -20,6 +20,13 @@ export const TEXT_BLOCK_TYPES = new Set([
 ]);
 
 function getBlockContentText(block: Block): string {
+  try {
+    const def = BlockRegistry.get(block.type);
+    if (def?.serializer) {
+      const md = def.serializer(block);
+      if (md) return md;
+    }
+  } catch {}
   switch (block.type) {
     case "heading":
       return (block.props.text as string) ?? "";
@@ -123,8 +130,9 @@ export function BlockAiDialog({ blockId, onClose }: BlockAiDialogProps) {
               role: "system",
               content:
                 "You are a content editor. The user will provide their current block content and a modification request. "
-                + "Respond with ONLY the modified content as markdown, preserving the SAME block format and heading level as the original. "
-                + "For example, if the original is a heading with ##, respond with ## followed by the modified text. "
+                + "Respond with ONLY the modified content as markdown. "
+                + "Keep the SAME block type as the original (e.g., if the original is a heading, output a heading). "
+                + "Only change the block type if the user explicitly asks you to. "
                 + "Do not include explanations or metadata.",
             },
             {
