@@ -2,14 +2,18 @@ import { NextRequest } from "next/server";
 
 export const runtime = "edge";
 
-const DEFAULT_SYSTEM_PROMPT = `You are a helpful coding assistant. Generate clear, well-formatted content in GitHub Flavored Markdown based on the user's request. Use proper formatting: fenced code blocks with language tags, tables, lists, and headings where appropriate. Return ONLY the markdown content — no extra commentary or explanation.`;
+const SYSTEM_PROMPT = `You are a helpful coding assistant. Generate clear, well-formatted content in GitHub Flavored Markdown based on the user's request. Use proper formatting: fenced code blocks with language tags, tables, lists, and headings where appropriate. When given a prior conversation, build on the previous context naturally. Always respond in markdown unless the user asks for plain text.`;
 
 export async function POST(req: NextRequest) {
-  const { prompt, systemPrompt } = await req.json();
+  const { messages, prompt, systemPrompt } = await req.json();
 
-  if (!prompt || typeof prompt !== "string") {
-    return new Response("Missing prompt", { status: 400 });
+  if ((!messages || !Array.isArray(messages)) && (!prompt || typeof prompt !== "string")) {
+    return new Response("Missing messages or prompt", { status: 400 });
   }
+
+  const apiMessages = messages ?? [
+    { role: "user", content: prompt },
+  ];
 
   const openRouterRes = await fetch(
     "https://openrouter.ai/api/v1/chat/completions",
@@ -24,8 +28,8 @@ export async function POST(req: NextRequest) {
         max_tokens: 600,
         stream: true,
         messages: [
-          { role: "system", content: systemPrompt || DEFAULT_SYSTEM_PROMPT },
-          { role: "user", content: prompt },
+          { role: "system", content: systemPrompt || SYSTEM_PROMPT },
+          ...apiMessages,
         ],
       }),
     },

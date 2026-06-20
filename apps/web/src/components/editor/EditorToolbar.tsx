@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import { CheckCheck, Loader2, ListTree, Search, Sparkles } from "lucide-react";
+import { CheckCheck, Loader2, ListTree, Search, Sparkles, Brain } from "lucide-react";
 import { useUIStore } from "@/store/uiStore";
 import { useEditorStore } from "@next-md-editor/editor-core";
 import { UndoRedoButtons } from "./toolbar/UndoRedoButtons";
@@ -100,6 +100,13 @@ export function EditorToolbar() {
         </ToolbarButton>
         <Divider />
         <TemplateMenu />
+        <ToolbarButton
+          onClick={() => useUIStore.getState().setAiChatOpen(true)}
+          tooltip="AI Assistant — chat and generate content"
+        >
+          <Brain size={14} />
+          <span className="btn-label">AI Chat</span>
+        </ToolbarButton>
         <ToolbarButton
           onClick={() => useUIStore.getState().setAiReadmeOpen(true)}
           tooltip="Generate README with AI"

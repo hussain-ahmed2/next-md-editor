@@ -21,6 +21,7 @@ import { MobileBottomBar } from "@/components/editor/MobileBottomBar";
 import { DragOverlayContent } from "@/components/editor/DragOverlayContent";
 import { SearchReplaceOverlay } from "@/components/editor/SearchReplaceOverlay";
 import { AiReadmeDialog } from "@/components/editor/AiReadmeDialog";
+import { AiChatPanel } from "@/components/editor/AiChatPanel";
 
 // Disable dropAnimation entirely — the default "snap back" animation causes
 // a brief flicker of the drag overlay at the original block position after
@@ -127,6 +128,7 @@ export default function EditorPage() {
       <EditorToolbar />
       <SearchReplaceOverlay />
       <AiReadmeDialog />
+      <AiChatPanel />
 
       {editorMode === "source" ? (
         <div
