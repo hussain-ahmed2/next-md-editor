@@ -28,6 +28,10 @@ interface BlockToolbarProps {
 }
 
 export function BlockToolbar({ blockId }: BlockToolbarProps) {
+	const b = findBlockById(useEditorStore.getState().blocks, blockId);
+	const isTextBlock = b && TEXT_BLOCK_TYPES.has(b.type);
+	if (!isTextBlock) return null;
+
 	const [activeFormats, setActiveFormats] = useState<FormatFlags>({});
 	const [linkDialog, setLinkDialog] = useState<{ url: string } | null>(null);
 	const [emojiPicker, setEmojiPicker] = useState(false);
