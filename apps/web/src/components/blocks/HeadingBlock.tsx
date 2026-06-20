@@ -92,7 +92,10 @@ export function HeadingBlock({ block }: { block: Block }) {
   // When entering focus, snap caret and ensure text is populated
   useEffect(() => {
     if (isFocused && ref.current) {
-      ref.current.innerHTML = renderInlineMarkdown(text);
+      const currentMarkdown = htmlToMarkdown(ref.current.innerHTML);
+      if (currentMarkdown !== text) {
+        ref.current.innerHTML = renderInlineMarkdown(text);
+      }
       const range = document.createRange();
       range.selectNodeContents(ref.current);
       range.collapse(false);
@@ -102,7 +105,7 @@ export function HeadingBlock({ block }: { block: Block }) {
         selection.addRange(range);
       }
     }
-  }, [isFocused]);
+  }, [isFocused, text]);
 
   const handleInput = (e: React.InputEvent<HTMLDivElement>) => {
     const rawText = htmlToMarkdown(e.currentTarget.innerHTML);

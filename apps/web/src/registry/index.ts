@@ -12,6 +12,7 @@ import { ImageGridBlock } from "@/components/blocks/ImageGridBlock";
 import { BadgeGroupBlock } from "@/components/blocks/BadgeGroupBlock";
 import { GithubStatsBlock } from "@/components/blocks/GithubStatsBlock";
 import { CollapsibleBlock } from "@/components/blocks/CollapsibleBlock";
+import { AiContentBlock } from "@/components/blocks/AiContentBlock";
 
 export function initRegistry() {
   BlockRegistry.register({
@@ -222,5 +223,12 @@ export function initRegistry() {
       const content = (b.props.content as string) ?? "";
       return `<details${b.props.open ? " open" : ""}>\n<summary>${summary}</summary>\n\n${content}\n\n</details>`;
     },
+  });
+
+  BlockRegistry.register({
+    type: "ai-content",
+    component: AiContentBlock,
+    defaultProps: { prompt: "", generated: "" },
+    serializer: (b) => (b.props.generated as string) ?? "",
   });
 }
