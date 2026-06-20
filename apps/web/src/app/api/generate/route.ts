@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
       },
       body: JSON.stringify({
         model: "~openai/gpt-latest",
-        max_tokens: 600,
+        max_tokens: 500,
         stream: true,
         messages: [
           { role: "system", content: systemPrompt || SYSTEM_PROMPT },
