@@ -4,9 +4,11 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useEditorStore } from "@next-md-editor/editor-core";
 import type { RichText, FormatFlags, Block } from "@next-md-editor/types";
 import { getSelectionRichRange, getActiveFormats, toggleRichFormat, getDomTextOffset } from "@next-md-editor/markdown";
+import { Brain } from "lucide-react";
 import { LinkDialog } from "./LinkDialog";
 import { EmojiPicker } from "./EmojiPicker";
 import { insertEmoji } from "@/utils/insert-emoji";
+import { BlockAiDialog, TEXT_BLOCK_TYPES } from "./BlockAiDialog";
 
 type FormatAction = "bold" | "italic" | "code" | "strikethrough" | "link";
 
@@ -29,6 +31,7 @@ export function BlockToolbar({ blockId }: BlockToolbarProps) {
 	const [activeFormats, setActiveFormats] = useState<FormatFlags>({});
 	const [linkDialog, setLinkDialog] = useState<{ url: string } | null>(null);
 	const [emojiPicker, setEmojiPicker] = useState(false);
+	const [aiDialogOpen, setAiDialogOpen] = useState(false);
 	const emojiBtnRef = useRef<HTMLButtonElement>(null);
 	const toolbarRef = useRef<HTMLDivElement>(null);
 	const rangeRef = useRef<{ start: number; end: number } | null>(null);
@@ -284,7 +287,42 @@ export function BlockToolbar({ blockId }: BlockToolbarProps) {
 					</button>
 					{emojiPicker && <EmojiPicker onSelect={handleEmoji} onClose={() => setEmojiPicker(false)} buttonRef={emojiBtnRef} />}
 				</div>
+				<div style={{ width: 1, height: 16, background: "var(--border-subtle)", margin: "0 4px" }} />
+				{(() => {
+					const b = findBlockById(useEditorStore.getState().blocks, blockId);
+					return b && TEXT_BLOCK_TYPES.has(b.type);
+				})() && (
+					<button
+						onClick={() => setAiDialogOpen(true)}
+						title="Edit with AI"
+						style={{
+							background: aiDialogOpen ? "var(--accent)" : "transparent",
+							border: "none",
+							borderRadius: 4,
+							padding: "3px 7px",
+							cursor: "pointer",
+							color: aiDialogOpen ? "#fff" : "var(--text-secondary)",
+							fontSize: 12,
+							transition: "all 0.12s",
+						}}
+						onMouseEnter={(e) => {
+							if (!aiDialogOpen) {
+								e.currentTarget.style.background = "var(--bg-elevated)";
+								e.currentTarget.style.color = "var(--text-primary)";
+							}
+						}}
+						onMouseLeave={(e) => {
+							if (!aiDialogOpen) {
+								e.currentTarget.style.background = "transparent";
+								e.currentTarget.style.color = "var(--text-secondary)";
+							}
+						}}
+					>
+						<Brain size={13} />
+					</button>
+				)}
 			</div>
+			{aiDialogOpen && <BlockAiDialog blockId={blockId} onClose={() => setAiDialogOpen(false)} />}
 			{linkDialog && (() => {
 				const tr = toolbarRef.current?.getBoundingClientRect();
 				const linkPos = tr ? { top: tr.bottom + 4, left: tr.left + tr.width / 2 } : { top: 80, left: window.innerWidth / 2 };
