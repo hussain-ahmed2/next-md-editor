@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useEditorStore } from "@next-md-editor/editor-core";
-import type { Block } from "@next-md-editor/types";
+import type { Block, RichText } from "@next-md-editor/types";
+import { getDomTextOffset, insertRichText } from "@next-md-editor/markdown";
 import { Brain } from "lucide-react";
 import { LinkDialog } from "./LinkDialog";
 import { EmojiPicker } from "./EmojiPicker";
@@ -62,7 +63,8 @@ export function BlockToolbar({ blockId }: BlockToolbarProps) {
 	const [aiDialogOpen, setAiDialogOpen] = useState(false);
 	const emojiBtnRef = useRef<HTMLButtonElement>(null);
 	const toolbarRef = useRef<HTMLDivElement>(null);
-	const savedRangeRef = useRef<Range | null>(null);
+	const savedLinkRangeRef = useRef<Range | null>(null);
+	const savedEmojiSelRef = useRef<{ blockId: string; offset: number } | null>(null);
 
 	const getContentEditable = useCallback(() => {
 		return document.querySelector<HTMLElement>(`[contenteditable][data-block-id="${blockId}"]`);
@@ -124,7 +126,7 @@ export function BlockToolbar({ blockId }: BlockToolbarProps) {
 				break;
 			case "link": {
 				const s = window.getSelection();
-				if (s && s.rangeCount > 0) savedRangeRef.current = s.getRangeAt(0).cloneRange();
+				if (s && s.rangeCount > 0) savedLinkRangeRef.current = s.getRangeAt(0).cloneRange();
 				setLinkDialog({ url: linkUrl || "https://" });
 				return;
 			}
@@ -136,7 +138,7 @@ export function BlockToolbar({ blockId }: BlockToolbarProps) {
 	const applyLink = useCallback((url: string) => {
 		const el = getContentEditable();
 		if (!el) return;
-		const saved = savedRangeRef.current;
+		const saved = savedLinkRangeRef.current;
 		if (saved) {
 			el.focus();
 			const sel = window.getSelection();
@@ -150,14 +152,14 @@ export function BlockToolbar({ blockId }: BlockToolbarProps) {
 			document.execCommand("createLink", false, url);
 		}
 		el.dispatchEvent(new Event("input", { bubbles: true }));
-		savedRangeRef.current = null;
+		savedLinkRangeRef.current = null;
 		setLinkDialog(null);
 	}, [getContentEditable]);
 
 	const removeLink = useCallback(() => {
 		const el = getContentEditable();
 		if (!el) return;
-		const saved = savedRangeRef.current;
+		const saved = savedLinkRangeRef.current;
 		if (saved) {
 			el.focus();
 			const sel = window.getSelection();
@@ -168,38 +170,36 @@ export function BlockToolbar({ blockId }: BlockToolbarProps) {
 		}
 		document.execCommand("unlink");
 		el.dispatchEvent(new Event("input", { bubbles: true }));
-		savedRangeRef.current = null;
+		savedLinkRangeRef.current = null;
 		setLinkDialog(null);
 	}, [getContentEditable]);
 
 	const handleEmoji = useCallback((emoji: string) => {
 		setEmojiPicker(false);
 
-		const range = savedRangeRef.current;
-		savedRangeRef.current = null;
+		const saved = savedEmojiSelRef.current;
+		savedEmojiSelRef.current = null;
 
-		if (range) {
-			const el = range.startContainer.parentElement?.closest("[contenteditable]") as HTMLElement | null;
-			if (el) {
-				el.focus();
-				const sel = window.getSelection();
-				if (sel) {
-					sel.removeAllRanges();
-					sel.addRange(range);
+		if (saved) {
+			const blocks = useEditorStore.getState().blocks;
+			const block = findBlockById(blocks, saved.blockId);
+			if (block) {
+				const update = useEditorStore.getState().updateBlock;
+				const text = block.props.text;
+				if (typeof text === "string") {
+					const offset = Math.min(saved.offset, text.length);
+					update(saved.blockId, { text: text.slice(0, offset) + emoji + text.slice(offset) });
+					document.querySelector<HTMLElement>(`[contenteditable][data-block-id="${saved.blockId}"]`)?.focus();
+					return;
 				}
-
-				range.deleteContents();
-				const textNode = document.createTextNode(emoji);
-				range.insertNode(textNode);
-				range.setStartAfter(textNode);
-				range.collapse(true);
-				if (sel) {
-					sel.removeAllRanges();
-					sel.addRange(range);
+				if (Array.isArray(block.props.content)) {
+					const content = block.props.content as RichText;
+					const len = content.reduce((s, sp) => s + (sp.text?.length ?? 0), 0);
+					const offset = Math.min(saved.offset, len);
+					update(saved.blockId, { content: insertRichText(content, offset, emoji) });
+					document.querySelector<HTMLElement>(`[contenteditable][data-block-id="${saved.blockId}"]`)?.focus();
+					return;
 				}
-
-				el.dispatchEvent(new Event("input", { bubbles: true }));
-				return;
 			}
 		}
 
@@ -211,13 +211,14 @@ export function BlockToolbar({ blockId }: BlockToolbarProps) {
 		if (el) {
 			const sel = window.getSelection();
 			if (sel && sel.rangeCount > 0 && el.contains(sel.anchorNode as Node)) {
-				savedRangeRef.current = sel.getRangeAt(0).cloneRange();
+				const offset = getDomTextOffset(el, sel.anchorNode!, sel.anchorOffset);
+				savedEmojiSelRef.current = { blockId, offset };
 			} else {
-				savedRangeRef.current = null;
+				savedEmojiSelRef.current = null;
 			}
 		}
 		setEmojiPicker((p) => !p);
-	}, [getContentEditable]);
+	}, [blockId, getContentEditable]);
 
 	const buttons: { action: FormatAction; label: React.ReactNode }[] = [
 		{ action: "bold", label: <strong style={{ fontSize: 13, letterSpacing: 0 }}>B</strong> },
