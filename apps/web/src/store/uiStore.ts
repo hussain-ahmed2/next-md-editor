@@ -15,7 +15,6 @@ interface UIState {
   sourceText: string;
   isSearchOpen: boolean;
   searchQuery: string;
-  isAiReadmeOpen: boolean;
   isAiChatOpen: boolean;
 
   setSidebarWidth: (width: number) => void;
@@ -33,7 +32,6 @@ interface UIState {
   setSourceText: (text: string) => void;
   setSearchOpen: (open: boolean) => void;
   setSearchQuery: (query: string) => void;
-  setAiReadmeOpen: (open: boolean) => void;
   setAiChatOpen: (open: boolean) => void;
 }
 
@@ -50,7 +48,6 @@ export const useUIStore = create<UIState>((set, get) => ({
   sourceText: "",
   isSearchOpen: false,
   searchQuery: "",
-  isAiReadmeOpen: false,
   isAiChatOpen: false,
 
   setSidebarWidth: (width) => set({ sidebarWidth: width }),
@@ -65,7 +62,6 @@ export const useUIStore = create<UIState>((set, get) => ({
   setSourceText: (text) => set({ sourceText: text }),
   setSearchOpen: (open) => set({ isSearchOpen: open }),
   setSearchQuery: (query) => set({ searchQuery: query }),
-  setAiReadmeOpen: (open) => set({ isAiReadmeOpen: open }),
   setAiChatOpen: (open) => set({ isAiChatOpen: open }),
   togglePreview: () => {
     const { isMobile, mobileTab, previewOpen } = get();

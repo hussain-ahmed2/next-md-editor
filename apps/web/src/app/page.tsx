@@ -20,7 +20,6 @@ import { ResizeBar } from "@/components/editor/ResizeBar";
 import { MobileBottomBar } from "@/components/editor/MobileBottomBar";
 import { DragOverlayContent } from "@/components/editor/DragOverlayContent";
 import { SearchReplaceOverlay } from "@/components/editor/SearchReplaceOverlay";
-import { AiReadmeDialog } from "@/components/editor/AiReadmeDialog";
 import { AiChatPanel } from "@/components/editor/AiChatPanel";
 
 // Disable dropAnimation entirely — the default "snap back" animation causes
@@ -127,7 +126,6 @@ export default function EditorPage() {
     >
       <EditorToolbar />
       <SearchReplaceOverlay />
-      <AiReadmeDialog />
       <AiChatPanel />
 
       {editorMode === "source" ? (

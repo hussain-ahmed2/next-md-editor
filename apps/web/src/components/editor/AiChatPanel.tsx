@@ -1,16 +1,41 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { Sparkles, Send, Square, FileDown, X, Brain, User } from "lucide-react";
+import { Sparkles, Send, Square, FileDown, X, Brain, User, RotateCw } from "lucide-react";
 import { useUIStore } from "@/store/uiStore";
 import { useEditorStore } from "@next-md-editor/editor-core";
 import { parseMarkdown } from "@/features/markdown/serializer";
+import { README_PROMPTS, type PromptTemplate } from "@/data/readme-prompts";
 import { v4 as uuidv4 } from "uuid";
 
 interface Message {
   role: "user" | "assistant";
   content: string;
 }
+
+const QUICK_PROMPTS: PromptTemplate[] = [
+  ...README_PROMPTS,
+  {
+    label: "Paragraph",
+    description: "Write a paragraph about any topic",
+    prompt: "Write a well-crafted paragraph about ",
+  },
+  {
+    label: "Code Example",
+    description: "Generate a code snippet",
+    prompt: "Write a code example showing how to ",
+  },
+  {
+    label: "List",
+    description: "Generate a bullet or numbered list",
+    prompt: "Create a list of ",
+  },
+  {
+    label: "Explain",
+    description: "Explain a concept simply",
+    prompt: "Explain ",
+  },
+];
 
 export function AiChatPanel() {
   const isOpen = useUIStore((s) => s.isAiChatOpen);
@@ -29,8 +54,6 @@ export function AiChatPanel() {
   useEffect(() => {
     if (isOpen) {
       setTimeout(() => inputRef.current?.focus(), 100);
-    } else {
-      setMessages([]);
     }
   }, [isOpen]);
 
@@ -38,10 +61,8 @@ export function AiChatPanel() {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
   }, [messages]);
 
-  const handleSend = useCallback(async () => {
-    const text = input.trim();
-    if (!text || streaming) return;
-    setInput("");
+  const sendPrompt = useCallback(async (text: string) => {
+    if (!text.trim() || streaming) return;
 
     const userMsg: Message = { role: "user", content: text };
     const assistantMsg: Message = { role: "assistant", content: "" };
@@ -95,12 +116,31 @@ export function AiChatPanel() {
       abortRef.current = null;
       inputRef.current?.focus();
     }
-  }, [input, messages, streaming]);
+  }, [messages, streaming]);
+
+  const handleSend = useCallback(async () => {
+    const text = input.trim();
+    if (!text || streaming) return;
+    setInput("");
+    await sendPrompt(text);
+  }, [input, streaming, sendPrompt]);
+
+  const handlePromptChip = useCallback(async (prompt: string) => {
+    await sendPrompt(prompt);
+  }, [sendPrompt]);
 
   const handleStop = useCallback(() => {
     abortRef.current?.abort();
     setStreaming(false);
   }, []);
+
+  const handleRegenerate = useCallback(() => {
+    const lastUser = [...messages].reverse().find((m) => m.role === "user");
+    if (lastUser) {
+      setMessages((prev) => prev.slice(0, -1));
+      handlePromptChip(lastUser.content);
+    }
+  }, [messages, handlePromptChip]);
 
   const handleInsertAll = useCallback(() => {
     const full = messages
@@ -120,6 +160,10 @@ export function AiChatPanel() {
     setOpen(false);
   }, [messages, blocks, selectedBlockIds, addBlock, setOpen]);
 
+  const handleClear = useCallback(() => {
+    setMessages([]);
+  }, []);
+
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.key === "Enter" && !e.shiftKey) {
@@ -129,8 +173,6 @@ export function AiChatPanel() {
     },
     [handleSend],
   );
-
-  if (!isOpen) return null;
 
   const bubbleStyle = (role: "user" | "assistant"): React.CSSProperties => ({
     maxWidth: "85%",
@@ -147,9 +189,28 @@ export function AiChatPanel() {
     border: role === "user" ? "none" : "1px solid var(--border)",
   });
 
+  const btnBase: React.CSSProperties = {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    padding: "5px 12px",
+    fontSize: 11,
+    fontWeight: 600,
+    border: "none",
+    borderRadius: 6,
+    cursor: "pointer",
+    fontFamily: "inherit",
+    transition: "opacity 0.15s ease",
+  };
+
+  const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant" && m.content);
+
   return (
     <>
-      <div style={{ position: "fixed", inset: 0, zIndex: 9997 }} onClick={() => setOpen(false)} />
+      {isOpen && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 9997 }} onClick={() => setOpen(false)} />
+      )}
       <div
         style={{
           position: "fixed",
@@ -162,9 +223,9 @@ export function AiChatPanel() {
           background: "var(--bg-elevated)",
           borderLeft: "1px solid var(--border)",
           boxShadow: "var(--shadow-xl)",
-          display: "flex",
+          display: isOpen ? "flex" : "none",
           flexDirection: "column",
-          animation: "slideIn 0.2s ease",
+          animation: isOpen ? "slideIn 0.2s ease" : "none",
         }}
       >
         {/* Header */}
@@ -183,20 +244,40 @@ export function AiChatPanel() {
               AI Assistant
             </span>
           </div>
-          <button
-            onClick={() => setOpen(false)}
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              color: "var(--text-muted)",
-              padding: 4,
-              borderRadius: 4,
-              display: "flex",
-            }}
-          >
-            <X size={16} />
-          </button>
+          <div style={{ display: "flex", gap: 4 }}>
+            {messages.length > 0 && (
+              <button
+                onClick={handleClear}
+                title="Clear conversation"
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "var(--text-muted)",
+                  padding: 4,
+                  borderRadius: 4,
+                  display: "flex",
+                  fontSize: 11,
+                }}
+              >
+                Clear
+              </button>
+            )}
+            <button
+              onClick={() => setOpen(false)}
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                color: "var(--text-muted)",
+                padding: 4,
+                borderRadius: 4,
+                display: "flex",
+              }}
+            >
+              <X size={16} />
+            </button>
+          </div>
         </div>
 
         {/* Messages */}
@@ -212,22 +293,53 @@ export function AiChatPanel() {
           }}
         >
           {messages.length === 0 && (
-            <div
-              style={{
-                textAlign: "center",
-                color: "var(--text-muted)",
-                fontSize: 12,
-                padding: "40px 20px",
-                lineHeight: 1.6,
-              }}
-            >
-              <Sparkles size={24} style={{ color: "var(--accent)", marginBottom: 8 }} />
-              <div style={{ fontWeight: 600, fontSize: 13, color: "var(--text-secondary)", marginBottom: 4 }}>
-                Ask me anything
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <div
+                style={{
+                  textAlign: "center",
+                  color: "var(--text-muted)",
+                  fontSize: 12,
+                  padding: "24px 20px 8px",
+                  lineHeight: 1.6,
+                }}
+              >
+                <Sparkles size={24} style={{ color: "var(--accent)", marginBottom: 8 }} />
+                <div style={{ fontWeight: 600, fontSize: 13, color: "var(--text-secondary)", marginBottom: 4 }}>
+                  Ask me anything
+                </div>
+                <div>
+                  Write content, generate code, create tables,<br />
+                  or refine previous responses.
+                </div>
               </div>
-              <div>
-                Write a paragraph, generate code, create a table,<br />
-                or ask for edits to previous responses.
+
+              {/* Quick prompts */}
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, padding: "0 4px 4px" }}>
+                {QUICK_PROMPTS.map((t) => (
+                  <button
+                    key={t.label}
+                    onClick={() => handlePromptChip(t.prompt)}
+                    style={{
+                      padding: "6px 10px",
+                      fontSize: 11,
+                      background: "var(--bg-surface)",
+                      border: "1px solid var(--border)",
+                      borderRadius: 6,
+                      cursor: "pointer",
+                      color: "var(--text-primary)",
+                      textAlign: "left",
+                      fontFamily: "inherit",
+                      flex: "1 0 calc(50% - 6px)",
+                      minWidth: 0,
+                      transition: "border-color 0.15s ease",
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.borderColor = "var(--accent)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.borderColor = "var(--border)")}
+                  >
+                    <div style={{ fontWeight: 600, fontSize: 11, marginBottom: 1 }}>{t.label}</div>
+                    <div style={{ fontSize: 10, color: "var(--text-muted)" }}>{t.description}</div>
+                  </button>
+                ))}
               </div>
             </div>
           )}
@@ -253,6 +365,8 @@ export function AiChatPanel() {
               </div>
             </div>
           ))}
+
+          {/* Action buttons */}
           {messages.length > 0 && (
             <div
               style={{
@@ -260,22 +374,28 @@ export function AiChatPanel() {
                 justifyContent: "flex-end",
                 gap: 6,
                 padding: "4px 0",
+                flexWrap: "wrap",
               }}
             >
+              {lastAssistant && !streaming && (
+                <button
+                  onClick={handleRegenerate}
+                  style={{
+                    ...btnBase,
+                    background: "var(--bg-surface)",
+                    border: "1px solid var(--border)",
+                    color: "var(--text-primary)",
+                  }}
+                >
+                  <RotateCw size={12} />
+                  Regenerate
+                </button>
+              )}
               <button
                 onClick={handleInsertAll}
                 disabled={!messages.some((m) => m.role === "assistant" && m.content)}
                 style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 5,
-                  padding: "5px 12px",
-                  fontSize: 11,
-                  fontWeight: 600,
-                  border: "none",
-                  borderRadius: 5,
-                  cursor: "pointer",
-                  fontFamily: "inherit",
+                  ...btnBase,
                   background: "var(--accent)",
                   color: "#fff",
                   opacity: messages.some((m) => m.role === "assistant" && m.content) ? 1 : 0.5,
