@@ -64,6 +64,7 @@ export function BlockToolbar({ blockId }: BlockToolbarProps) {
 	const emojiBtnRef = useRef<HTMLButtonElement>(null);
 	const toolbarRef = useRef<HTMLDivElement>(null);
 	const savedSelRef = useRef<{ el: HTMLElement; start: number; end: number } | null>(null);
+	const savedRangeRef = useRef<Range | null>(null);
 
 	const getContentEditable = useCallback(() => {
 		return document.querySelector<HTMLElement>(`[contenteditable][data-block-id="${blockId}"]`);
@@ -123,9 +124,12 @@ export function BlockToolbar({ blockId }: BlockToolbarProps) {
 					return;
 				}
 				break;
-			case "link":
+			case "link": {
+				const s = window.getSelection();
+				if (s && s.rangeCount > 0) savedRangeRef.current = s.getRangeAt(0).cloneRange();
 				setLinkDialog({ url: linkUrl || "https://" });
 				return;
+			}
 		}
 
 		el.dispatchEvent(new Event("input", { bubbles: true }));
@@ -134,19 +138,39 @@ export function BlockToolbar({ blockId }: BlockToolbarProps) {
 	const applyLink = useCallback((url: string) => {
 		const el = getContentEditable();
 		if (!el) return;
+		const saved = savedRangeRef.current;
+		if (saved) {
+			el.focus();
+			const sel = window.getSelection();
+			if (sel) {
+				sel.removeAllRanges();
+				sel.addRange(saved);
+			}
+		}
 		document.execCommand("unlink");
 		if (url) {
 			document.execCommand("createLink", false, url);
 		}
 		el.dispatchEvent(new Event("input", { bubbles: true }));
+		savedRangeRef.current = null;
 		setLinkDialog(null);
 	}, [getContentEditable]);
 
 	const removeLink = useCallback(() => {
 		const el = getContentEditable();
 		if (!el) return;
+		const saved = savedRangeRef.current;
+		if (saved) {
+			el.focus();
+			const sel = window.getSelection();
+			if (sel) {
+				sel.removeAllRanges();
+				sel.addRange(saved);
+			}
+		}
 		document.execCommand("unlink");
 		el.dispatchEvent(new Event("input", { bubbles: true }));
+		savedRangeRef.current = null;
 		setLinkDialog(null);
 	}, [getContentEditable]);
 
