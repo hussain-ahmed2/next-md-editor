@@ -227,6 +227,7 @@ export function BlockAiDialog({ blockId, onClose }: BlockAiDialogProps) {
         onClick={onClose}
       />
       <div
+        onClick={(e) => e.stopPropagation()}
         style={{
           position: "fixed",
           top: "50%",

@@ -34,6 +34,7 @@ export function LinkDialog({ initialUrl, position, onApply, onRemove, onCancel }
 
   return (
     <div
+      onClick={(e) => e.stopPropagation()}
       style={{
         position: "fixed",
         top: position.top,
