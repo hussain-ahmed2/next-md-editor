@@ -49,7 +49,6 @@ export function LinkDialog({ initialUrl, position, onApply, onRemove, onCancel }
         gap: 6,
         alignItems: "center",
       }}
-      onMouseDown={(e) => e.preventDefault()}
     >
       <form onSubmit={handleSubmit} style={{ display: "flex", gap: 6, alignItems: "center" }}>
         <input
