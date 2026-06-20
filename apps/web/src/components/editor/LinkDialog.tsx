@@ -34,6 +34,7 @@ export function LinkDialog({ initialUrl, position, onApply, onRemove, onCancel }
 
   return (
     <div
+      onClick={(e) => e.stopPropagation()}
       style={{
         position: "fixed",
         top: position.top,
@@ -49,7 +50,6 @@ export function LinkDialog({ initialUrl, position, onApply, onRemove, onCancel }
         gap: 6,
         alignItems: "center",
       }}
-      onMouseDown={(e) => e.preventDefault()}
     >
       <form onSubmit={handleSubmit} style={{ display: "flex", gap: 6, alignItems: "center" }}>
         <input

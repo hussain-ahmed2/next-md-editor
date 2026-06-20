@@ -19,6 +19,7 @@ import {
 	ImageIcon,
 	GitFork,
 	ChevronDown,
+	Sparkles,
 } from "lucide-react";
 
 interface SidebarBlock {
@@ -106,6 +107,12 @@ const BLOCK_PALETTE: SidebarBlock[] = [
 		label: "GitHub Stats",
 		icon: <GitFork size={18} />,
 		description: "GitHub profile stats card",
+	},
+	{
+		type: "ai-content",
+		label: "AI Content",
+		icon: <Sparkles size={18} />,
+		description: "AI-generated content from prompts",
 	},
 	{
 		type: "collapsible",
