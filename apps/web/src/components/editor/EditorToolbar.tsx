@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import { CheckCheck, Loader2, ListTree, Search } from "lucide-react";
+import { CheckCheck, Loader2, ListTree, Search, Sparkles } from "lucide-react";
 import { useUIStore } from "@/store/uiStore";
 import { useEditorStore } from "@next-md-editor/editor-core";
 import { UndoRedoButtons } from "./toolbar/UndoRedoButtons";
@@ -100,6 +100,13 @@ export function EditorToolbar() {
         </ToolbarButton>
         <Divider />
         <TemplateMenu />
+        <ToolbarButton
+          onClick={() => useUIStore.getState().setAiReadmeOpen(true)}
+          tooltip="Generate README with AI"
+        >
+          <Sparkles size={14} />
+          <span className="btn-label">AI Readme</span>
+        </ToolbarButton>
         <ModeToggle />
         <div style={{ position: "relative" }}>
           <ToolbarButton

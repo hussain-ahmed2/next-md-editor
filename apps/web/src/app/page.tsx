@@ -20,6 +20,7 @@ import { ResizeBar } from "@/components/editor/ResizeBar";
 import { MobileBottomBar } from "@/components/editor/MobileBottomBar";
 import { DragOverlayContent } from "@/components/editor/DragOverlayContent";
 import { SearchReplaceOverlay } from "@/components/editor/SearchReplaceOverlay";
+import { AiReadmeDialog } from "@/components/editor/AiReadmeDialog";
 
 // Disable dropAnimation entirely — the default "snap back" animation causes
 // a brief flicker of the drag overlay at the original block position after
@@ -125,6 +126,7 @@ export default function EditorPage() {
     >
       <EditorToolbar />
       <SearchReplaceOverlay />
+      <AiReadmeDialog />
 
       {editorMode === "source" ? (
         <div
