@@ -176,9 +176,30 @@ export function BlockToolbar({ blockId }: BlockToolbarProps) {
 
 	const handleEmoji = useCallback((emoji: string) => {
 		setEmojiPicker(false);
-		const saved = savedSelRef.current;
-		if (saved) {
-			const { el, start, end } = saved;
+
+		const insertViaRange = (range: Range) => {
+			const el = range.startContainer.parentElement?.closest("[contenteditable]") as HTMLElement | null;
+			if (!el) return false;
+			el.focus();
+			const sel = window.getSelection();
+			if (sel) {
+				sel.removeAllRanges();
+				sel.addRange(range);
+			}
+			insertEmoji(emoji);
+			return true;
+		};
+
+		const savedRange = savedRangeRef.current;
+		if (savedRange) {
+			savedRangeRef.current = null;
+			if (insertViaRange(savedRange)) return;
+		}
+
+		const savedSel = savedSelRef.current;
+		if (savedSel) {
+			const { el, start } = savedSel;
+			el.focus();
 			const range = document.createRange();
 			const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
 			let pos = 0;
@@ -197,17 +218,11 @@ export function BlockToolbar({ blockId }: BlockToolbarProps) {
 			if (targetNode) {
 				range.setStart(targetNode, targetOffset);
 				range.collapse(true);
-				const sel = window.getSelection();
-				if (sel) {
-					sel.removeAllRanges();
-					sel.addRange(range);
-				}
-				document.execCommand("insertText", false, emoji);
-				el.dispatchEvent(new Event("input", { bubbles: true }));
+				if (insertViaRange(range)) return;
 			}
-		} else {
-			insertEmoji(emoji);
 		}
+
+		insertEmoji(emoji);
 	}, []);
 
 	const handleEmojiClick = useCallback(() => {
@@ -215,10 +230,12 @@ export function BlockToolbar({ blockId }: BlockToolbarProps) {
 		if (el) {
 			const sel = window.getSelection();
 			if (sel && sel.rangeCount > 0 && el.contains(sel.anchorNode as Node)) {
+				savedRangeRef.current = sel.getRangeAt(0).cloneRange();
 				const start = getDomTextOffset(el, sel.anchorNode!, sel.anchorOffset);
 				const end = sel.focusNode ? getDomTextOffset(el, sel.focusNode, sel.focusOffset) : start;
 				savedSelRef.current = { el, start, end };
 			} else {
+				savedRangeRef.current = null;
 				savedSelRef.current = null;
 			}
 		}
