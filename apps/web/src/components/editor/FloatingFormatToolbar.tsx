@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useEditorStore } from "@next-md-editor/editor-core";
 import type { Block } from "@next-md-editor/types";
-import { getDomTextOffset } from "@next-md-editor/markdown";
 import { Brain } from "lucide-react";
 import { LinkDialog } from "./LinkDialog";
 import { EmojiPicker } from "./EmojiPicker";
@@ -63,7 +62,6 @@ export function BlockToolbar({ blockId }: BlockToolbarProps) {
 	const [aiDialogOpen, setAiDialogOpen] = useState(false);
 	const emojiBtnRef = useRef<HTMLButtonElement>(null);
 	const toolbarRef = useRef<HTMLDivElement>(null);
-	const savedSelRef = useRef<{ el: HTMLElement; start: number; end: number } | null>(null);
 	const savedRangeRef = useRef<Range | null>(null);
 
 	const getContentEditable = useCallback(() => {
@@ -177,48 +175,31 @@ export function BlockToolbar({ blockId }: BlockToolbarProps) {
 	const handleEmoji = useCallback((emoji: string) => {
 		setEmojiPicker(false);
 
-		const insertViaRange = (range: Range) => {
+		const range = savedRangeRef.current;
+		savedRangeRef.current = null;
+
+		if (range) {
 			const el = range.startContainer.parentElement?.closest("[contenteditable]") as HTMLElement | null;
-			if (!el) return false;
-			el.focus();
-			const sel = window.getSelection();
-			if (sel) {
-				sel.removeAllRanges();
-				sel.addRange(range);
-			}
-			insertEmoji(emoji);
-			return true;
-		};
-
-		const savedRange = savedRangeRef.current;
-		if (savedRange) {
-			savedRangeRef.current = null;
-			if (insertViaRange(savedRange)) return;
-		}
-
-		const savedSel = savedSelRef.current;
-		if (savedSel) {
-			const { el, start } = savedSel;
-			el.focus();
-			const range = document.createRange();
-			const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
-			let pos = 0;
-			let node: Node | null;
-			let targetNode: Node | null = null;
-			let targetOffset = 0;
-			while ((node = walker.nextNode())) {
-				const len = node.textContent?.length ?? 0;
-				if (pos + len >= start) {
-					targetNode = node;
-					targetOffset = start - pos;
-					break;
+			if (el) {
+				el.focus();
+				const sel = window.getSelection();
+				if (sel) {
+					sel.removeAllRanges();
+					sel.addRange(range);
 				}
-				pos += len;
-			}
-			if (targetNode) {
-				range.setStart(targetNode, targetOffset);
+
+				range.deleteContents();
+				const textNode = document.createTextNode(emoji);
+				range.insertNode(textNode);
+				range.setStartAfter(textNode);
 				range.collapse(true);
-				if (insertViaRange(range)) return;
+				if (sel) {
+					sel.removeAllRanges();
+					sel.addRange(range);
+				}
+
+				el.dispatchEvent(new Event("input", { bubbles: true }));
+				return;
 			}
 		}
 
@@ -231,12 +212,8 @@ export function BlockToolbar({ blockId }: BlockToolbarProps) {
 			const sel = window.getSelection();
 			if (sel && sel.rangeCount > 0 && el.contains(sel.anchorNode as Node)) {
 				savedRangeRef.current = sel.getRangeAt(0).cloneRange();
-				const start = getDomTextOffset(el, sel.anchorNode!, sel.anchorOffset);
-				const end = sel.focusNode ? getDomTextOffset(el, sel.focusNode, sel.focusOffset) : start;
-				savedSelRef.current = { el, start, end };
 			} else {
 				savedRangeRef.current = null;
-				savedSelRef.current = null;
 			}
 		}
 		setEmojiPicker((p) => !p);
