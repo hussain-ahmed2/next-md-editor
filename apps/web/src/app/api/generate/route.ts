@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
         Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "~openai/gpt-latest",
+        model: "meta-llama/llama-3.3-70b-instruct:free",
         max_tokens: 500,
         stream: true,
         messages: [
