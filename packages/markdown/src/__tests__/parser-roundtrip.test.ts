@@ -88,14 +88,14 @@ describe("parser round-trip", () => {
       const grid = findFirst(blocks, "image-grid");
       expect(grid).toBeDefined();
       expect(grid!.props.images).toBeDefined();
-      expect((grid!.props.images as any[]).length).toBeGreaterThanOrEqual(2);
+      expect((grid!.props.images as unknown[]).length).toBeGreaterThanOrEqual(2);
     });
 
     it("parses badge-group block", () => {
       const badge = findFirst(blocks, "badge-group");
       expect(badge).toBeDefined();
       expect(badge!.props.badges).toBeDefined();
-      expect((badge!.props.badges as any[]).length).toBeGreaterThanOrEqual(2);
+      expect((badge!.props.badges as unknown[]).length).toBeGreaterThanOrEqual(2);
     });
 
     it("round-trips: serialize → re-parse produces same block types", () => {

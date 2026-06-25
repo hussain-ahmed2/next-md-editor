@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useCallback } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { useEditorStore } from "@next-md-editor/editor-core";
 import { BlockRegistry } from "@next-md-editor/editor-core";
@@ -8,7 +8,6 @@ import type { Block, RichText } from "@next-md-editor/types";
 import {
   richTextToHtml,
   htmlToRichText,
-  richTextPlainText,
   markdownToRichText,
   getSelectionRichRange,
   applyRichFormat,
@@ -16,6 +15,7 @@ import {
 import { SlashCommandMenu } from "@/components/editor/SlashCommandMenu";
 import { LinkDialog } from "@/components/editor/LinkDialog";
 import { useBlockFocus } from "@/hooks/useBlockFocus";
+import { useContentSync } from "@/hooks/useContentSync";
 
 export function ParagraphBlock({ block }: { block: Block }) {
   const blocks = useEditorStore((s) => s.blocks);
@@ -32,7 +32,6 @@ export function ParagraphBlock({ block }: { block: Block }) {
       ? markdownToRichText(block.props.text as string)
       : [];
 
-  const [isFocused, setIsFocused] = useState(false);
   const [linkDialog, setLinkDialog] = useState<{
     url: string;
     pos: { top: number; left: number };
@@ -47,44 +46,14 @@ export function ParagraphBlock({ block }: { block: Block }) {
   // Auto-focus synchronization when block is selected
   useBlockFocus(ref, block.id, selectedBlockIds);
 
-  // Sync store changes to DOM when they differ (e.g. on undo/redo)
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const expectedHtml = richTextToHtml(content);
-    if (el.innerHTML === expectedHtml) return;
-    el.innerHTML = expectedHtml;
-    if (document.activeElement === el) {
-      const range = document.createRange();
-      range.selectNodeContents(el);
-      range.collapse(false);
-      const sel = window.getSelection();
-      if (sel) {
-        sel.removeAllRanges();
-        sel.addRange(range);
-      }
-    }
-  }, [content]);
-
-  // When entering focus, snap caret to end
-  useEffect(() => {
-    if (isFocused && ref.current) {
-      ref.current.innerHTML = richTextToHtml(content);
-      const range = document.createRange();
-      range.selectNodeContents(ref.current);
-      range.collapse(false);
-      const sel = window.getSelection();
-      if (sel) {
-        sel.removeAllRanges();
-        sel.addRange(range);
-      }
-    }
-  }, [isFocused]);
-
-  const handleInput = useCallback(
-    (e: React.FormEvent<HTMLDivElement>) => {
-      let rawText = richTextPlainText(htmlToRichText(e.currentTarget.innerHTML));
-
+  const { handleInput: syncInput, handleBlur: syncBlur, flushUpdate } = useContentSync({
+    blockId: block.id,
+    ref,
+    storeValue: content,
+    updatePropName: "content",
+    parseHtml: htmlToRichText,
+    serializeToHtml: richTextToHtml,
+    onInputCallback: (rawText) => {
       // Slash command detection
       const match = rawText.match(/(^|\s)\/([a-zA-Z0-9]*)$/);
       if (match) {
@@ -94,21 +63,22 @@ export function ParagraphBlock({ block }: { block: Block }) {
       } else {
         setSlashMenuOpen(false);
       }
+    }
+  });
 
-      const newContent = htmlToRichText(e.currentTarget.innerHTML);
-      updateBlock(block.id, { content: newContent });
+  const handleInput = useCallback(
+    (e: React.FormEvent<HTMLDivElement>) => {
+      syncInput(e);
     },
-    [block.id, updateBlock],
+    [syncInput],
   );
 
   const handleBlur = useCallback(
-    (e: React.FocusEvent<HTMLDivElement>) => {
-      setIsFocused(false);
+    () => {
       setTimeout(() => setSlashMenuOpen(false), 200);
-      const newContent = htmlToRichText(e.currentTarget.innerHTML);
-      updateBlock(block.id, { content: newContent });
+      syncBlur();
     },
-    [block.id, updateBlock],
+    [syncBlur],
   );
 
   const onKeyDown = useCallback(
@@ -159,7 +129,7 @@ export function ParagraphBlock({ block }: { block: Block }) {
       }
 
       if (e.key === "Backspace") {
-        const text = richTextPlainText(content);
+        const text = ref.current?.textContent ?? "";
         if (text === "") {
           e.preventDefault();
           const currentIndex = blocks.findIndex((b) => b.id === block.id);
@@ -189,7 +159,6 @@ export function ParagraphBlock({ block }: { block: Block }) {
     [
       block.id,
       blocks,
-      content,
       slashMenuOpen,
       slashSearchText,
       slashSelectedIndex,
@@ -197,7 +166,6 @@ export function ParagraphBlock({ block }: { block: Block }) {
       removeBlocks,
       replaceBlock,
       selectBlock,
-      updateBlock,
     ],
   );
 
@@ -221,7 +189,6 @@ export function ParagraphBlock({ block }: { block: Block }) {
         contentEditable
         suppressContentEditableWarning
         data-block-id={block.id}
-        onFocus={() => setIsFocused(true)}
         onBlur={handleBlur}
         onInput={handleInput}
         onKeyDown={onKeyDown}
@@ -234,13 +201,6 @@ export function ParagraphBlock({ block }: { block: Block }) {
           minHeight: "1.75em",
         }}
         data-placeholder="Start typing…"
-        {...(!isFocused
-          ? {
-              dangerouslySetInnerHTML: {
-                __html: richTextToHtml(content) || "",
-              },
-            }
-          : {})}
       />
       {slashMenu}
       {linkDialog && (
@@ -248,9 +208,11 @@ export function ParagraphBlock({ block }: { block: Block }) {
           initialUrl={linkDialog.url}
           position={linkDialog.pos}
           onApply={(url) => {
-            const range = getSelectionRichRange(content, ref.current!);
+            flushUpdate();
+            const freshContent = useEditorStore.getState().blocks.find((b) => b.id === block.id)?.props.content as RichText || content;
+            const range = getSelectionRichRange(freshContent, ref.current!);
             if (!range || range.start >= range.end) return;
-            const newContent = applyRichFormat(content, range.start, range.end, { link: url });
+            const newContent = applyRichFormat(freshContent, range.start, range.end, { link: url });
             updateBlock(block.id, { content: newContent });
             setLinkDialog(null);
           }}

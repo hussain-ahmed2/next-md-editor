@@ -16,9 +16,10 @@ const htmlToMdProcessor = unified()
   .use(rehypeParse, { fragment: true })
   .use(rehypeMinifyWhitespace)
   .use(rehypeRemark)
+  .use(remarkGfm)
   .use(remarkStringify, { bullet: "-", emphasis: "*", strong: "*" });
 
-function htmlToMarkdown(html: string): string {
+export function htmlToMarkdown(html: string): string {
   if (!html) return "";
   try {
     const file = htmlToMdProcessor.processSync(html);
@@ -28,9 +29,25 @@ function htmlToMarkdown(html: string): string {
   }
 }
 
+interface UnistNode {
+  type: string;
+  value?: string;
+  url?: string;
+  alt?: string | null;
+  title?: string;
+  ordered?: boolean;
+  depth?: number;
+  lang?: string;
+  position?: {
+    start: { offset: number };
+    end: { offset: number };
+  };
+  children?: UnistNode[];
+}
+
 // ── Extract raw text from AST node via source position ────────────────────────
 
-function extractRawText(node: any, markdown: string): string {
+function extractRawText(node: UnistNode, markdown: string): string {
   if (node.position) {
     return markdown.slice(node.position.start.offset, node.position.end.offset);
   }
@@ -67,7 +84,7 @@ export function parseMarkdown(markdown: string): Block[] {
 
     // Detect new-style raw HTML image grid: <!-- image-grid --> followed by <table> with <img>
     if (node.type === "html") {
-      const val = ((node as any).value ?? "").trim();
+      const val = ((node as unknown as UnistNode).value ?? "").trim();
       if (val === "<!-- image-grid -->") {
         const images: { id: string; url: string; alt: string }[] = [];
         let consumed = 0;
@@ -75,7 +92,7 @@ export function parseMarkdown(markdown: string): Block[] {
         for (let j = i + 1; j < tree.children.length; j++) {
           const next = tree.children[j];
           if (next.type !== "html") break;
-          const html = ((next as any).value ?? "").trim();
+          const html = ((next as unknown as UnistNode).value ?? "").trim();
 
           const imgRegex = /<img\s+[^>]*src="([^"]+)"[^>]*\/?>/gi;
           let match: RegExpExecArray | null;
@@ -101,7 +118,7 @@ export function parseMarkdown(markdown: string): Block[] {
           // Determine cols from <td> count in first <tr> of the <table> HTML
           let cols = Math.min(images.length, 3);
           for (let j = i + 1; j < Math.min(i + consumed + 2, tree.children.length); j++) {
-            const html = ((tree.children[j] as any)?.value ?? "").trim();
+            const html = ((tree.children[j] as unknown as UnistNode)?.value ?? "").trim();
             const trMatch = html.match(/<tr[^>]*>([\s\S]*?)<\/tr>/i);
             if (trMatch) {
               const tdCount = (trMatch[1].match(/<td/gi) || []).length;
@@ -155,14 +172,14 @@ export function parseMarkdown(markdown: string): Block[] {
 
       // Detect badge-group: <!-- badge-group --> followed by ![image](url) markdown
       if (val === "<!-- badge-group -->") {
-        const badges: any[] = [];
+        const badges: Array<{ id: string; text: string; color: string; logo?: string; url?: string }> = [];
         let consumed = 0;
         let alignment = "left";
 
         // Check for HTML format with alignment: <div style="text-align:center"> with <img> tags
         const nextHtml = i + 1 < tree.children.length ? tree.children[i + 1] : null;
         if (nextHtml?.type === "html") {
-          const htmlVal = ((nextHtml as any).value ?? "").trim();
+          const htmlVal = ((nextHtml as unknown as UnistNode).value ?? "").trim();
           const alignMatch = htmlVal.match(/text-align:\s*(center|right)/i);
           if (alignMatch) {
             alignment = alignMatch[1].toLowerCase();
@@ -199,13 +216,13 @@ export function parseMarkdown(markdown: string): Block[] {
             const next = tree.children[j];
             if (next.type !== "paragraph") break;
 
-            const images = (next as any).children?.filter(
-              (c: any) => c.type === "image" && typeof c.url === "string" && isBadgeUrl(c.url),
+            const images = (next as unknown as UnistNode).children?.filter(
+              (c: UnistNode) => c.type === "image" && typeof c.url === "string" && isBadgeUrl(c.url),
             ) ?? [];
             if (images.length === 0) break;
 
             for (const img of images) {
-              const badgeUrl = img.url;
+              const badgeUrl = img.url ?? "";
               const badgeUrlPart = badgeUrl.replace("https://img.shields.io/badge/", "");
               const [labelColorPart, queryString = ""] = badgeUrlPart.split("?");
               const parts = labelColorPart.split("-");
@@ -246,13 +263,13 @@ export function parseMarkdown(markdown: string): Block[] {
     // Remark inserts text("\n") / break nodes between images on consecutive lines.
     // Strip those out before checking — only non-whitespace children need to be images.
     if (node.type === "paragraph" && Array.isArray(node.children)) {
-      const significantChildren = (node.children as any[]).filter(
-        (c: any) =>
-          !(c.type === "text" && c.value.trim() === "") && c.type !== "break",
+      const significantChildren = (node.children as unknown as UnistNode[]).filter(
+        (c: UnistNode) =>
+          !(c.type === "text" && (c.value ?? "").trim() === "") && c.type !== "break",
       );
       if (
         significantChildren.length > 0 &&
-        significantChildren.every((c: any) => c.type === "image")
+        significantChildren.every((c: UnistNode) => c.type === "image")
       ) {
         if (significantChildren.length === 1) {
           const img = significantChildren[0];
@@ -279,11 +296,11 @@ export function parseMarkdown(markdown: string): Block[] {
         } else {
           // Check if all are badges
           const allBadges = significantChildren.every(
-            (c: any) => typeof c.url === "string" && isBadgeUrl(c.url),
+            (c: UnistNode) => typeof c.url === "string" && isBadgeUrl(c.url),
           );
           if (allBadges) {
-            const badges = significantChildren.map((img: any) => {
-              const badgeUrl = img.url;
+            const badges = significantChildren.map((img: UnistNode) => {
+              const badgeUrl = img.url ?? "";
               const badgeUrlPart = badgeUrl.replace("https://img.shields.io/badge/", "");
               const [labelColorPart, queryString = ""] = badgeUrlPart.split("?");
               const parts = labelColorPart.split("-");
@@ -309,7 +326,7 @@ export function parseMarkdown(markdown: string): Block[] {
             });
           } else {
             // Otherwise, make it an image-grid
-            const images = significantChildren.map((img: any) => ({
+            const images = significantChildren.map((img: UnistNode) => ({
               id: Math.random().toString(36).substring(7),
               url: img.url || "",
               alt: img.alt || "",
@@ -328,17 +345,17 @@ export function parseMarkdown(markdown: string): Block[] {
       }
     }
 
-    const block = nodeToBlock(node as any, markdown);
+    const block = nodeToBlock(node as unknown as UnistNode, markdown);
     if (block) blocks.push(block);
   }
   return blocks;
 }
 
-function nodeToBlock(node: any, markdown: string): Block | null {
+function nodeToBlock(node: UnistNode, markdown: string): Block | null {
   switch (node.type) {
     case "heading": {
-      const text = node.children
-        .map((child: any) => extractRawText(child, markdown))
+      const text = (node.children ?? [])
+        .map((child: UnistNode) => extractRawText(child, markdown))
         .join("")
         .trim();
       return {
@@ -365,7 +382,7 @@ function nodeToBlock(node: any, markdown: string): Block | null {
       return { id: uuidv4(), type: "divider", props: {} };
 
     case "blockquote": {
-      const [firstP, ...rest] = node.children;
+      const [firstP, ...rest] = node.children ?? [];
       if (firstP?.type === "paragraph") {
         const pText = extractRawText(firstP, markdown).trimStart();
         const alertMatch = pText.match(/^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*/i);
@@ -386,8 +403,8 @@ function nodeToBlock(node: any, markdown: string): Block | null {
           };
         }
       }
-      const quoteText = node.children
-        .map((c: any) => extractRawText(c, markdown))
+      const quoteText = (node.children ?? [])
+        .map((c: UnistNode) => extractRawText(c, markdown))
         .join("\n")
         .trim();
       return { id: uuidv4(), type: "quote", props: { text: quoteText } };
@@ -428,36 +445,36 @@ function nodeToBlock(node: any, markdown: string): Block | null {
 
 // ── Inline AST → HTML ─────────────────────────────────────────────────────────
 
-function inlineAstToHtml(children: any[]): string {
+function inlineAstToHtml(children: UnistNode[]): string {
   let html = "";
   for (const node of children) {
     switch (node.type) {
       case "text":
-        html += escapeHtml(node.value);
+        html += escapeHtml(node.value ?? "");
         break;
       case "strong":
-        html += "<strong>" + inlineAstToHtml(node.children) + "</strong>";
+        html += "<strong>" + inlineAstToHtml(node.children ?? []) + "</strong>";
         break;
       case "emphasis":
-        html += "<em>" + inlineAstToHtml(node.children) + "</em>";
+        html += "<em>" + inlineAstToHtml(node.children ?? []) + "</em>";
         break;
       case "inlineCode":
-        html += "<code>" + node.value + "</code>";
+        html += "<code>" + (node.value ?? "") + "</code>";
         break;
       case "delete":
-        html += "<del>" + inlineAstToHtml(node.children) + "</del>";
+        html += "<del>" + inlineAstToHtml(node.children ?? []) + "</del>";
         break;
       case "link":
-        html += '<a href="' + escapeHtml(node.url) + '">' + inlineAstToHtml(node.children) + "</a>";
+        html += '<a href="' + escapeHtml(node.url ?? "") + '">' + inlineAstToHtml(node.children ?? []) + "</a>";
         break;
       case "image":
-        html += '<img src="' + escapeHtml(node.url) + '" alt="' + escapeHtml(node.alt ?? "") + '" />';
+        html += '<img src="' + escapeHtml(node.url ?? "") + '" alt="' + escapeHtml(node.alt ?? "") + '" />';
         break;
       case "break":
         html += "<br />";
         break;
       case "html":
-        html += node.value;
+        html += node.value ?? "";
         break;
       default:
         if (node.children) html += inlineAstToHtml(node.children);
@@ -469,16 +486,16 @@ function inlineAstToHtml(children: any[]): string {
 
 // ── List AST → HTML (SSR-safe string building) ───────────────────────────────
 
-function listNodeToHtml(node: any, markdown: string): string {
+function listNodeToHtml(node: UnistNode, markdown: string): string {
   const ordered = node.ordered ?? false;
   const parts: string[] = [];
   const tag = ordered ? "ol" : "ul";
   parts.push(`<${tag}>`);
-  for (const item of node.children) {
+  for (const item of node.children ?? []) {
     parts.push("<li>");
-    for (const child of item.children) {
+    for (const child of item.children ?? []) {
       if (child.type === "paragraph") {
-        parts.push(inlineAstToHtml(child.children));
+        parts.push(inlineAstToHtml(child.children ?? []));
       } else if (child.type === "list") {
         parts.push(listNodeToHtml(child, markdown));
       } else {
@@ -494,13 +511,13 @@ function listNodeToHtml(node: any, markdown: string): string {
 
 // ── Table AST → rows ─────────────────────────────────────────────────────────
 
-function tableNodeToRows(node: any, markdown: string): string[][] {
+function tableNodeToRows(node: UnistNode, markdown: string): string[][] {
   const rows: string[][] = [];
   for (const row of node.children || []) {
     const cells: string[] = [];
     for (const cell of row.children || []) {
       const text = (cell.children || [])
-        .map((c: any) => extractRawText(c, markdown))
+        .map((c: UnistNode) => extractRawText(c, markdown))
         .join("")
         .trim();
       cells.push(text);
@@ -574,146 +591,157 @@ function serializeListItem(
   return result;
 }
 
-function serializeBlock(block: Block, indentLevel: number = 0): string {
+export type SerializerLookup = (type: string) => ((block: Block) => string) | undefined;
+
+function serializeBlock(
+  block: Block,
+  indentLevel: number = 0,
+  lookupSerializer?: SerializerLookup,
+): string {
   const indent = "  ".repeat(indentLevel);
   let text = "";
 
-  switch (block.type) {
-    case "heading": {
-      const level = (block.props.level as number) ?? 1;
-      text = `${"#".repeat(level)} ${(block.props.text as string) ?? ""}`;
-      break;
-    }
-    case "paragraph":
-      text = richTextToMarkdown((block.props.content as RichText) ?? []);
-      break;
-    case "quote": {
-      const t = (block.props.text as string) ?? "";
-      text = t.split("\n").map((l) => `> ${l}`).join("\n");
-      break;
-    }
-    case "code": {
-      const lang = (block.props.language as string) ?? "";
-      const code = (block.props.code as string) ?? "";
-      text = `\`\`\`${lang}\n${code}\n\`\`\``;
-      break;
-    }
-    case "divider":
-      text = "---";
-      break;
-    case "image": {
-      const alt = (block.props.alt as string) ?? "";
-      const url = (block.props.url as string) ?? "";
-      text = `![${alt}](${url})`;
-      break;
-    }
-    case "callout": {
-      const t = (block.props.text as string) ?? "";
-      const type = ((block.props.type as string) ?? "note").toUpperCase();
-      text = `> [!${type}]\n${t.split("\n").map((l) => `> ${l}`).join("\n")}`;
-      break;
-    }
-    case "table": {
-      const rows = (block.props.rows as string[][]) ?? [["", ""]];
-      if (!rows.length) break;
-      text = [
-        `| ${rows[0].join(" | ")} |`,
-        `| ${rows[0].map(() => "---").join(" | ")} |`,
-        ...rows.slice(1).map((r) => `| ${r.join(" | ")} |`),
-      ].join("\n");
-      break;
-    }
-    case "bullet-list":
-    case "numbered-list": {
-      const items = block.props.items as Array<Record<string, unknown>> | undefined;
-      if (items && items.length > 0) {
-        const ordered = block.type === "numbered-list";
-        text = items
-          .map((item) => serializeListItem(item, ordered ? "1." : "-"))
+  const customSerializer = lookupSerializer?.(block.type);
+  if (customSerializer) {
+    text = customSerializer(block);
+  } else {
+    switch (block.type) {
+      case "heading": {
+        const level = (block.props.level as number) ?? 1;
+        text = `${"#".repeat(level)} ${(block.props.text as string) ?? ""}`;
+        break;
+      }
+      case "paragraph":
+        text = richTextToMarkdown((block.props.content as RichText) ?? []);
+        break;
+      case "quote": {
+        const t = (block.props.text as string) ?? "";
+        text = t.split("\n").map((l) => `> ${l}`).join("\n");
+        break;
+      }
+      case "code": {
+        const lang = (block.props.language as string) ?? "";
+        const code = (block.props.code as string) ?? "";
+        text = `\`\`\`${lang}\n${code}\n\`\`\``;
+        break;
+      }
+      case "divider":
+        text = "---";
+        break;
+      case "image": {
+        const alt = (block.props.alt as string) ?? "";
+        const url = (block.props.url as string) ?? "";
+        text = `![${alt}](${url})`;
+        break;
+      }
+      case "callout": {
+        const t = (block.props.text as string) ?? "";
+        const type = ((block.props.type as string) ?? "note").toUpperCase();
+        text = `> [!${type}]\n${t.split("\n").map((l) => `> ${l}`).join("\n")}`;
+        break;
+      }
+      case "table": {
+        const rows = (block.props.rows as string[][]) ?? [["", ""]];
+        if (!rows.length) break;
+        text = [
+          `| ${rows[0].join(" | ")} |`,
+          `| ${rows[0].map(() => "---").join(" | ")} |`,
+          ...rows.slice(1).map((r) => `| ${r.join(" | ")} |`),
+        ].join("\n");
+        break;
+      }
+      case "bullet-list":
+      case "numbered-list": {
+        const items = block.props.items as Array<Record<string, unknown>> | undefined;
+        if (items && items.length > 0) {
+          const ordered = block.type === "numbered-list";
+          text = items
+            .map((item) => serializeListItem(item, ordered ? "1." : "-"))
+            .join("\n");
+        } else {
+          const html = (block.props.html as string) ?? "";
+          text = htmlToMarkdown(html);
+        }
+        break;
+      }
+      case "image-grid": {
+        const images = (block.props.images as Array<{ id: string; url: string; alt?: string }>) ?? [];
+        const cols = (block.props.cols as number) ?? 2;
+        if (!images.length) break;
+
+        const parts: string[] = [];
+        parts.push("<!-- image-grid -->");
+
+        const imageRows: string[][] = [];
+        let cur: string[] = [];
+        for (const img of images) {
+          cur.push(`<img src="${img.url}" alt="${img.alt || "Image"}" />`);
+          if (cur.length === cols) { imageRows.push(cur); cur = []; }
+        }
+        if (cur.length) {
+          while (cur.length < cols) cur.push("");
+          imageRows.push(cur);
+        }
+
+        const rows = imageRows
+          .map((r) => `<tr>${r.map((cell) => (cell ? `<td>${cell}</td>` : "<td></td>")).join("")}</tr>`)
           .join("\n");
-      } else {
-        const html = (block.props.html as string) ?? "";
-        text = htmlToMarkdown(html);
+        parts.push(`<table>\n${rows}\n</table>`);
+        text = parts.join("\n\n");
+        break;
       }
-      break;
-    }
-    case "image-grid": {
-      const images = (block.props.images as any[]) ?? [];
-      const cols = (block.props.cols as number) ?? 2;
-      if (!images.length) break;
-
-      const parts: string[] = [];
-      parts.push("<!-- image-grid -->");
-
-      const imageRows: string[][] = [];
-      let cur: string[] = [];
-      for (const img of images) {
-        cur.push(`<img src="${img.url}" alt="${img.alt || "Image"}" />`);
-        if (cur.length === cols) { imageRows.push(cur); cur = []; }
+      case "github-stats": {
+        const username = (block.props.username as string) ?? "";
+        const variant = (block.props.variant as string) ?? "default";
+        const theme = (block.props.theme as string) ?? "auto";
+        if (username) {
+          const base = process.env.NEXT_PUBLIC_FRONTEND_URL ?? "";
+          const params = new URLSearchParams();
+          if (variant !== "default") params.set("variant", variant);
+          if (theme !== "auto") params.set("theme", theme);
+          const qs = params.toString() ? `?${params.toString()}` : "";
+          text = `![GitHub Stats](${base}/api/github/${username}/stats.svg${qs})`;
+        }
+        break;
       }
-      if (cur.length) {
-        while (cur.length < cols) cur.push("");
-        imageRows.push(cur);
-      }
+      case "badge-group": {
+        const badges = (block.props.badges as Array<{ text: string; color: string; logo?: string; url?: string }>) ?? [];
+        const alignment = (block.props.alignment as string) ?? "left";
+        if (!badges.length) break;
+        const parts: string[] = [];
+        parts.push("<!-- badge-group -->");
 
-      const rows = imageRows
-        .map((r) => `<tr>${r.map((cell) => (cell ? `<td>${cell}</td>` : "<td></td>")).join("")}</tr>`)
-        .join("\n");
-      parts.push(`<table>\n${rows}\n</table>`);
-      text = parts.join("\n\n");
-      break;
-    }
-    case "github-stats": {
-      const username = (block.props.username as string) ?? "";
-      const variant = (block.props.variant as string) ?? "default";
-      const theme = (block.props.theme as string) ?? "auto";
-      if (username) {
-        const base = process.env.NEXT_PUBLIC_FRONTEND_URL ?? "";
-        const params = new URLSearchParams();
-        if (variant !== "default") params.set("variant", variant);
-        if (theme !== "auto") params.set("theme", theme);
-        const qs = params.toString() ? `?${params.toString()}` : "";
-        text = `![GitHub Stats](${base}/api/github/${username}/stats.svg${qs})`;
-      }
-      break;
-    }
-    case "badge-group": {
-      const badges = (block.props.badges as any[]) ?? [];
-      const alignment = (block.props.alignment as string) ?? "left";
-      if (!badges.length) break;
-      const parts: string[] = [];
-      parts.push("<!-- badge-group -->");
-
-      const badgeImgs = badges.map((badge: any) => {
-        if (badge.url) return `![image](${badge.url})`;
-        const color = badge.color.replace("#", "");
-        const logo = badge.logo ? `&logo=${encodeURIComponent(badge.logo)}&logoColor=white` : "";
-        return `![image](https://img.shields.io/badge/${encodeURIComponent(badge.text.replace(/-/g, "--"))}-${color}?style=for-the-badge${logo})`;
-      });
-
-      if (alignment === "left") {
-        parts.push(badgeImgs.join("\n"));
-      } else {
-        const htmlImgs = badges.map((badge: any) => {
-          if (badge.url) {
-            return `<img src="${badge.url}" alt="${badge.text}" />`;
-          }
+        const badgeImgs = badges.map((badge: { text: string; color: string; logo?: string; url?: string }) => {
+          if (badge.url) return `![image](${badge.url})`;
           const color = badge.color.replace("#", "");
           const logo = badge.logo ? `&logo=${encodeURIComponent(badge.logo)}&logoColor=white` : "";
-          return `<img src="https://img.shields.io/badge/${encodeURIComponent(badge.text.replace(/-/g, "--"))}-${color}?style=for-the-badge${logo}" alt="${badge.text}" />`;
-        }).join("\n");
-        parts.push(`<div style="text-align:${alignment}">\n${htmlImgs}\n</div>`);
-      }
+          return `![image](https://img.shields.io/badge/${encodeURIComponent(badge.text.replace(/-/g, "--"))}-${color}?style=for-the-badge${logo})`;
+        });
 
-      text = parts.join("\n\n");
-      break;
-    }
-    case "collapsible": {
-      const summary = (block.props.summary as string) ?? "";
-      const content = (block.props.content as string) ?? "";
-      const open = (block.props.open as boolean) ?? false;
-      text = `<details${open ? " open" : ""}>\n<summary>${summary}</summary>\n\n${content}\n\n</details>`;
-      break;
+        if (alignment === "left") {
+          parts.push(badgeImgs.join("\n"));
+        } else {
+          const htmlImgs = badges.map((badge: { text: string; color: string; logo?: string; url?: string }) => {
+            if (badge.url) {
+              return `<img src="${badge.url}" alt="${badge.text}" />`;
+            }
+            const color = badge.color.replace("#", "");
+            const logo = badge.logo ? `&logo=${encodeURIComponent(badge.logo)}&logoColor=white` : "";
+            return `<img src="https://img.shields.io/badge/${encodeURIComponent(badge.text.replace(/-/g, "--"))}-${color}?style=for-the-badge${logo}" alt="${badge.text}" />`;
+          }).join("\n");
+          parts.push(`<div style="text-align:${alignment}">\n${htmlImgs}\n</div>`);
+        }
+
+        text = parts.join("\n\n");
+        break;
+      }
+      case "collapsible": {
+        const summary = (block.props.summary as string) ?? "";
+        const content = (block.props.content as string) ?? "";
+        const open = (block.props.open as boolean) ?? false;
+        text = `<details${open ? " open" : ""}>\n<summary>${summary}</summary>\n\n${content}\n\n</details>`;
+        break;
+      }
     }
   }
 
@@ -721,14 +749,17 @@ function serializeBlock(block: Block, indentLevel: number = 0): string {
     ? text.split("\n").map((l) => `${indent}${l}`).join("\n")
     : "";
   const childrenText = block.children?.length
-    ? block.children.map((child) => serializeBlock(child, indentLevel + 1)).filter(Boolean).join("\n\n")
+    ? block.children.map((child) => serializeBlock(child, indentLevel + 1, lookupSerializer)).filter(Boolean).join("\n\n")
     : "";
 
   return [serializedLines, childrenText].filter(Boolean).join("\n\n");
 }
 
-export function serializeMarkdown(blocks: Block[]): string {
-  return blocks.map((b) => serializeBlock(b, 0)).filter(Boolean).join("\n\n");
+export function serializeMarkdown(
+  blocks: Block[],
+  lookupSerializer?: SerializerLookup,
+): string {
+  return blocks.map((b) => serializeBlock(b, 0, lookupSerializer)).filter(Boolean).join("\n\n");
 }
 
 export function hasImageGridMarker(markdown: string): boolean {

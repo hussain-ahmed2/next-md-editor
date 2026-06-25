@@ -124,7 +124,7 @@ export function initRegistry() {
       ]
     },
     serializer: (b) => {
-      const images = (b.props.images as any[]) ?? [];
+      const images = (b.props.images as Array<{ id: string; url: string; alt?: string }>) ?? [];
       const cols = (b.props.cols as number) ?? 2;
       const title = (b.props.title as string) ?? "";
       const description = (b.props.description as string) ?? "";
@@ -197,7 +197,7 @@ export function initRegistry() {
       alignment: "left",
     },
     serializer: (b) => {
-      const badges = (b.props.badges as any[]) ?? [];
+      const badges = (b.props.badges as Array<{ id: string; text: string; color: string; logo?: string; url?: string }>) ?? [];
       if (badges.length === 0) return "";
       const lines: string[] = [];
       lines.push("<!-- badge-group -->");

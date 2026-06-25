@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useEditorStore } from "@next-md-editor/editor-core";
 import type { Block } from "@next-md-editor/types";
 import {
@@ -10,6 +10,7 @@ import {
 import { renderInlineMarkdown } from "@/features/markdown/highlighter";
 import { LinkDialog } from "@/components/editor/LinkDialog";
 import { useBlockFocus } from "@/hooks/useBlockFocus";
+import { useContentSync } from "@/hooks/useContentSync";
 
 const LEVEL_STYLES: Record<
   number,
@@ -57,7 +58,6 @@ export function HeadingBlock({ block }: { block: Block }) {
   const level = (block.props.level as number) ?? 1;
   const text = (block.props.text as string) ?? "";
   const style = LEVEL_STYLES[level] ?? LEVEL_STYLES[1];
-  const [isFocused, setIsFocused] = useState(false);
   const [linkDialog, setLinkDialog] = useState<{
     url: string;
     pos: { top: number; left: number };
@@ -67,55 +67,28 @@ export function HeadingBlock({ block }: { block: Block }) {
   // Auto-focus synchronization when block is selected
   useBlockFocus(ref, block.id, selectedBlockIds);
 
-  // Sync state changes from store to DOM when they differ (e.g. on undo/redo)
-  useEffect(() => {
-    if (ref.current) {
-      const currentMarkdown = htmlToMarkdown(ref.current.innerHTML);
-      if (currentMarkdown !== text) {
-        ref.current.innerHTML = renderInlineMarkdown(text);
+  const { handleInput: syncInput, handleBlur: syncBlur, flushUpdate } = useContentSync({
+    blockId: block.id,
+    ref,
+    storeValue: text,
+    updatePropName: "text",
+    parseHtml: htmlToMarkdown,
+    serializeToHtml: renderInlineMarkdown,
+  });
 
-        // Reset caret to the end if focused
-        if (document.activeElement === ref.current) {
-          const range = document.createRange();
-          range.selectNodeContents(ref.current);
-          range.collapse(false);
-          const selection = window.getSelection();
-          if (selection) {
-            selection.removeAllRanges();
-            selection.addRange(range);
-          }
-        }
-      }
-    }
-  }, [text]);
+  const handleInput = useCallback(
+    (e: React.FormEvent<HTMLDivElement>) => {
+      syncInput(e);
+    },
+    [syncInput],
+  );
 
-  // When entering focus, snap caret and ensure text is populated
-  useEffect(() => {
-    if (isFocused && ref.current) {
-      const currentMarkdown = htmlToMarkdown(ref.current.innerHTML);
-      if (currentMarkdown !== text) {
-        ref.current.innerHTML = renderInlineMarkdown(text);
-      }
-      const range = document.createRange();
-      range.selectNodeContents(ref.current);
-      range.collapse(false);
-      const selection = window.getSelection();
-      if (selection) {
-        selection.removeAllRanges();
-        selection.addRange(range);
-      }
-    }
-  }, [isFocused, text]);
-
-  const handleInput = (e: React.InputEvent<HTMLDivElement>) => {
-    const rawText = htmlToMarkdown(e.currentTarget.innerHTML);
-    updateBlock(block.id, { text: rawText });
-  };
-
-  const handleBlur = (e: React.FocusEvent<HTMLDivElement>) => {
-    setIsFocused(false);
-    updateBlock(block.id, { text: htmlToMarkdown(e.currentTarget.innerHTML) });
-  };
+  const handleBlur = useCallback(
+    () => {
+      syncBlur();
+    },
+    [syncBlur],
+  );
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -149,7 +122,6 @@ export function HeadingBlock({ block }: { block: Block }) {
         contentEditable
         data-block-id={block.id}
         suppressContentEditableWarning
-        onFocus={() => setIsFocused(true)}
         onBlur={handleBlur}
         onInput={handleInput}
         onKeyDown={(e) => {
@@ -186,13 +158,6 @@ export function HeadingBlock({ block }: { block: Block }) {
           minHeight: "1.4em",
           letterSpacing: level === 1 ? "-0.03em" : "-0.01em",
         }}
-        {...(!isFocused
-          ? {
-              dangerouslySetInnerHTML: {
-                __html: renderInlineMarkdown(text) || "",
-              },
-            }
-          : {})}
       />
       {linkDialog && (
         <LinkDialog
@@ -202,10 +167,8 @@ export function HeadingBlock({ block }: { block: Block }) {
             const el = ref.current;
             if (!el) return;
             el.focus();
-            const sel = window.getSelection();
-            if (!sel || !sel.rangeCount) return;
             document.execCommand("createLink", false, url);
-            updateBlock(block.id, { text: htmlToMarkdown(el.innerHTML) });
+            flushUpdate();
             setLinkDialog(null);
           }}
           onCancel={() => setLinkDialog(null)}

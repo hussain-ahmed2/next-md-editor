@@ -3,7 +3,7 @@
 import { useEditorStore } from "@next-md-editor/editor-core";
 import { serializeToMarkdown, parseMarkdown } from "@/features/markdown/serializer";
 import { useUIStore } from "@/store/uiStore";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 
 export function SourceEditor() {
   const blocks = useEditorStore((s) => s.blocks);
@@ -12,8 +12,19 @@ export function SourceEditor() {
   const setEditorMode = useUIStore((s) => s.setEditorMode);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  const blocksRef = useRef(blocks);
+  const setSourceTextRef = useRef(setSourceText);
+
   useEffect(() => {
-    setSourceText(serializeToMarkdown(blocks));
+    blocksRef.current = blocks;
+  }, [blocks]);
+
+  useEffect(() => {
+    setSourceTextRef.current = setSourceText;
+  }, [setSourceText]);
+
+  useEffect(() => {
+    setSourceTextRef.current(serializeToMarkdown(blocksRef.current));
   }, []);
 
   const handleApply = () => {

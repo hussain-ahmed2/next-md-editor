@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { parseMarkdown, serializeMarkdown } from "../index";
+import type { Block } from "@next-md-editor/types";
 
 const FLUID =
   "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=600&auto=format&fit=crop";
@@ -8,7 +9,7 @@ const GLOSSY =
 const ARCH =
   "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=600&auto=format&fit=crop";
 
-function findImageGrid(blocks: any[]) {
+function findImageGrid(blocks: Block[]) {
   return blocks.find((b) => b.type === "image-grid");
 }
 

@@ -1,4 +1,80 @@
 import type { RichText, RichTextSpan, FormatFlags } from "@next-md-editor/types";
+import { unified } from "unified";
+import remarkParse from "remark-parse";
+import remarkGfm from "remark-gfm";
+
+const inlineParser = unified().use(remarkParse).use(remarkGfm);
+
+interface UnistNode {
+  type: string;
+  value?: string;
+  url?: string;
+  alt?: string | null;
+  children?: UnistNode[];
+}
+
+function parseAstToSpans(nodes: UnistNode[], inheritedFlags: FormatFlags = {}): RichTextSpan[] {
+  const spans: RichTextSpan[] = [];
+  for (const node of nodes) {
+    const flags = { ...inheritedFlags };
+    switch (node.type) {
+      case "text":
+        spans.push({ text: node.value ?? "", ...flags });
+        break;
+      case "strong":
+        spans.push(...parseAstToSpans(node.children || [], { ...flags, bold: true }));
+        break;
+      case "emphasis":
+        spans.push(...parseAstToSpans(node.children || [], { ...flags, italic: true }));
+        break;
+      case "delete":
+        spans.push(...parseAstToSpans(node.children || [], { ...flags, strikethrough: true }));
+        break;
+      case "inlineCode":
+        spans.push({ text: node.value ?? "", ...flags, code: true });
+        break;
+      case "link":
+        spans.push(...parseAstToSpans(node.children || [], { ...flags, link: node.url }));
+        break;
+      case "break":
+        spans.push({ text: "\n", ...flags });
+        break;
+      default:
+        if (node.children) {
+          spans.push(...parseAstToSpans(node.children, flags));
+        }
+        break;
+    }
+  }
+  return spans;
+}
+
+function extractInlineNodes(nodes: UnistNode[]): UnistNode[] {
+  const inlineNodes: UnistNode[] = [];
+  for (let i = 0; i < nodes.length; i++) {
+    const node = nodes[i];
+    if (node.type === "paragraph" || node.type === "heading" || node.type === "blockquote") {
+      if (inlineNodes.length > 0) {
+        inlineNodes.push({ type: "break" });
+      }
+      inlineNodes.push(...(node.children || []));
+    } else if (
+      node.type === "text" ||
+      node.type === "strong" ||
+      node.type === "emphasis" ||
+      node.type === "delete" ||
+      node.type === "inlineCode" ||
+      node.type === "link"
+    ) {
+      inlineNodes.push(node);
+    } else {
+      if (node.children) {
+        inlineNodes.push(...extractInlineNodes(node.children));
+      }
+    }
+  }
+  return inlineNodes;
+}
 
 // ── Merging adjacent spans with identical formats ──────────────────────────────
 
@@ -213,47 +289,60 @@ function richTextToMarkdown(rt: RichText): string {
 
 function markdownToRichText(md: string): RichText {
   if (!md) return [];
-
-  const regex =
-    /(\*\*\*(.+?)\*\*\*|___([\s\S]+?)___|\*\*(.+?)\*\*|__([\s\S]+?)__|\*(.+?)\*|_([\s\S]+?)_|~~([\s\S]+?)~~|`([^`]+)`|\[([^\]]*)\]\(([^)]+)\))/g;
-
-  const result: RichText = [];
-  let lastIndex = 0;
-
-  const pushText = (text: string, flags?: Partial<FormatFlags>) => {
-    if (!text) return;
-    result.push({ text, ...flags } as RichTextSpan);
-  };
-
-  let match: RegExpExecArray | null;
-  while ((match = regex.exec(md)) !== null) {
-    if (match.index > lastIndex) {
-      pushText(md.slice(lastIndex, match.index));
-    }
-    lastIndex = match.index + match[0].length;
-
-    if (match[2] !== undefined) pushText(match[2], { bold: true, italic: true });
-    else if (match[3] !== undefined) pushText(match[3], { bold: true, italic: true });
-    else if (match[4] !== undefined) pushText(match[4], { bold: true });
-    else if (match[5] !== undefined) pushText(match[5], { bold: true });
-    else if (match[6] !== undefined) pushText(match[6], { italic: true });
-    else if (match[7] !== undefined) pushText(match[7], { italic: true });
-    else if (match[8] !== undefined) pushText(match[8], { strikethrough: true });
-    else if (match[9] !== undefined) pushText(match[9], { code: true });
-    else if (match[10] !== undefined && match[11] !== undefined)
-      pushText(match[10], { link: match[11] });
+  try {
+    const tree = inlineParser.parse(md);
+    const inlineNodes = extractInlineNodes(tree.children as unknown as UnistNode[]);
+    return mergeRichText(parseAstToSpans(inlineNodes));
+  } catch (e) {
+    console.error("Failed to parse markdown to rich text:", e);
+    return [{ text: md }];
   }
-
-  if (lastIndex < md.length) {
-    pushText(md.slice(lastIndex));
-  }
-
-  return mergeRichText(result);
 }
 
 // ── DOM selection ↔ RichText offset ───────────────────────────────────────────
 
+function getTextLength(node: Node): number {
+  if (node.nodeType === Node.TEXT_NODE) {
+    return node.textContent?.length ?? 0;
+  }
+  let len = 0;
+  for (let i = 0; i < node.childNodes.length; i++) {
+    len += getTextLength(node.childNodes[i]);
+  }
+  return len;
+}
+
 function getDomTextOffset(container: Node, targetNode: Node, targetOffset: number): number {
+  if (targetNode === container) {
+    let offset = 0;
+    const children = container.childNodes;
+    const limit = Math.min(targetOffset, children.length);
+    for (let i = 0; i < limit; i++) {
+      offset += getTextLength(children[i]);
+    }
+    return offset;
+  }
+
+  if (targetNode.nodeType === Node.ELEMENT_NODE) {
+    let offset = 0;
+    const walker = document.createTreeWalker(container, NodeFilter.SHOW_ALL);
+    let node: Node | null;
+    while ((node = walker.nextNode())) {
+      if (node === targetNode) {
+        const children = targetNode.childNodes;
+        const limit = Math.min(targetOffset, children.length);
+        for (let i = 0; i < limit; i++) {
+          offset += getTextLength(children[i]);
+        }
+        return offset;
+      }
+      if (node.nodeType === Node.TEXT_NODE && !targetNode.contains(node)) {
+        offset += node.textContent?.length ?? 0;
+      }
+    }
+    return offset;
+  }
+
   let offset = 0;
   const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
   let node: Node | null;
@@ -296,8 +385,15 @@ function restoreDomRange(
   if (!endNode) endNode = container;
 
   const range = document.createRange();
-  range.setStart(startNode, startNodeOffset);
-  range.setEnd(endNode, endNodeOffset);
+  try {
+    range.setStart(startNode, startNodeOffset);
+    range.setEnd(endNode, endNodeOffset);
+  } catch {
+    // Fallback if startNode/endNode offsets are out of bounds for non-text container
+    range.selectNodeContents(container);
+    range.collapse(false);
+  }
+
   const sel = window.getSelection();
   if (sel) {
     sel.removeAllRanges();

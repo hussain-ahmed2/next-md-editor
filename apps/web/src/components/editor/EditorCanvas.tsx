@@ -4,13 +4,22 @@ import { useEditorStore } from "@next-md-editor/editor-core";
 import { useUIStore } from "@/store/uiStore";
 import { BlockRenderer } from "./BlockRenderer";
 import { useDroppable, useDragOperation, useDragDropMonitor, useDragDropManager } from "@dnd-kit/react";
-import type { DragOverEvent, DragEndEvent } from "@dnd-kit/react";
+import type { DragOverEvent } from "@dnd-kit/react";
 import { SortableBlock } from "./SortableBlock";
 import { BlockRegistry } from "@next-md-editor/editor-core";
-import { useState, useRef, useMemo, useCallback } from "react";
+import { useState, useRef, useMemo, useCallback, useEffect } from "react";
 import { EmptyState } from "./EmptyState";
 
 export const CANVAS_ROOT_ID = "canvas-root";
+
+function assignRef<T>(ref: React.Ref<T> | undefined, value: T | null) {
+  if (!ref) return;
+  if (typeof ref === "function") {
+    ref(value);
+  } else if (ref && "current" in ref) {
+    (ref as React.MutableRefObject<T | null>).current = value;
+  }
+}
 
 export function EditorCanvas({ scrollRef }: { scrollRef?: React.Ref<HTMLDivElement> }) {
   const blocks = useEditorStore((s) => s.blocks);
@@ -21,18 +30,16 @@ export function EditorCanvas({ scrollRef }: { scrollRef?: React.Ref<HTMLDivEleme
   // Keep a stable ref so the memoized monitor handlers always see current blocks
   // without needing to be re-created (which would cause re-subscription churn)
   const blocksRef = useRef(blocks);
-  blocksRef.current = blocks;
+  useEffect(() => {
+    blocksRef.current = blocks;
+  }, [blocks]);
 
   // Droppable canvas root — the whole canvas is a valid drop target
   const { ref: droppableRef } = useDroppable({ id: CANVAS_ROOT_ID });
 
   const setRef = useCallback((node: HTMLDivElement | null) => {
     (droppableRef as (el: Element | null) => void)(node);
-    if (typeof scrollRef === "function") {
-      scrollRef(node);
-    } else if (scrollRef) {
-      (scrollRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
-    }
+    assignRef(scrollRef, node);
   }, [droppableRef, scrollRef]);
 
   // ── Reactive drag state from library (no manual state needed) ─────────────
@@ -93,7 +100,7 @@ export function EditorCanvas({ scrollRef }: { scrollRef?: React.Ref<HTMLDivEleme
         // If hovering over own placeholder → keep current insertIndex (no flicker)
       },
 
-      onDragEnd(_event: DragEndEvent) {
+      onDragEnd() {
         setInsertIndex(null);
       },
     }),

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback } from "react";
 import { useEditorStore } from "@next-md-editor/editor-core";
 import type { Block } from "@next-md-editor/types";
 import { ChevronRight, GripVertical } from "lucide-react";
@@ -13,7 +13,6 @@ export function CollapsibleBlock({ block }: { block: Block }) {
   const content = (myBlock.props.content as string) ?? "";
   const open = (myBlock.props.open as boolean) ?? false;
 
-  const [editingSummary, setEditingSummary] = useState(false);
 
   const handleSummaryChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {

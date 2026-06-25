@@ -3,15 +3,15 @@
 import { useSortable } from "@dnd-kit/react/sortable";
 import { useEditorStore } from "@next-md-editor/editor-core";
 import type { Block } from "@next-md-editor/types";
-import { useState } from "react";
+import { useState, memo } from "react";
 import { DragHandle } from "./sortable-block/DragHandle";
 import { DeleteButton } from "./sortable-block/DeleteButton";
 import { PlaceholderBlock } from "./sortable-block/PlaceholderBlock";
 import { BlockToolbar } from "./FloatingFormatToolbar";
 
-export function SortableBlock({
+export const SortableBlock = memo(
+  function SortableBlock({
   id,
-  block,
   children,
   isPlaceholder,
   index,
@@ -93,4 +93,13 @@ export function SortableBlock({
       </div>
     </div>
   );
-}
+},
+(prevProps, nextProps) => {
+  return (
+    prevProps.id === nextProps.id &&
+    prevProps.index === nextProps.index &&
+    prevProps.isPlaceholder === nextProps.isPlaceholder &&
+    prevProps.showToolbar === nextProps.showToolbar &&
+    prevProps.block === nextProps.block
+  );
+});

@@ -54,11 +54,15 @@ export function CodeBlock({ block }: { block: Block }) {
   const [isEditing, setIsEditing] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Sync textarea when blocks change externally (undo/redo)
+  // Sync textarea when blocks change externally (undo/redo) and auto-resize
   useEffect(() => {
     const el = textareaRef.current;
-    if (el && el.value !== code) {
-      el.value = code;
+    if (el) {
+      if (el.value !== code) {
+        el.value = code;
+      }
+      el.style.height = "auto";
+      el.style.height = `${el.scrollHeight}px`;
     }
   }, [blocks, code]);
 

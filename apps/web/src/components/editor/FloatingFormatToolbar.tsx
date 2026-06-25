@@ -54,17 +54,27 @@ interface BlockToolbarProps {
 export function BlockToolbar({ blockId }: BlockToolbarProps) {
 	const b = findBlockById(useEditorStore.getState().blocks, blockId);
 	const isTextBlock = b && TEXT_BLOCK_TYPES.has(b.type);
-	if (!isTextBlock) return null;
 
 	const [activeFormats, setActiveFormats] = useState<Record<string, boolean>>({});
 	const [linkUrl, setLinkUrl] = useState<string | null>(null);
 	const [linkDialog, setLinkDialog] = useState<{ url: string } | null>(null);
+	const [linkPos, setLinkPos] = useState<{ top: number; left: number } | null>(null);
 	const [emojiPicker, setEmojiPicker] = useState(false);
 	const [aiDialogOpen, setAiDialogOpen] = useState(false);
 	const emojiBtnRef = useRef<HTMLButtonElement>(null);
 	const toolbarRef = useRef<HTMLDivElement>(null);
 	const savedLinkRangeRef = useRef<Range | null>(null);
 	const savedEmojiSelRef = useRef<{ blockId: string; offset: number } | null>(null);
+
+	useEffect(() => {
+		if (linkDialog) {
+			const tr = toolbarRef.current?.getBoundingClientRect();
+			const pos = tr ? { top: tr.bottom + 4, left: tr.left + tr.width / 2 } : { top: 80, left: window.innerWidth / 2 };
+			setLinkPos(pos);
+		} else {
+			setLinkPos(null);
+		}
+	}, [linkDialog]);
 
 	const getContentEditable = useCallback(() => {
 		return document.querySelector<HTMLElement>(`[contenteditable][data-block-id="${blockId}"]`);
@@ -86,7 +96,8 @@ export function BlockToolbar({ blockId }: BlockToolbarProps) {
 	}, [getContentEditable]);
 
 	useEffect(() => {
-		updateFormats();
+		const timer = setTimeout(updateFormats, 0);
+		return () => clearTimeout(timer);
 	}, [updateFormats]);
 
 	useEffect(() => {
@@ -220,6 +231,8 @@ export function BlockToolbar({ blockId }: BlockToolbarProps) {
 		setEmojiPicker((p) => !p);
 	}, [blockId, getContentEditable]);
 
+	if (!isTextBlock) return null;
+
 	const buttons: { action: FormatAction; label: React.ReactNode }[] = [
 		{ action: "bold", label: <strong style={{ fontSize: 13, letterSpacing: 0 }}>B</strong> },
 		{ action: "italic", label: <em style={{ fontSize: 13 }}>I</em> },
@@ -352,19 +365,15 @@ export function BlockToolbar({ blockId }: BlockToolbarProps) {
 				)}
 			</div>
 			{aiDialogOpen && <BlockAiDialog blockId={blockId} onClose={() => setAiDialogOpen(false)} />}
-			{linkDialog && (() => {
-				const tr = toolbarRef.current?.getBoundingClientRect();
-				const linkPos = tr ? { top: tr.bottom + 4, left: tr.left + tr.width / 2 } : { top: 80, left: window.innerWidth / 2 };
-				return (
-					<LinkDialog
-						initialUrl={linkDialog.url}
-						position={linkPos}
-						onApply={applyLink}
-						onRemove={linkUrl ? removeLink : undefined}
-						onCancel={() => setLinkDialog(null)}
-					/>
-				);
-			})()}
+			{linkDialog && linkPos && (
+				<LinkDialog
+					initialUrl={linkDialog.url}
+					position={linkPos}
+					onApply={applyLink}
+					onRemove={linkUrl ? removeLink : undefined}
+					onCancel={() => setLinkDialog(null)}
+				/>
+			)}
 		</>
 	);
 }

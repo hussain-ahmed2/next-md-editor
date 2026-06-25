@@ -8,7 +8,7 @@ export function useSynchronizedScroll() {
   const elBRef = useRef<HTMLElement | null>(null);
   const cleanupRef = useRef<(() => void) | null>(null);
 
-  function sync(from: HTMLElement, to: HTMLElement) {
+  const sync = useCallback((from: HTMLElement, to: HTMLElement) => {
     if (lock.current) return;
     lock.current = true;
     const maxFrom = from.scrollHeight - from.clientHeight;
@@ -19,9 +19,9 @@ export function useSynchronizedScroll() {
     }
     to.scrollTop = (from.scrollTop / maxFrom) * maxTo;
     requestAnimationFrame(() => { lock.current = false; });
-  }
+  }, []);
 
-  function attach() {
+  const attach = useCallback(() => {
     if (cleanupRef.current) cleanupRef.current();
     const elA = elARef.current;
     const elB = elBRef.current;
@@ -37,7 +37,7 @@ export function useSynchronizedScroll() {
       elA.removeEventListener("scroll", onScrollA);
       elB.removeEventListener("scroll", onScrollB);
     };
-  }
+  }, [sync]);
 
   useEffect(() => {
     return () => {
@@ -48,12 +48,12 @@ export function useSynchronizedScroll() {
   const refA = useCallback((node: HTMLElement | null) => {
     elARef.current = node;
     attach();
-  }, []);
+  }, [attach]);
 
   const refB = useCallback((node: HTMLElement | null) => {
     elBRef.current = node;
     attach();
-  }, []);
+  }, [attach]);
 
   return { refA, refB };
 }

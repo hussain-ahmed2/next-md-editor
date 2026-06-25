@@ -15,7 +15,9 @@ export function useEditorPersistence() {
 
   // Stable ref so save timers always write the latest data without stale closures
   const blocksRef = useRef(blocks);
-  blocksRef.current = blocks;
+  useEffect(() => {
+    blocksRef.current = blocks;
+  }, [blocks]);
 
   // Ref to hold the "idle" reset timer so we can cancel it if editing resumes
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -24,21 +26,26 @@ export function useEditorPersistence() {
   useEffect(() => {
     initRegistry();
     const saved = localStorage.getItem("next-md-editor-blocks");
+    let loadedBlocks: typeof blocks | null = null;
+    let loadedStatus: "saved" | "idle" = "idle";
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          setBlocks(parsed);
-          setIsLoaded(true);
-          setSaveStatus("saved");
-          return;
+          loadedBlocks = parsed;
+          loadedStatus = "saved";
         }
       } catch (e) {
         console.error("Failed to parse saved blocks:", e);
       }
     }
-    setIsLoaded(true);
-    setSaveStatus("idle");
+    setTimeout(() => {
+      if (loadedBlocks) {
+        setBlocks(loadedBlocks);
+      }
+      setIsLoaded(true);
+      setSaveStatus(loadedStatus);
+    }, 0);
   }, [setBlocks, setSaveStatus]);
 
   // Optimized two-phase auto-save debounce:
