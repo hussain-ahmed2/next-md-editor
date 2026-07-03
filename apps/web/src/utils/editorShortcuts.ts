@@ -1,56 +1,14 @@
 import React from "react";
 import { v4 as uuidv4 } from "uuid";
 import type { Block } from "@next-md-editor/types";
+import { htmlToMarkdown as baseHtmlToMarkdown } from "@next-md-editor/markdown";
 
 /**
  * Converts rich visual HTML inside contentEditable back into clean Markdown.
- * Intercepts visual browser tags like <b>, <strong>, <i>, <em>, <code> and <a>
- * and translates them back to standard GFM syntax.
+ * Uses the robust unified/rehype AST parser package under the hood.
  */
 export function htmlToMarkdown(html: string): string {
-  if (!html) return "";
-
-  let text = html;
-
-  // Helper: extract whitespace from formatted content, place it outside markers
-  const wrapTrim = (content: string, marker: string): string => {
-    const leading = content.match(/^\s*/)?.[0] ?? "";
-    const trailing = content.match(/\s*$/)?.[0] ?? "";
-    const inner = content.trim();
-    return inner ? `${leading}${marker}${inner}${marker}${trailing}` : content;
-  };
-
-  // 1. Convert bold structures
-  text = text.replace(/<(strong|b)>(.*?)<\/\1>/gi, (_, _tag, c) => wrapTrim(c, "**"));
-
-  // 2. Convert italic structures
-  text = text.replace(/<(em|i)>(.*?)<\/\1>/gi, (_, _tag, c) => wrapTrim(c, "*"));
-
-  // 3. Convert strikethrough
-  text = text.replace(/<(del|s|strike)>(.*?)<\/\1>/gi, (_, _tag, c) => wrapTrim(c, "~~"));
-
-  // 4. Convert inline code blocks
-  text = text.replace(/<code[^>]*>(.*?)<\/code>/gi, (_, c) => wrapTrim(c, "`"));
-
-  // 5. Convert hyperlink structures
-  text = text.replace(/<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/gi, "[$2]($1)");
-
-  // 6. Clean up standard editor container wrappers & breaks
-  text = text.replace(/<br\s*\/?>/gi, "\n");
-  text = text.replace(/<div[^>]*>(.*?)<\/div>/gi, "\n$1");
-  text = text.replace(/<p[^>]*>(.*?)<\/p>/gi, "\n$1");
-
-  // 7. Strip all other browser-injected HTML markup
-  text = text.replace(/<[^>]*>/g, "");
-
-  // 8. Decode HTML entities cleanly
-  text = text
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&nbsp;/g, " ");
-
-  return text.trim();
+  return baseHtmlToMarkdown(html);
 }
 
 /**
@@ -68,7 +26,7 @@ export function handleEditorKeyboardShortcuts(
   selectedBlockIds: string[],
   addBlock: (block: Block, index?: number) => void,
   removeBlocks: (ids: string[]) => void,
-  updateBlock: (id: string, props: any) => void,
+  updateBlock: (id: string, props: Record<string, unknown>) => void,
   selectBlock: (id: string | null, extend?: boolean) => void,
 ) {
   const hasMeta = e.ctrlKey || e.metaKey;

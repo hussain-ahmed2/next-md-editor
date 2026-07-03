@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { parseMarkdown, serializeMarkdown } from "../index";
+import type { Block } from "@next-md-editor/types";
 
 const FLUID =
   "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=600&auto=format&fit=crop";
@@ -8,14 +9,15 @@ const GLOSSY =
 const ARCH =
   "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=600&auto=format&fit=crop";
 
-function stripIds(blocks: any[]) {
+function stripIds(blocks: Block[]) {
   return blocks.map((b) => {
-    const { id, images, ...rest } = b;
+    const { id, ...rest } = b;
+    const images = (b.props.images as Array<{ id?: string; url: string; alt?: string }>) ?? [];
     return {
       ...rest,
       props: {
         ...b.props,
-        images: (b.props.images ?? []).map((img: any) => {
+        images: images.map((img) => {
           const { id: _id, ...imgRest } = img;
           return imgRest;
         }),

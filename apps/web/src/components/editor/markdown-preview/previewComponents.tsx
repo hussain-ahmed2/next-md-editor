@@ -20,7 +20,8 @@ function findImgInNode(node: React.ReactNode): React.ReactElement | null {
   for (const child of children) {
     if (!React.isValidElement(child)) continue;
     if (child.type === "img") return child;
-    const found = findImgInNode((child.props as any)?.children);
+    const props = child.props as { children?: React.ReactNode };
+    const found = findImgInNode(props?.children);
     if (found) return found;
   }
   return null;
@@ -148,29 +149,31 @@ export const getTableComponents = (isImageGrid: boolean): Components => {
       );
 
       const bodyChildren = tbody
-        ? React.Children.toArray((tbody as any).props.children)
+        ? React.Children.toArray(tbody.props.children)
         : kids.filter((c): c is React.ReactElement => React.isValidElement(c) && c.type === "tr");
 
       if (!bodyChildren.length) {
         return <table>{children}</table>;
       }
 
-      const bodyRows = bodyChildren;
+      const bodyRows = bodyChildren.filter((c): c is React.ReactElement<{ children?: React.ReactNode }> => React.isValidElement(c));
       if (!bodyRows.length) {
         return <table>{children}</table>;
       }
 
-      const cols = Math.max(...bodyRows.map((r: any) =>
+      const cols = Math.max(...bodyRows.map((r) =>
         React.Children.count(r.props.children)
       ), 1);
 
       return (
         <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 12, margin: "12px 0" }}>
-          {bodyRows.flatMap((row: any) =>
-            React.Children.toArray(row.props.children).map((cell: any, ci: number) => {
-              const imgEl = findImgInNode(cell.props.children);
+          {bodyRows.flatMap((row) =>
+            React.Children.toArray(row.props.children).map((cell, ci: number) => {
+              if (!React.isValidElement(cell)) return null;
+              const cellProps = cell.props as { children?: React.ReactNode };
+              const imgEl = findImgInNode(cellProps.children);
               if (!imgEl) return null;
-              const p = imgEl.props as any;
+              const p = imgEl.props as { src?: string; alt?: string };
               return (
                 <div key={ci} style={{ display: "flex", flexDirection: "column", borderRadius: 6, border: "1px solid var(--border)", overflow: "hidden" }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}

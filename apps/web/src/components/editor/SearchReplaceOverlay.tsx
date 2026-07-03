@@ -72,9 +72,6 @@ function replaceInBlock(block: Block, field: string, match: SearchMatch, replace
 
   if (field === "content") {
     const content = [...((p.content as RichText) ?? [])];
-    const prevText = content.map((s) => s.text).join("");
-    const beforeText = prevText.slice(0, match.offset);
-    const afterText = prevText.slice(match.offset + match.length);
     const newContent = deleteRichRange(content, match.offset, match.offset + match.length);
     const inserted = insertRichText(newContent, match.offset, replacement);
     updateBlock(block.id, { content: inserted });
@@ -165,9 +162,15 @@ export function SearchReplaceOverlay() {
     }
   }, [isSearchOpen]);
 
-  useEffect(() => {
+  const [prevSearchState, setPrevSearchState] = useState({ query, matchCase, useRegex });
+  if (
+    query !== prevSearchState.query ||
+    matchCase !== prevSearchState.matchCase ||
+    useRegex !== prevSearchState.useRegex
+  ) {
+    setPrevSearchState({ query, matchCase, useRegex });
     setCurrentIndex(0);
-  }, [query, matchCase, useRegex]);
+  }
 
   useEffect(() => {
     if (matches.length > 0 && matches[clampedIndex]) {

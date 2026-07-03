@@ -71,11 +71,17 @@ export default function EditorPage() {
   const { refA: canvasScrollRef, refB: previewScrollRef } = useSynchronizedScroll();
 
   useEffect(() => {
-    setMounted(true);
+    setTimeout(() => {
+      setMounted(true);
+    }, 0);
   }, []);
 
   useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    const checkMobile = () => {
+      setTimeout(() => {
+        setIsMobile(window.innerWidth < 768);
+      }, 0);
+    };
     checkMobile();
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);

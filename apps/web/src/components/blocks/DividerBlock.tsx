@@ -1,8 +1,6 @@
 "use client";
 
-import type { Block } from "@next-md-editor/types";
-
-export function DividerBlock({ block: _ }: { block: Block }) {
+export function DividerBlock() {
   return (
     <div style={{ padding: "12px 0" }}>
       <hr style={{

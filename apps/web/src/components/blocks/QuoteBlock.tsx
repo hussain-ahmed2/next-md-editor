@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useRef, useCallback } from "react";
 import { useEditorStore } from "@next-md-editor/editor-core";
 import type { Block } from "@next-md-editor/types";
 import {
@@ -9,6 +9,7 @@ import {
 } from "@/utils/editorShortcuts";
 import { renderInlineMarkdown } from "@/features/markdown/highlighter";
 import { useBlockFocus } from "@/hooks/useBlockFocus";
+import { useContentSync } from "@/hooks/useContentSync";
 
 export function QuoteBlock({ block }: { block: Block }) {
   const blocks = useEditorStore((s) => s.blocks);
@@ -18,60 +19,34 @@ export function QuoteBlock({ block }: { block: Block }) {
   const selectBlock = useEditorStore((s) => s.selectBlock);
   const selectedBlockIds = useEditorStore((s) => s.selectedBlockIds);
 
-
   const text = (block.props.text as string) ?? "";
-  const [isFocused, setIsFocused] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   // Auto-focus synchronization when block is selected
   useBlockFocus(ref, block.id, selectedBlockIds);
 
-  // Sync state changes from store to DOM when they differ (e.g. on undo/redo)
-  useEffect(() => {
-    if (ref.current) {
-      const currentMarkdown = htmlToMarkdown(ref.current.innerHTML);
-      if (currentMarkdown !== text) {
-        ref.current.innerHTML = renderInlineMarkdown(text);
+  const { handleInput: syncInput, handleBlur: syncBlur } = useContentSync({
+    blockId: block.id,
+    ref,
+    storeValue: text,
+    updatePropName: "text",
+    parseHtml: htmlToMarkdown,
+    serializeToHtml: renderInlineMarkdown,
+  });
 
-        // Reset caret to the end if focused
-        if (document.activeElement === ref.current) {
-          const range = document.createRange();
-          range.selectNodeContents(ref.current);
-          range.collapse(false);
-          const selection = window.getSelection();
-          if (selection) {
-            selection.removeAllRanges();
-            selection.addRange(range);
-          }
-        }
-      }
-    }
-  }, [text]);
+  const handleInput = useCallback(
+    (e: React.FormEvent<HTMLDivElement>) => {
+      syncInput(e);
+    },
+    [syncInput],
+  );
 
-  // When entering focus, snap caret and ensure text is populated
-  useEffect(() => {
-    if (isFocused && ref.current) {
-      ref.current.innerHTML = renderInlineMarkdown(text);
-      const range = document.createRange();
-      range.selectNodeContents(ref.current);
-      range.collapse(false);
-      const selection = window.getSelection();
-      if (selection) {
-        selection.removeAllRanges();
-        selection.addRange(range);
-      }
-    }
-  }, [isFocused]);
-
-  const handleInput = (e: React.InputEvent<HTMLDivElement>) => {
-    const rawText = htmlToMarkdown(e.currentTarget.innerHTML);
-    updateBlock(block.id, { text: rawText });
-  };
-
-  const handleBlur = (e: React.FocusEvent<HTMLDivElement>) => {
-    setIsFocused(false);
-    updateBlock(block.id, { text: htmlToMarkdown(e.currentTarget.innerHTML) });
-  };
+  const handleBlur = useCallback(
+    () => {
+      syncBlur();
+    },
+    [syncBlur],
+  );
 
   return (
     <div
@@ -97,7 +72,6 @@ export function QuoteBlock({ block }: { block: Block }) {
         contentEditable
         data-block-id={block.id}
         suppressContentEditableWarning
-        onFocus={() => setIsFocused(true)}
         onBlur={handleBlur}
         onInput={handleInput}
         onKeyDown={(e) =>
@@ -121,13 +95,6 @@ export function QuoteBlock({ block }: { block: Block }) {
           outline: "none",
           minHeight: "1.6em",
         }}
-        {...(!isFocused
-          ? {
-              dangerouslySetInnerHTML: {
-                __html: renderInlineMarkdown(text) || "",
-              },
-            }
-          : {})}
       />
     </div>
   );

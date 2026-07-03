@@ -2,7 +2,7 @@
 
 import { useEditorStore } from "@next-md-editor/editor-core";
 import type { Block } from "@next-md-editor/types";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { htmlToMarkdown } from "@/utils/editorShortcuts";
 import { renderInlineMarkdown } from "@/features/markdown/highlighter";
 import { PlusCircle, MinusCircle, Columns2, Rows2 } from "lucide-react";
@@ -11,17 +11,22 @@ export function TableBlock({ block }: { block: Block }) {
   const updateBlock = useEditorStore((s) => s.updateBlock);
   const blocks = useEditorStore((s) => s.blocks);
   const myBlock = blocks.find((b) => b.id === block.id) ?? block;
-  const rows = (myBlock.props.rows as string[][]) ?? [["Column 1", "Column 2"], ["Cell 1", "Cell 2"]];
+  const rows = useMemo(() => (myBlock.props.rows as string[][]) ?? [["Column 1", "Column 2"], ["Cell 1", "Cell 2"]], [myBlock.props.rows]);
   const [focusedCell, setFocusedCell] = useState<{ rIdx: number; cIdx: number } | null>(null);
 
   // A map of refs keyed by "rIdx-cIdx" for imperative DOM access
-  const cellRefs = useRef<Map<string, HTMLElement>>(new Map());
+  const cellRefs = useRef<Map<string, HTMLTableCellElement>>(new Map());
 
-  const setCellRef = (rIdx: number, cIdx: number) => (el: HTMLElement | null) => {
+  const setCellRef = (rIdx: number, cIdx: number) => (el: HTMLTableCellElement | null) => {
     const key = `${rIdx}-${cIdx}`;
     if (el) cellRefs.current.set(key, el);
     else cellRefs.current.delete(key);
   };
+
+  const rowsRef = useRef(rows);
+  useEffect(() => {
+    rowsRef.current = rows;
+  }, [rows]);
 
   // When focus changes to a new cell, imperatively populate its innerHTML
   // so React's removal of dangerouslySetInnerHTML doesn't clear the content
@@ -30,7 +35,7 @@ export function TableBlock({ block }: { block: Block }) {
       const { rIdx, cIdx } = focusedCell;
       const key = `${rIdx}-${cIdx}`;
       const el = cellRefs.current.get(key);
-      const cellValue = rows[rIdx]?.[cIdx] ?? "";
+      const cellValue = rowsRef.current[rIdx]?.[cIdx] ?? "";
       if (el) {
         el.innerHTML = renderInlineMarkdown(cellValue);
         // Move caret to end
@@ -111,7 +116,6 @@ export function TableBlock({ block }: { block: Block }) {
     return (
       <Tag
         key={cIdx}
-        // @ts-ignore - ref callback for map
         ref={setCellRef(rIdx, cIdx)}
         contentEditable
         data-block-id={block.id}
