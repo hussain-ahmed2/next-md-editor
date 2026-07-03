@@ -6,9 +6,10 @@ import rehypeRemark from "rehype-remark";
 import remarkStringify from "remark-stringify";
 import rehypeMinifyWhitespace from "rehype-minify-whitespace";
 import { v4 as uuidv4 } from "uuid";
-import type { Root, Heading, Paragraph, Code, ThematicBreak, List, ListItem, Table, Blockquote } from "mdast";
+import type { Root } from "mdast";
 import type { Block, RichText } from "@next-md-editor/types";
 import { markdownToRichText, richTextToMarkdown } from "./richText";
+import { visit } from "unist-util-visit";
 
 // ── Unified pipeline for HTML → Markdown (SSR-safe) ──────────────────────────
 
@@ -43,6 +44,16 @@ interface UnistNode {
     end: { offset: number };
   };
   children?: UnistNode[];
+  cols?: number;
+  images?: Array<{ id: string; url: string; alt: string }>;
+  username?: string;
+  variant?: string;
+  theme?: string;
+  summary?: string;
+  content?: string;
+  open?: boolean;
+  badges?: Array<{ id: string; text: string; color: string; logo?: string; url?: string }>;
+  alignment?: string;
 }
 
 // ── Extract raw text from AST node via source position ────────────────────────
@@ -68,283 +79,268 @@ function isBadgeUrl(url: string | undefined): boolean {
   );
 }
 
+function remarkCustomBlocks() {
+  return (tree: Root) => {
+    visit(tree, (node: unknown, index, parent) => {
+      const uNode = node as UnistNode;
+      const uParent = parent as UnistNode | undefined;
+
+      if (uNode.type === "html" && uParent && typeof index === "number") {
+        const val = (uNode.value ?? "").trim();
+        if (val === "<!-- image-grid -->") {
+          const images: { id: string; url: string; alt: string }[] = [];
+          let consumed = 0;
+
+          for (let j = index + 1; j < (uParent.children?.length ?? 0); j++) {
+            const next = uParent.children?.[j] as UnistNode;
+            if (next.type !== "html") break;
+            const html = (next.value ?? "").trim();
+
+            const imgRegex = /<img\s+[^>]*src="([^"]+)"[^>]*\/?>/gi;
+            let match: RegExpExecArray | null;
+            let foundImg = false;
+            while ((match = imgRegex.exec(html)) !== null) {
+              foundImg = true;
+              const tag = match[0];
+              const altMatch = tag.match(/alt="([^"]*)"/i);
+              images.push({
+                id: Math.random().toString(36).substring(7),
+                url: match[1],
+                alt: altMatch?.[1] ?? "",
+              });
+            }
+            if (foundImg) {
+              consumed++;
+            } else {
+              break;
+            }
+          }
+
+          if (images.length > 0) {
+            let cols = Math.min(images.length, 3);
+            for (let j = index + 1; j < Math.min(index + consumed + 2, uParent.children?.length ?? 0); j++) {
+              const html = ((uParent.children?.[j] as UnistNode)?.value ?? "").trim();
+              const trMatch = html.match(/<tr[^>]*>([\s\S]*?)<\/tr>/i);
+              if (trMatch) {
+                const tdCount = (trMatch[1].match(/<td/gi) || []).length;
+                if (tdCount > 0) { cols = tdCount; break; }
+              }
+            }
+            const gridNode: UnistNode = {
+              type: "customImageGrid",
+              cols,
+              images,
+            };
+            uParent.children?.splice(index, consumed + 1, gridNode);
+            return index + 1;
+          }
+        }
+
+        const statsMatch = val.match(/^<!--\s*github-stats:\s*([a-zA-Z0-9-]+)\s*-->$/);
+        if (statsMatch) {
+          const statsNode: UnistNode = {
+            type: "customGithubStats",
+            username: statsMatch[1],
+          };
+          uParent.children?.splice(index, 1, statsNode);
+          return index + 1;
+        }
+
+        const detailsMatch = val.match(/^<details\s*(open)?>([\s\S]*)<\/details>$/i);
+        if (detailsMatch) {
+          const inner = detailsMatch[2].trim();
+          const summaryMatch = inner.match(/<summary>([\s\S]*)<\/summary>/i);
+          const summary = summaryMatch ? summaryMatch[1].trim() : "Details";
+          const content = summaryMatch
+            ? inner.replace(/<summary>[\s\S]*<\/summary>/i, "").trim()
+            : inner;
+          const collapsibleNode: UnistNode = {
+            type: "customCollapsible",
+            summary,
+            content,
+            open: detailsMatch[1]?.trim() === "open",
+          };
+          uParent.children?.splice(index, 1, collapsibleNode);
+          return index + 1;
+        }
+
+        if (val === "<!-- badge-group -->") {
+          const badges: Array<{ id: string; text: string; color: string; logo?: string; url?: string }> = [];
+          let consumed = 0;
+          let alignment = "left";
+
+          const nextHtml = index + 1 < (uParent.children?.length ?? 0) ? uParent.children?.[index + 1] : null;
+          if (nextHtml?.type === "html") {
+            const htmlVal = ((nextHtml as UnistNode).value ?? "").trim();
+            const alignMatch = htmlVal.match(/text-align:\s*(center|right)/i);
+            if (alignMatch) {
+              alignment = alignMatch[1].toLowerCase();
+              const imgRegex = /<img\s+[^>]*src="([^"]+)"[^>]*alt="([^"]*)"/gi;
+              let match;
+              while ((match = imgRegex.exec(htmlVal)) !== null) {
+                const url = match[1];
+                const text = match[2];
+                let color = "000000";
+                let logo = "";
+                const badgeUrlPart = url.replace("https://img.shields.io/badge/", "");
+                if (badgeUrlPart !== url) {
+                  const [labelColorPart, queryString = ""] = badgeUrlPart.split("?");
+                  const parts = labelColorPart.split("-");
+                  color = parts.pop() ?? "000000";
+                  const logoMatch = queryString.match(/logo=([^&]+)/i);
+                  logo = logoMatch ? decodeURIComponent(logoMatch[1]) : "";
+                }
+                badges.push({
+                  id: Math.random().toString(36).substring(7),
+                  text,
+                  color,
+                  logo,
+                  url,
+                });
+              }
+              if (badges.length > 0) consumed = 1;
+            }
+          }
+
+          if (badges.length === 0) {
+            for (let j = index + 1; j < (uParent.children?.length ?? 0); j++) {
+              const next = uParent.children?.[j] as UnistNode;
+              if (next.type !== "paragraph") break;
+
+              const images = next.children?.filter(
+                (c: UnistNode) => c.type === "image" && typeof c.url === "string" && isBadgeUrl(c.url),
+              ) ?? [];
+              if (images.length === 0) break;
+
+              for (const img of images) {
+                const badgeUrl = img.url ?? "";
+                const badgeUrlPart = badgeUrl.replace("https://img.shields.io/badge/", "");
+                const [labelColorPart, queryString = ""] = badgeUrlPart.split("?");
+                const parts = labelColorPart.split("-");
+                const color = parts.pop() ?? "000000";
+                const text = decodeURIComponent(parts.join("-").replace(/--/g, " "));
+
+                const logoMatch = queryString.match(/logo=([^&]+)/i);
+                const logo = logoMatch ? decodeURIComponent(logoMatch[1]) : "";
+
+                badges.push({
+                  id: Math.random().toString(36).substring(7),
+                  text,
+                  color,
+                  logo,
+                  url: badgeUrl,
+                });
+              }
+              consumed++;
+            }
+          }
+
+          if (badges.length > 0) {
+            const badgeGroupNode: UnistNode = {
+              type: "customBadgeGroup",
+              badges,
+              alignment,
+            };
+            uParent.children?.splice(index, consumed + 1, badgeGroupNode);
+            return index + 1;
+          }
+        }
+      }
+
+      if (uNode.type === "paragraph" && uParent && typeof index === "number" && Array.isArray(uNode.children)) {
+        const significantChildren = (uNode.children as UnistNode[]).filter(
+          (c: UnistNode) =>
+            !(c.type === "text" && (c.value ?? "").trim() === "") && c.type !== "break",
+        );
+        if (
+          significantChildren.length > 0 &&
+          significantChildren.every((c: UnistNode) => c.type === "image")
+        ) {
+          if (significantChildren.length === 1) {
+            const img = significantChildren[0];
+            const imgUrl = img.url || "";
+            const statsMatch = imgUrl.match(/\/api\/github\/([a-zA-Z0-9-]+)\/stats\.svg(\?.*)?$/);
+            if (statsMatch) {
+              const qs = new URLSearchParams(statsMatch[2] ?? "");
+              const statsNode: UnistNode = {
+                type: "customGithubStats",
+                username: statsMatch[1],
+                variant: qs.get("variant") || "default",
+                theme: qs.get("theme") || "auto",
+              };
+              uParent.children?.splice(index, 1, statsNode);
+              return index + 1;
+            } else {
+              const imgNode: UnistNode = {
+                type: "customImage",
+                url: imgUrl,
+                alt: img.alt || "",
+              };
+              uParent.children?.splice(index, 1, imgNode);
+              return index + 1;
+            }
+          } else {
+            const allBadges = significantChildren.every(
+              (c: UnistNode) => typeof c.url === "string" && isBadgeUrl(c.url),
+            );
+            if (allBadges) {
+              const badges = significantChildren.map((img: UnistNode) => {
+                const badgeUrl = img.url ?? "";
+                const badgeUrlPart = badgeUrl.replace("https://img.shields.io/badge/", "");
+                const [labelColorPart, queryString = ""] = badgeUrlPart.split("?");
+                const parts = labelColorPart.split("-");
+                const color = parts.pop() ?? "000000";
+                const text = decodeURIComponent(parts.join("-").replace(/--/g, " "));
+                const logoMatch = queryString.match(/logo=([^&]+)/i);
+                const logo = logoMatch ? decodeURIComponent(logoMatch[1]) : "";
+                return {
+                  id: Math.random().toString(36).substring(7),
+                  text,
+                  color,
+                  logo,
+                  url: badgeUrl,
+                };
+              });
+              const badgeGroupNode: UnistNode = {
+                type: "customBadgeGroup",
+                badges,
+                alignment: "left",
+              };
+              uParent.children?.splice(index, 1, badgeGroupNode);
+              return index + 1;
+            } else {
+              const images = significantChildren.map((img: UnistNode) => ({
+                id: Math.random().toString(36).substring(7),
+                url: img.url || "",
+                alt: img.alt || "",
+              }));
+              const gridNode: UnistNode = {
+                type: "customImageGrid",
+                cols: images.length,
+                images,
+              };
+              uParent.children?.splice(index, 1, gridNode);
+              return index + 1;
+            }
+          }
+        }
+      }
+    });
+  };
+}
+
 export function parseMarkdown(markdown: string): Block[] {
   const tree = unified()
     .use(remarkParse)
     .use(remarkGfm)
     .parse(markdown) as Root;
 
+  const transformed = unified()
+    .use(remarkCustomBlocks)
+    .runSync(tree) as Root;
+
   const blocks: Block[] = [];
-  let skipCount = 0;
-
-  for (let i = 0; i < tree.children.length; i++) {
-    if (skipCount > 0) { skipCount--; continue; }
-
-    const node = tree.children[i];
-
-    // Detect new-style raw HTML image grid: <!-- image-grid --> followed by <table> with <img>
-    if (node.type === "html") {
-      const val = ((node as unknown as UnistNode).value ?? "").trim();
-      if (val === "<!-- image-grid -->") {
-        const images: { id: string; url: string; alt: string }[] = [];
-        let consumed = 0;
-
-        for (let j = i + 1; j < tree.children.length; j++) {
-          const next = tree.children[j];
-          if (next.type !== "html") break;
-          const html = ((next as unknown as UnistNode).value ?? "").trim();
-
-          const imgRegex = /<img\s+[^>]*src="([^"]+)"[^>]*\/?>/gi;
-          let match: RegExpExecArray | null;
-          let foundImg = false;
-          while ((match = imgRegex.exec(html)) !== null) {
-            foundImg = true;
-            const tag = match[0];
-            const altMatch = tag.match(/alt="([^"]*)"/i);
-            images.push({
-              id: Math.random().toString(36).substring(7),
-              url: match[1],
-              alt: altMatch?.[1] ?? "",
-            });
-          }
-          if (foundImg) {
-            consumed++;
-          } else {
-            break;
-          }
-        }
-
-        if (images.length > 0) {
-          // Determine cols from <td> count in first <tr> of the <table> HTML
-          let cols = Math.min(images.length, 3);
-          for (let j = i + 1; j < Math.min(i + consumed + 2, tree.children.length); j++) {
-            const html = ((tree.children[j] as unknown as UnistNode)?.value ?? "").trim();
-            const trMatch = html.match(/<tr[^>]*>([\s\S]*?)<\/tr>/i);
-            if (trMatch) {
-              const tdCount = (trMatch[1].match(/<td/gi) || []).length;
-              if (tdCount > 0) { cols = tdCount; break; }
-            }
-          }
-          blocks.push({
-            id: uuidv4(),
-            type: "image-grid",
-            props: {
-              cols,
-              images,
-            },
-          });
-          skipCount = consumed;
-          continue;
-        }
-      }
-
-      // Detect github-stats: <!-- github-stats:username -->
-      const statsMatch = val.match(/^<!--\s*github-stats:\s*([a-zA-Z0-9-]+)\s*-->$/);
-      if (statsMatch) {
-        blocks.push({
-          id: uuidv4(),
-          type: "github-stats",
-          props: { username: statsMatch[1] },
-        });
-        continue;
-      }
-
-      // Detect collapsible: <details> HTML block
-      const detailsMatch = val.match(/^<details\s*(open)?>([\s\S]*)<\/details>$/i);
-      if (detailsMatch) {
-        const inner = detailsMatch[2].trim();
-        const summaryMatch = inner.match(/<summary>([\s\S]*)<\/summary>/i);
-        const summary = summaryMatch ? summaryMatch[1].trim() : "Details";
-        const content = summaryMatch
-          ? inner.replace(/<summary>[\s\S]*<\/summary>/i, "").trim()
-          : inner;
-        blocks.push({
-          id: uuidv4(),
-          type: "collapsible",
-          props: {
-            summary,
-            content,
-            open: detailsMatch[1]?.trim() === "open",
-          },
-        });
-        continue;
-      }
-
-      // Detect badge-group: <!-- badge-group --> followed by ![image](url) markdown
-      if (val === "<!-- badge-group -->") {
-        const badges: Array<{ id: string; text: string; color: string; logo?: string; url?: string }> = [];
-        let consumed = 0;
-        let alignment = "left";
-
-        // Check for HTML format with alignment: <div style="text-align:center"> with <img> tags
-        const nextHtml = i + 1 < tree.children.length ? tree.children[i + 1] : null;
-        if (nextHtml?.type === "html") {
-          const htmlVal = ((nextHtml as unknown as UnistNode).value ?? "").trim();
-          const alignMatch = htmlVal.match(/text-align:\s*(center|right)/i);
-          if (alignMatch) {
-            alignment = alignMatch[1].toLowerCase();
-            const imgRegex = /<img\s+[^>]*src="([^"]+)"[^>]*alt="([^"]*)"/gi;
-            let match;
-            while ((match = imgRegex.exec(htmlVal)) !== null) {
-              const url = match[1];
-              const text = match[2];
-              let color = "000000";
-              let logo = "";
-              const badgeUrlPart = url.replace("https://img.shields.io/badge/", "");
-              if (badgeUrlPart !== url) {
-                const [labelColorPart, queryString = ""] = badgeUrlPart.split("?");
-                const parts = labelColorPart.split("-");
-                color = parts.pop() ?? "000000";
-                const logoMatch = queryString.match(/logo=([^&]+)/i);
-                logo = logoMatch ? decodeURIComponent(logoMatch[1]) : "";
-              }
-              badges.push({
-                id: Math.random().toString(36).substring(7),
-                text,
-                color,
-                logo,
-                url,
-              });
-            }
-            if (badges.length > 0) consumed = 1;
-          }
-        }
-
-        // Fall back to old paragraph-based parsing
-        if (badges.length === 0) {
-          for (let j = i + 1; j < tree.children.length; j++) {
-            const next = tree.children[j];
-            if (next.type !== "paragraph") break;
-
-            const images = (next as unknown as UnistNode).children?.filter(
-              (c: UnistNode) => c.type === "image" && typeof c.url === "string" && isBadgeUrl(c.url),
-            ) ?? [];
-            if (images.length === 0) break;
-
-            for (const img of images) {
-              const badgeUrl = img.url ?? "";
-              const badgeUrlPart = badgeUrl.replace("https://img.shields.io/badge/", "");
-              const [labelColorPart, queryString = ""] = badgeUrlPart.split("?");
-              const parts = labelColorPart.split("-");
-              const color = parts.pop() ?? "000000";
-              const text = decodeURIComponent(parts.join("-").replace(/--/g, " "));
-
-              const logoMatch = queryString.match(/logo=([^&]+)/i);
-              const logo = logoMatch ? decodeURIComponent(logoMatch[1]) : "";
-
-              badges.push({
-                id: Math.random().toString(36).substring(7),
-                text,
-                color,
-                logo,
-                url: badgeUrl,
-              });
-            }
-            consumed++;
-          }
-        }
-
-        if (badges.length > 0) {
-          blocks.push({
-            id: uuidv4(),
-            type: "badge-group",
-            props: {
-              badges,
-              alignment,
-            },
-          });
-          skipCount = consumed;
-          continue;
-        }
-      }
-    }
-
-    // ── Paragraph that is entirely image(s) → single image, badge-group, or image-grid ──────
-    // Remark inserts text("\n") / break nodes between images on consecutive lines.
-    // Strip those out before checking — only non-whitespace children need to be images.
-    if (node.type === "paragraph" && Array.isArray(node.children)) {
-      const significantChildren = (node.children as unknown as UnistNode[]).filter(
-        (c: UnistNode) =>
-          !(c.type === "text" && (c.value ?? "").trim() === "") && c.type !== "break",
-      );
-      if (
-        significantChildren.length > 0 &&
-        significantChildren.every((c: UnistNode) => c.type === "image")
-      ) {
-        if (significantChildren.length === 1) {
-          const img = significantChildren[0];
-          const imgUrl = img.url || "";
-          const statsMatch = imgUrl.match(/\/api\/github\/([a-zA-Z0-9-]+)\/stats\.svg(\?.*)?$/);
-          if (statsMatch) {
-            const qs = new URLSearchParams(statsMatch[2] ?? "");
-            blocks.push({
-              id: uuidv4(),
-              type: "github-stats",
-              props: {
-                username: statsMatch[1],
-                variant: qs.get("variant") || "default",
-                theme: qs.get("theme") || "auto",
-              },
-            });
-          } else {
-            blocks.push({
-              id: uuidv4(),
-              type: "image",
-              props: { url: imgUrl, alt: img.alt || "" },
-            });
-          }
-        } else {
-          // Check if all are badges
-          const allBadges = significantChildren.every(
-            (c: UnistNode) => typeof c.url === "string" && isBadgeUrl(c.url),
-          );
-          if (allBadges) {
-            const badges = significantChildren.map((img: UnistNode) => {
-              const badgeUrl = img.url ?? "";
-              const badgeUrlPart = badgeUrl.replace("https://img.shields.io/badge/", "");
-              const [labelColorPart, queryString = ""] = badgeUrlPart.split("?");
-              const parts = labelColorPart.split("-");
-              const color = parts.pop() ?? "000000";
-              const text = decodeURIComponent(parts.join("-").replace(/--/g, " "));
-              const logoMatch = queryString.match(/logo=([^&]+)/i);
-              const logo = logoMatch ? decodeURIComponent(logoMatch[1]) : "";
-              return {
-                id: Math.random().toString(36).substring(7),
-                text,
-                color,
-                logo,
-                url: badgeUrl,
-              };
-            });
-            blocks.push({
-              id: uuidv4(),
-              type: "badge-group",
-              props: {
-                badges,
-                alignment: "left",
-              },
-            });
-          } else {
-            // Otherwise, make it an image-grid
-            const images = significantChildren.map((img: UnistNode) => ({
-              id: Math.random().toString(36).substring(7),
-              url: img.url || "",
-              alt: img.alt || "",
-            }));
-            blocks.push({
-              id: uuidv4(),
-              type: "image-grid",
-              props: {
-                cols: images.length,
-            images,
-              },
-            });
-          }
-        }
-        continue;
-      }
-    }
-
+  for (const node of transformed.children) {
     const block = nodeToBlock(node as unknown as UnistNode, markdown);
     if (block) blocks.push(block);
   }
@@ -353,6 +349,58 @@ export function parseMarkdown(markdown: string): Block[] {
 
 function nodeToBlock(node: UnistNode, markdown: string): Block | null {
   switch (node.type) {
+    case "customImageGrid":
+      return {
+        id: uuidv4(),
+        type: "image-grid",
+        props: {
+          cols: node.cols as number,
+          images: node.images as Array<{ id: string; url: string; alt: string }>,
+        },
+      };
+
+    case "customGithubStats":
+      return {
+        id: uuidv4(),
+        type: "github-stats",
+        props: {
+          username: node.username as string,
+          variant: (node.variant as string) ?? "default",
+          theme: (node.theme as string) ?? "auto",
+        },
+      };
+
+    case "customCollapsible":
+      return {
+        id: uuidv4(),
+        type: "collapsible",
+        props: {
+          summary: node.summary as string,
+          content: node.content as string,
+          open: node.open as boolean,
+        },
+      };
+
+    case "customBadgeGroup":
+      return {
+        id: uuidv4(),
+        type: "badge-group",
+        props: {
+          badges: node.badges as Array<{ id: string; text: string; color: string; logo?: string; url?: string }>,
+          alignment: (node.alignment as string) ?? "left",
+        },
+      };
+
+    case "customImage":
+      return {
+        id: uuidv4(),
+        type: "image",
+        props: {
+          url: node.url as string,
+          alt: node.alt as string,
+        },
+      };
+
     case "heading": {
       const text = (node.children ?? [])
         .map((child: UnistNode) => extractRawText(child, markdown))

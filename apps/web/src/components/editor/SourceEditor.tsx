@@ -3,14 +3,18 @@
 import { useEditorStore } from "@next-md-editor/editor-core";
 import { serializeToMarkdown, parseMarkdown } from "@/features/markdown/serializer";
 import { useUIStore } from "@/store/uiStore";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useMemo } from "react";
+import CodeMirror from "@uiw/react-codemirror";
+import { githubLight, githubDark } from "@uiw/codemirror-theme-github";
+import { loadLanguage } from "@uiw/codemirror-extensions-langs";
+import { useTheme } from "@/hooks/useTheme";
 
 export function SourceEditor() {
   const blocks = useEditorStore((s) => s.blocks);
   const sourceText = useUIStore((s) => s.sourceText);
   const setSourceText = useUIStore((s) => s.setSourceText);
   const setEditorMode = useUIStore((s) => s.setEditorMode);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const { theme } = useTheme();
 
   const blocksRef = useRef(blocks);
   const setSourceTextRef = useRef(setSourceText);
@@ -32,6 +36,11 @@ export function SourceEditor() {
     useEditorStore.getState().setBlocks(parsed);
     setEditorMode("canvas");
   };
+
+  const extensions = useMemo(() => {
+    const mdLang = loadLanguage("markdown");
+    return mdLang ? [mdLang] : [];
+  }, []);
 
   return (
     <main
@@ -84,45 +93,50 @@ export function SourceEditor() {
           </button>
         </div>
       </div>
-      <textarea
-        ref={textareaRef}
-        value={sourceText}
-        onChange={(e) => setSourceText(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Tab") {
-            e.preventDefault();
-            const ta = e.currentTarget;
-            const start = ta.selectionStart;
-            const end = ta.selectionEnd;
-            const newVal = sourceText.slice(0, start) + "  " + sourceText.slice(end);
-            setSourceText(newVal);
-            requestAnimationFrame(() => {
-              ta.selectionStart = ta.selectionEnd = start + 2;
-            });
+
+      <div style={{ flex: 1, overflow: "auto", display: "flex", flexDirection: "column" }} className="next-md-source-cm-wrapper">
+        <CodeMirror
+          value={sourceText}
+          theme={theme === "light" ? githubLight : githubDark}
+          extensions={extensions}
+          onChange={(val) => setSourceText(val)}
+          onKeyDown={(e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+              e.preventDefault();
+              handleApply();
+            }
+          }}
+          basicSetup={{
+            lineNumbers: true,
+            foldGutter: true,
+            highlightActiveLine: true,
+            dropCursor: true,
+            allowMultipleSelections: true,
+            indentOnInput: true,
+          }}
+          style={{
+            flex: 1,
+            fontSize: 13,
+            fontFamily: "ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace",
+          }}
+        />
+        <style>{`
+          .next-md-source-cm-wrapper {
+            background-color: var(--bg-base);
           }
-          if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
-            e.preventDefault();
-            handleApply();
+          .next-md-source-cm-wrapper .cm-editor {
+            height: 100%;
+            background-color: transparent !important;
           }
-        }}
-        spellCheck={false}
-        style={{
-          flex: 1,
-          width: "100%",
-          padding: "24px 32px",
-          fontFamily: "ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace",
-          fontSize: 13,
-          lineHeight: 1.7,
-          color: "var(--text-primary)",
-          background: "transparent",
-          border: "none",
-          outline: "none",
-          resize: "none",
-          tabSize: 2,
-          whiteSpace: "pre-wrap",
-          overflowWrap: "break-word",
-        }}
-      />
+          .next-md-source-cm-wrapper .cm-scroller {
+            font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+            padding: 16px 20px;
+          }
+          .next-md-source-cm-wrapper .cm-content {
+            padding: 0;
+          }
+        `}</style>
+      </div>
     </main>
   );
 }
