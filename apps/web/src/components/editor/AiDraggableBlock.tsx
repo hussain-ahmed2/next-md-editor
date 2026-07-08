@@ -3,6 +3,8 @@ import { useDraggable } from "@dnd-kit/react";
 import type { Block } from "@next-md-editor/types";
 import { BlockRenderer } from "./BlockRenderer";
 
+import { GripVertical } from "lucide-react";
+
 export function AiDraggableBlock({ block }: { block: Block }) {
   const { ref, isDragging } = useDraggable({
     id: `ai-drag-${block.id}`,
@@ -21,12 +23,15 @@ export function AiDraggableBlock({ block }: { block: Block }) {
         opacity: isDragging ? 0.4 : 1,
         cursor: "grab",
         padding: "8px 12px",
+        paddingLeft: "32px",
         border: "1px solid var(--border)",
         borderRadius: "var(--radius-md)",
         marginBottom: 8,
         background: "var(--bg-base)",
         userSelect: "none",
+        touchAction: "none",
         transition: "all 0.15s ease",
+        position: "relative",
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.borderColor = "var(--accent)";
@@ -37,6 +42,20 @@ export function AiDraggableBlock({ block }: { block: Block }) {
         e.currentTarget.style.background = "var(--bg-base)";
       }}
     >
+      <div
+        style={{
+          position: "absolute",
+          left: "8px",
+          top: "50%",
+          transform: "translateY(-50%)",
+          color: "var(--text-muted)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <GripVertical size={14} />
+      </div>
       <div style={{ pointerEvents: "none" }}>
         <BlockRenderer block={block} />
       </div>

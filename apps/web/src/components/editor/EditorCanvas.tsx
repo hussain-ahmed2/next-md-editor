@@ -6,12 +6,14 @@ import { BlockRenderer } from "./BlockRenderer";
 import type { Block } from "@next-md-editor/types";
 import { useDroppable, useDragOperation, useDragDropMonitor, useDragDropManager } from "@dnd-kit/react";
 import type { DragOverEvent } from "@dnd-kit/react";
-import { SortableBlock } from "./SortableBlock";
+import { withSortable } from "./withSortable";
 import { BlockRegistry } from "@next-md-editor/editor-core";
 import { useState, useRef, useMemo, useCallback, useEffect } from "react";
 import { EmptyState } from "./EmptyState";
 
 export const CANVAS_ROOT_ID = "canvas-root";
+
+const SortableBlockRenderer = withSortable(BlockRenderer);
 
 function assignRef<T>(ref: React.Ref<T> | undefined, value: T | null) {
   if (!ref) return;
@@ -155,16 +157,14 @@ export function EditorCanvas({ scrollRef }: { scrollRef?: React.Ref<HTMLDivEleme
             const isPlaceholder =
               isSidebarDrag && block.id.startsWith("placeholder-");
             return (
-              <SortableBlock
+              <SortableBlockRenderer
                 key={block.id}
                 id={block.id}
                 block={block}
                 isPlaceholder={isPlaceholder}
                 index={blockIdx}
                 showToolbar={block.id === focusedBlockId}
-              >
-                <BlockRenderer block={block} />
-              </SortableBlock>
+              />
             );
           })}
         </div>

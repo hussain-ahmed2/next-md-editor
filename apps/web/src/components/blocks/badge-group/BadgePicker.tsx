@@ -315,7 +315,7 @@ export function BadgePicker({
           >
             {filteredTech.map((tech) => (
               <button
-                key={tech.logo}
+                key={tech.text}
                 onClick={() => onAddPreset(tech)}
                 title={tech.text}
                 style={{

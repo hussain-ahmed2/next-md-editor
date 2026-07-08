@@ -3,154 +3,171 @@
    ============================================================ */
 
 /* Rich text list block styles with high specificity to bypass CSS resets */
-.rich-list-content ul, 
+.rich-list-content ul,
 .rich-list-content ul li,
-.rich-list-content ol, 
+.rich-list-content ol,
 .rich-list-content ol li,
 .markdown-body .rich-list-content ul,
 .markdown-body .rich-list-content ol {
-  margin: revert !important;
-  padding: revert !important;
+    margin: revert !important;
+    padding: revert !important;
 }
 
 .rich-list-content ul,
 .markdown-body .rich-list-content ul {
-  list-style-type: disc !important;
-  list-style-position: outside !important;
-  padding-left: 28px !important;
-  margin: 6px 0 !important;
-  display: block !important;
+    list-style-type: disc !important;
+    list-style-position: outside !important;
+    padding-left: 28px !important;
+    margin: 6px 0 !important;
+    display: block !important;
 }
 
 .rich-list-content ol,
 .markdown-body .rich-list-content ol {
-  list-style-type: decimal !important;
-  list-style-position: outside !important;
-  padding-left: 28px !important;
-  margin: 6px 0 !important;
-  display: block !important;
+    list-style-type: decimal !important;
+    list-style-position: outside !important;
+    padding-left: 28px !important;
+    margin: 6px 0 !important;
+    display: block !important;
 }
 
 .rich-list-content li,
 .markdown-body .rich-list-content li {
-  display: list-item !important;
-  margin: 4px 0 !important;
-  list-style: inherit !important;
+    display: list-item !important;
+    margin: 4px 0 !important;
+    list-style: inherit !important;
 }
 
 .rich-list-content ul ul,
 .markdown-body .rich-list-content ul ul {
-  list-style-type: circle !important;
+    list-style-type: circle !important;
 }
 
 .rich-list-content ul ul ul,
 .markdown-body .rich-list-content ul ul ul {
-  list-style-type: square !important;
+    list-style-type: square !important;
 }
 
 .rich-list-content ol ol,
 .markdown-body .rich-list-content ol ol {
-  list-style-type: lower-roman !important;
+    list-style-type: lower-roman !important;
 }
 
 .rich-list-content ol ol ol,
 .markdown-body .rich-list-content ol ol ol {
-  list-style-type: lower-alpha !important;
+    list-style-type: lower-alpha !important;
 }
 
 /* Restore list markers inside github-markdown-css preview (Tailwind preflight sets list-style: none) */
-.markdown-body ul, .markdown-body ol {
-  list-style: revert;
+.markdown-body ul,
+.markdown-body ol {
+    list-style: revert;
 }
 
 /* Inline code inside .markdown-body: match GitHub — github-markdown-css handles background per theme */
 .markdown-body :not(pre) > code {
-  border-radius: 6px;
-  padding: 0.2em 0.4em;
+    border-radius: 6px;
+    padding: 0.2em 0.4em;
 }
 
 /* Universal fluid responsiveness for Image Grid controls on any size */
 .image-grid-controls {
-  display: flex !important;
-  flex-wrap: wrap !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  gap: 8px 12px !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 8px 12px !important;
 }
 
 .image-grid-actions {
-  display: flex !important;
-  flex-wrap: wrap !important;
-  align-items: center !important;
-  gap: 8px 16px !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 8px 16px !important;
 }
 
 /* Responsive adjustments for mobile screens */
 @media (max-width: 768px) {
-  /* Allow toolbar to scroll horizontally on small mobile viewports */
-  header {
-    padding: 0 10px !important;
-    gap: 8px !important;
-  }
-  
-  header > div:nth-child(3) {
-    overflow-x: auto !important;
-    white-space: nowrap !important;
-    scrollbar-width: none !important;
-    -ms-overflow-style: none !important;
-    padding: 4px 0 !important;
-  }
-  header > div:nth-child(3)::-webkit-scrollbar {
-    display: none !important;
-  }
-  
-  header > div:first-child span {
-    display: none !important; /* Hide branding text on mobile */
-  }
+    /* Allow toolbar to scroll horizontally on small mobile viewports */
+    header {
+        padding: 0 10px !important;
+        gap: 8px !important;
+    }
 
-  /* Hide button text and save text on mobile to make icons fit cleanly */
-  .btn-label,
-  .save-status-label {
-    display: none !important;
-  }
-  
-  /* Responsive paddings for editor block containers */
-  .block-container {
-    padding: 4px 4px !important;
-  }
+    header > div:nth-child(3) {
+        overflow-x: auto !important;
+        white-space: nowrap !important;
+        scrollbar-width: none !important;
+        -ms-overflow-style: none !important;
+        padding: 4px 0 !important;
+    }
+    header > div:nth-child(3)::-webkit-scrollbar {
+        display: none !important;
+    }
 
-  /* Spacious left/right gutters to house absolute positioned drag grips (-28px) and delete buttons (-28px) comfortably, with overflow-x hidden to ensure no horizontal scrollbar */
-  .editor-canvas-container {
-    padding: 32px 48px 100px 48px !important;
-    overflow-x: hidden !important;
-  }
+    header > div:first-child span {
+        display: none !important; /* Hide branding text on mobile */
+    }
 
-  /* Image Grid Mobile Customizations */
-  .image-grid-controls {
-    flex-direction: column !important;
-    align-items: stretch !important;
-    gap: 10px !important;
-    padding: 8px 10px !important;
-  }
+    /* Hide button text and save text on mobile to make icons fit cleanly */
+    .btn-label,
+    .save-status-label {
+        display: none !important;
+    }
 
-  .image-grid-actions {
-    width: 100% !important;
-    justify-content: space-between !important;
-    gap: 8px !important;
-  }
+    /* Responsive paddings for editor block containers */
+    .block-container {
+        padding: 4px 4px !important;
+    }
 
-  .image-grid-captions-label span,
-  .image-grid-cols-wrapper span {
-    font-size: 9px !important;
-  }
+    /* Spacious left/right gutters to house absolute positioned drag grips (-28px) and delete buttons (-28px) comfortably, with overflow-x hidden to ensure no horizontal scrollbar */
+    .editor-canvas-container {
+        padding: 32px 48px 100px 48px !important;
+        overflow-x: hidden !important;
+    }
 
-  .image-grid-container {
-    gap: 8px !important;
-  }
+    /* Image Grid Mobile Customizations */
+    .image-grid-controls {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 10px !important;
+        padding: 8px 10px !important;
+    }
 
-  /* Make block drag handles visible on mobile since there is no hover state */
-  .drag-handle-grip {
-    color: var(--text-muted) !important;
-    touch-action: none !important;
-  }
+    .image-grid-actions {
+        width: 100% !important;
+        justify-content: space-between !important;
+        gap: 8px !important;
+    }
+
+    .image-grid-captions-label span,
+    .image-grid-cols-wrapper span {
+        font-size: 9px !important;
+    }
+
+    .image-grid-container {
+        gap: 8px !important;
+    }
+
+    /* Make block drag handles visible on mobile since there is no hover state */
+    .drag-handle-grip {
+        color: var(--text-muted) !important;
+        touch-action: none !important;
+    }
+}
+
+.lexical-link {
+    cursor: text !important;
+    text-decoration: underline;
+    color: var(--accent);
+}
+
+.lexical-code {
+    background-color: var(--bg-hover);
+    padding: 0.2em 0.2em;
+    margin: 0;
+    border-radius: 6px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 85%;
+    color: var(--text-primary);
 }

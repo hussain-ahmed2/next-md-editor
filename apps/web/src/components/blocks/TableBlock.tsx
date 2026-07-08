@@ -2,73 +2,19 @@
 
 import { useEditorStore } from "@next-md-editor/editor-core";
 import type { Block } from "@next-md-editor/types";
-import { useRef, useEffect, useMemo, useCallback } from "react";
+import { useMemo, useCallback, useState, useEffect } from "react";
 import { htmlToMarkdown } from "@/utils/editorShortcuts";
-import { renderInlineMarkdown } from "@/features/markdown/highlighter";
-import { PlusCircle, MinusCircle, Columns2, Rows2 } from "lucide-react";
-
-function TableCell({
-	cellValue,
-	rIdx,
-	cIdx,
-	isHeader,
-	blockId,
-	onInput,
-}: {
-	cellValue: string;
-	rIdx: number;
-	cIdx: number;
-	isHeader: boolean;
-	blockId: string;
-	onInput: (rIdx: number, cIdx: number, html: string) => void;
-}) {
-	const Tag = isHeader ? "th" : "td";
-	const ref = useRef<HTMLTableCellElement>(null);
-
-	// Sync cell content when rows change from outside (undo/redo)
-	useEffect(() => {
-		const el = ref.current;
-		if (!el) return;
-		if (document.activeElement !== el) {
-			const currentMarkdown = htmlToMarkdown(el.innerHTML);
-			if (currentMarkdown !== cellValue) {
-				el.innerHTML = renderInlineMarkdown(cellValue);
-			}
-		}
-	}, [cellValue]);
-
-	// Initial render
-	useEffect(() => {
-		const el = ref.current;
-		if (el && !el.innerHTML) {
-			el.innerHTML = renderInlineMarkdown(cellValue);
-		}
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, []);
-
-	return (
-		<Tag
-			ref={ref as React.LegacyRef<HTMLTableCellElement>}
-			contentEditable
-			data-block-id={blockId}
-			suppressContentEditableWarning
-			onInput={(e) => onInput(rIdx, cIdx, e.currentTarget.innerHTML)}
-			style={{
-				padding: "10px 12px",
-				fontWeight: isHeader ? 600 : 400,
-				color: isHeader ? "var(--text-primary)" : "var(--text-secondary)",
-				borderRight: "1px solid var(--border-subtle)",
-				outline: "none",
-				minWidth: 80,
-			}}
-		/>
-	);
-}
+import { TableCell } from "./table/TableCell";
+import { TableFormatToolbar } from "./table/TableFormatToolbar";
+import { TableGridControls } from "./table/TableGridControls";
 
 export function TableBlock({ block }: { block: Block }) {
 	const updateBlock = useEditorStore((s) => s.updateBlock);
 	const blocks = useEditorStore((s) => s.blocks);
+	const selectedBlockIds = useEditorStore((s) => s.selectedBlockIds);
 	const myBlock = blocks.find((b) => b.id === block.id) ?? block;
+	const isFocused = selectedBlockIds.includes(block.id);
+
 	const rows = useMemo(
 		() =>
 			(myBlock.props.rows as string[][]) ?? [
@@ -114,8 +60,53 @@ export function TableBlock({ block }: { block: Block }) {
 		updateBlock(block.id, { rows: rows.map((r) => r.slice(0, -1)) });
 	};
 
+	const [activeFormats, setActiveFormats] = useState<Record<string, boolean>>({});
+
+	const updateFormats = useCallback(() => {
+		const activeEl = document.activeElement;
+		if (activeEl && (activeEl.tagName === "TD" || activeEl.tagName === "TH")) {
+			const selection = window.getSelection();
+			let isCode = false;
+			let isLink = false;
+			if (selection && selection.rangeCount > 0) {
+				const checkNode = (n: Node | null) => {
+					let curr = n;
+					while (curr && curr !== activeEl) {
+						if (curr.nodeName.toLowerCase() === "code") isCode = true;
+						if (curr.nodeName.toLowerCase() === "a") isLink = true;
+						curr = curr.parentNode;
+					}
+				};
+				checkNode(selection.anchorNode);
+				checkNode(selection.focusNode);
+			}
+			setActiveFormats({
+				bold: document.queryCommandState("bold"),
+				italic: document.queryCommandState("italic"),
+				strikeThrough: document.queryCommandState("strikeThrough"),
+				code: isCode,
+				link: isLink,
+			});
+		}
+	}, []);
+
+	useEffect(() => {
+		if (!isFocused) return;
+		document.addEventListener("selectionchange", updateFormats);
+		return () => document.removeEventListener("selectionchange", updateFormats);
+	}, [isFocused, updateFormats]);
+
 	return (
 		<div style={{ display: "flex", flexDirection: "column", gap: 10, margin: "8px 0" }}>
+			{/* Format Toolbar (Top) */}
+			{isFocused && (
+				<TableFormatToolbar
+					blockId={block.id}
+					activeFormats={activeFormats}
+					updateFormats={updateFormats}
+				/>
+			)}
+
 			{/* Visual Table Container */}
 			<div
 				style={{
@@ -178,80 +169,12 @@ export function TableBlock({ block }: { block: Block }) {
 			</div>
 
 			{/* Glassmorphic Action Bar */}
-			<div
-				style={{
-					display: "flex",
-					gap: 8,
-					alignItems: "center",
-					flexWrap: "wrap",
-					padding: "4px 8px",
-					background: "var(--bg-elevated)",
-					border: "1px dashed var(--border)",
-					borderRadius: 6,
-				}}
-			>
-				<span style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 500, marginRight: 4 }}>
-					GRID CONTROLS:
-				</span>
-				{[
-					{
-						label: "Add Row",
-						icon: (
-							<>
-								<PlusCircle size={12} /> Row
-							</>
-						),
-						action: addRow,
-					},
-					{
-						label: "Delete Row",
-						icon: (
-							<>
-								<MinusCircle size={12} /> Row
-							</>
-						),
-						action: deleteRow,
-					},
-					{
-						label: "Add Col",
-						icon: (
-							<>
-								<Columns2 size={12} /> Add Col
-							</>
-						),
-						action: addColumn,
-					},
-					{
-						label: "Delete Col",
-						icon: (
-							<>
-								<Rows2 size={12} /> Del Col
-							</>
-						),
-						action: deleteColumn,
-					},
-				].map(({ label, icon, action }) => (
-					<button
-						key={label}
-						onClick={action}
-						style={{
-							display: "flex",
-							alignItems: "center",
-							gap: 4,
-							padding: "4px 8px",
-							fontSize: 11,
-							fontWeight: 600,
-							borderRadius: 4,
-							border: "1px solid var(--border)",
-							background: "transparent",
-							color: "var(--text-secondary)",
-							cursor: "pointer",
-						}}
-					>
-						{icon}
-					</button>
-				))}
-			</div>
+			<TableGridControls
+				addRow={addRow}
+				deleteRow={deleteRow}
+				addColumn={addColumn}
+				deleteColumn={deleteColumn}
+			/>
 		</div>
 	);
 }
