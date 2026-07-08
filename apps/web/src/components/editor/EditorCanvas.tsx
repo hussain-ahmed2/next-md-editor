@@ -3,6 +3,7 @@
 import { useEditorStore } from "@next-md-editor/editor-core";
 import { useUIStore } from "@/store/uiStore";
 import { BlockRenderer } from "./BlockRenderer";
+import type { Block } from "@next-md-editor/types";
 import { useDroppable, useDragOperation, useDragDropMonitor, useDragDropManager } from "@dnd-kit/react";
 import type { DragOverEvent } from "@dnd-kit/react";
 import { SortableBlock } from "./SortableBlock";
@@ -46,7 +47,7 @@ export function EditorCanvas({ scrollRef }: { scrollRef?: React.Ref<HTMLDivEleme
   const { source } = useDragOperation();
   const isSidebarDrag = source?.data?.isSidebarItem === true;
   const activeSidebarItem = isSidebarDrag
-    ? (source!.data as { type: string; label: string })
+    ? (source!.data as { type: string; label: string; block?: Block })
     : null;
 
   // Local state for the visual insert indicator — computed by the monitor below
@@ -114,7 +115,10 @@ export function EditorCanvas({ scrollRef }: { scrollRef?: React.Ref<HTMLDivEleme
     if (isSidebarDrag && insertIndex !== null && activeSidebarItem) {
       const type = activeSidebarItem.type;
       const def = BlockRegistry.get(type);
-      const placeholder = {
+      const placeholder = activeSidebarItem.block ? {
+        ...activeSidebarItem.block,
+        id: `placeholder-${activeSidebarItem.block.id}`,
+      } : {
         id: `placeholder-${type}`,
         type,
         props: { ...(def?.defaultProps ?? {}) },
@@ -149,7 +153,7 @@ export function EditorCanvas({ scrollRef }: { scrollRef?: React.Ref<HTMLDivEleme
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           {displayBlocks.map((block, blockIdx) => {
             const isPlaceholder =
-              isSidebarDrag && block.id === `placeholder-${block.type}`;
+              isSidebarDrag && block.id.startsWith("placeholder-");
             return (
               <SortableBlock
                 key={block.id}

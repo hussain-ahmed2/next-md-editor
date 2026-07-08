@@ -1,12 +1,23 @@
 "use client";
 
+import { useState } from "react";
 import { useEditorStore } from "@next-md-editor/editor-core";
 import { parseMarkdown } from "@/features/markdown/serializer";
-import { TEMPLATES } from "@/constants/templates";
+import { TEMPLATES, type TemplateDef } from "@/constants/templates";
 import { BookOpen, FileCode2, NotebookText, FileText, Zap } from "lucide-react";
+import { AiTemplateModal } from "./toolbar/AiTemplateModal";
 
 export function EmptyState() {
   const setBlocks = useEditorStore((s) => s.setBlocks);
+  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
+
+  const handleTemplateClick = (tmpl: TemplateDef) => {
+    if (tmpl.isAiTemplate) {
+      setIsAiModalOpen(true);
+    } else if (tmpl.markdown) {
+      setBlocks(parseMarkdown(tmpl.markdown));
+    }
+  };
 
   const templateIcons: Record<string, React.ReactNode> = {
     "github-profile": <BookOpen size={18} />,
@@ -68,7 +79,7 @@ export function EmptyState() {
         {TEMPLATES.map((tmpl) => (
           <button
             key={tmpl.id}
-            onClick={() => setBlocks(parseMarkdown(tmpl.markdown))}
+            onClick={() => handleTemplateClick(tmpl)}
             style={{
               display: "flex",
               flexDirection: "column",
@@ -114,6 +125,7 @@ export function EmptyState() {
           </button>
         ))}
       </div>
+      {isAiModalOpen && <AiTemplateModal isOpen={isAiModalOpen} onClose={() => setIsAiModalOpen(false)} />}
     </div>
   );
 }
