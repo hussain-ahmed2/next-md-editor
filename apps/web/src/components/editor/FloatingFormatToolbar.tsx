@@ -79,7 +79,23 @@ export function BlockToolbar({ blockId }: BlockToolbarProps) {
 	}, [linkDialog]);
 
 	const getContentEditable = useCallback(() => {
-		return document.querySelector<HTMLElement>(`[contenteditable][data-block-id="${blockId}"]`);
+		const els = Array.from(document.querySelectorAll<HTMLElement>(`[contenteditable][data-block-id="${blockId}"]`));
+		if (els.length === 0) return null;
+		
+		const activeEl = document.activeElement;
+		if (activeEl && els.includes(activeEl as HTMLElement)) {
+			return activeEl as HTMLElement;
+		}
+
+		const sel = window.getSelection();
+		if (sel && sel.rangeCount > 0) {
+			const node = sel.anchorNode;
+			for (const el of els) {
+				if (node && el.contains(node)) return el;
+			}
+		}
+		
+		return els[0];
 	}, [blockId]);
 
 	const updateFormats = useCallback(() => {
@@ -197,16 +213,27 @@ export function BlockToolbar({ blockId }: BlockToolbarProps) {
 		(emoji: string) => {
 			setEmojiPicker(false);
 
-			const el = getContentEditable();
 			const savedRange = savedEmojiRangeRef.current;
 			savedEmojiRangeRef.current = null;
 
-			if (el && savedRange) {
-				el.focus();
-				const sel = window.getSelection();
-				if (sel) {
-					sel.removeAllRanges();
-					sel.addRange(savedRange);
+			if (savedRange) {
+				let target: HTMLElement | null = savedRange.startContainer.nodeType === Node.ELEMENT_NODE
+					? savedRange.startContainer as HTMLElement
+					: savedRange.startContainer.parentElement;
+				while (target && target.getAttribute("contenteditable") !== "true") {
+					target = target.parentElement;
+				}
+
+				if (target) {
+					target.focus();
+					const sel = window.getSelection();
+					if (sel) {
+						sel.removeAllRanges();
+						sel.addRange(savedRange);
+					}
+				} else {
+					const el = getContentEditable();
+					if (el) el.focus();
 				}
 			}
 
