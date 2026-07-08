@@ -142,11 +142,36 @@ export function BlockToolbar({ blockId }: BlockToolbarProps) {
 				case "strikethrough":
 					document.execCommand("strikeThrough");
 					break;
-				case "code":
+				case "code": {
 					const sel = window.getSelection();
 					if (sel && sel.rangeCount > 0 && !sel.getRangeAt(0).collapsed) {
 						if (isInCodeElement(sel)) {
-							document.execCommand("insertHTML", false, sel.toString());
+							const node = sel.anchorNode;
+							let codeEl: Element | null = node?.nodeType === Node.ELEMENT_NODE ? (node as Element) : node?.parentElement || null;
+							while (codeEl && codeEl.tagName !== "CODE" && codeEl.tagName !== "PRE" && codeEl.getAttribute("contenteditable") !== "true") {
+								codeEl = codeEl.parentElement;
+							}
+							if (codeEl && (codeEl.tagName === "CODE" || codeEl.tagName === "PRE")) {
+								const parent = codeEl.parentNode;
+								if (parent) {
+									const frag = document.createDocumentFragment();
+									const firstChild = codeEl.firstChild;
+									const lastChild = codeEl.lastChild;
+									
+									while (codeEl.firstChild) {
+										frag.appendChild(codeEl.firstChild);
+									}
+									parent.replaceChild(frag, codeEl);
+									
+									if (firstChild && lastChild) {
+										const newRange = document.createRange();
+										newRange.setStartBefore(firstChild);
+										newRange.setEndAfter(lastChild);
+										sel.removeAllRanges();
+										sel.addRange(newRange);
+									}
+								}
+							}
 						} else {
 							document.execCommand("insertHTML", false, "<code>" + sel.toString() + "</code>");
 						}
@@ -154,6 +179,7 @@ export function BlockToolbar({ blockId }: BlockToolbarProps) {
 						return;
 					}
 					break;
+				}
 				case "link": {
 					const s = window.getSelection();
 					if (s && s.rangeCount > 0) savedLinkRangeRef.current = s.getRangeAt(0).cloneRange();
