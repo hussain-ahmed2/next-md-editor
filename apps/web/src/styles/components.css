@@ -13,6 +13,17 @@
     padding: revert !important;
 }
 
+/* Fix for nested lists double numbering */
+.rich-list-content .lexical-nested-listitem,
+.markdown-body .rich-list-content .lexical-nested-listitem {
+    list-style-type: none !important;
+    list-style: none !important;
+}
+.rich-list-content .lexical-nested-listitem::before,
+.rich-list-content .lexical-nested-listitem::after {
+    display: none !important;
+}
+
 .rich-list-content ul,
 .markdown-body .rich-list-content ul {
     list-style-type: disc !important;
