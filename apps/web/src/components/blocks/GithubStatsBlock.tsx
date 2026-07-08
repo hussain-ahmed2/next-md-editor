@@ -284,6 +284,7 @@ export function GithubStatsBlock({ block }: { block: Block }) {
       {showProfile && (
         <>
           <div style={{ display: "flex", gap: 10, padding: "16px 16px 12px", alignItems: "flex-start" }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={stats.avatarUrl} alt={stats.login}
               style={{ width: 48, height: 48, borderRadius: "50%", border: `1.5px solid ${c.border}`, flexShrink: 0 }} />
             <div style={{ minWidth: 0, overflow: "hidden" }}>

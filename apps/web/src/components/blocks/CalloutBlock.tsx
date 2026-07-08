@@ -3,20 +3,31 @@
 import { useRef, useCallback } from "react";
 import { useEditorStore } from "@next-md-editor/editor-core";
 import type { Block } from "@next-md-editor/types";
-import { htmlToMarkdown } from "@/utils/editorShortcuts";
+import {
+  handleEditorKeyboardShortcuts,
+  htmlToMarkdown,
+} from "@/utils/editorShortcuts";
 import { renderInlineMarkdown } from "@/features/markdown/highlighter";
 import { CALLOUT_TYPES, type CalloutKey } from "@/constants/calloutTypes";
+import { useBlockFocus } from "@/hooks/useBlockFocus";
 import { useContentSync } from "@/hooks/useContentSync";
 
 export function CalloutBlock({ block }: { block: Block }) {
   const updateBlock = useEditorStore((s) => s.updateBlock);
   const blocks = useEditorStore((s) => s.blocks);
+  const addBlock = useEditorStore((s) => s.addBlock);
+  const removeBlocks = useEditorStore((s) => s.removeBlocks);
+  const selectBlock = useEditorStore((s) => s.selectBlock);
+  const selectedBlockIds = useEditorStore((s) => s.selectedBlockIds);
+
   const myBlock = blocks.find((b) => b.id === block.id) ?? block;
   const text = (myBlock.props.text as string) ?? "";
   const type = ((myBlock.props.type as string) ?? "note").toLowerCase() as CalloutKey;
   const config = CALLOUT_TYPES[type] ?? CALLOUT_TYPES.note;
 
   const ref = useRef<HTMLDivElement>(null);
+
+  useBlockFocus(ref, block.id, selectedBlockIds);
 
   const { handleInput: syncInput, handleBlur: syncBlur } = useContentSync({
     blockId: block.id,
@@ -91,6 +102,18 @@ export function CalloutBlock({ block }: { block: Block }) {
         data-block-id={block.id}
         onBlur={handleBlur}
         onInput={handleInput}
+        onKeyDown={(e) =>
+          handleEditorKeyboardShortcuts(
+            e,
+            block,
+            blocks,
+            selectedBlockIds,
+            addBlock,
+            removeBlocks,
+            updateBlock,
+            selectBlock,
+          )
+        }
         style={{
           fontSize: 14,
           lineHeight: 1.6,

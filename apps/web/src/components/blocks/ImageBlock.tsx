@@ -5,6 +5,7 @@ import { useEditorStore } from "@next-md-editor/editor-core";
 import type { Block } from "@next-md-editor/types";
 import { handleEditorKeyboardShortcuts } from "@/utils/editorShortcuts";
 import { useBlockFocus } from "@/hooks/useBlockFocus";
+import { Image as ImageIcon, Edit2 } from "lucide-react";
 
 const DEFAULT_IMAGE = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=800&auto=format&fit=crop";
 
@@ -63,7 +64,7 @@ export function ImageBlock({ block }: { block: Block }) {
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ fontSize: 16 }}>🖼️</span>
+            <ImageIcon size={16} style={{ color: "var(--text-primary)" }} />
             <span style={{ fontWeight: 600, fontSize: 13, color: "var(--text-primary)" }}>
               Configure Image Block
             </span>
@@ -194,7 +195,7 @@ export function ImageBlock({ block }: { block: Block }) {
               fontFamily: "var(--font-sans)",
             }}
           >
-            ✏️ Edit Image
+            <Edit2 size={12} /> Edit Image
           </div>
         </div>
       )}

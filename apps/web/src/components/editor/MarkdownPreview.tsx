@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
@@ -14,18 +14,9 @@ export function MarkdownPreview({ scrollRef }: { scrollRef?: React.Ref<HTMLDivEl
 	const blocks = useEditorStore((s) => s.blocks);
 	const previewRatio = useUIStore((s) => s.previewRatio);
 	const markdown = serializeToMarkdown(blocks);
-	const [debouncedMarkdown, setDebouncedMarkdown] = useState(markdown);
-
-	useEffect(() => {
-		const timer = setTimeout(() => {
-			setDebouncedMarkdown(markdown);
-		}, 150);
-		return () => clearTimeout(timer);
-	}, [markdown]);
-
 	const [activeTab, setActiveTab] = useState<"preview" | "raw">("preview");
 
-	const isImageGrid = debouncedMarkdown.includes("<!-- image-grid -->");
+	const isImageGrid = markdown.includes("<!-- image-grid -->");
 
 	const markdownComponents = useMemo(() => getMarkdownComponents(), []);
 	const tableComponents = useMemo(
@@ -117,7 +108,7 @@ export function MarkdownPreview({ scrollRef }: { scrollRef?: React.Ref<HTMLDivEl
 								wordBreak: "break-word",
 							}}
 						>
-							{debouncedMarkdown}
+							{markdown}
 						</pre>
 					) : (
 						<div className="markdown-body" style={{ padding: "32px" }}>
@@ -126,7 +117,7 @@ export function MarkdownPreview({ scrollRef }: { scrollRef?: React.Ref<HTMLDivEl
 								rehypePlugins={[rehypeRaw]}
 								components={{ ...markdownComponents, ...tableComponents }}
 							>
-								{debouncedMarkdown}
+								{markdown}
 							</ReactMarkdown>
 						</div>
 					)}

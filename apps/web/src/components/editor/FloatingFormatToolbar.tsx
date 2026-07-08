@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useEditorStore } from "@next-md-editor/editor-core";
-import type { Block, RichText } from "@next-md-editor/types";
+import type { Block } from "@next-md-editor/types";
 
-import { Brain } from "lucide-react";
+import { Brain, Smile } from "lucide-react";
 import { LinkDialog } from "./LinkDialog";
 import { EmojiPicker } from "./EmojiPicker";
 import { insertEmoji } from "@/utils/insert-emoji";
@@ -288,14 +288,15 @@ export function BlockToolbar({ blockId }: BlockToolbarProps) {
 						onClick={handleEmojiClick}
 						title="Emoji"
 						style={{
+							display: "flex",
+							alignItems: "center",
+							justifyContent: "center",
 							background: emojiPicker ? "var(--accent)" : "transparent",
 							border: "none",
 							borderRadius: 4,
 							padding: "3px 7px",
 							cursor: "pointer",
 							color: emojiPicker ? "#fff" : "var(--text-secondary)",
-							fontSize: 15,
-							lineHeight: 1,
 							transition: "all 0.12s",
 						}}
 						onMouseEnter={(e) => {
@@ -311,7 +312,7 @@ export function BlockToolbar({ blockId }: BlockToolbarProps) {
 							}
 						}}
 					>
-						😊
+						<Smile size={14} />
 					</button>
 					{emojiPicker && <EmojiPicker onSelect={handleEmoji} onClose={() => setEmojiPicker(false)} buttonRef={emojiBtnRef} />}
 				</div>
