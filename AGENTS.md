@@ -36,3 +36,7 @@ Data flows: `Markdown ↔ Block[] ↔ Zustand Store ↔ Block Components`
 - `@next-md-editor/editor-core` — Zustand store + BlockRegistry singleton
 - `@next-md-editor/markdown` — Parser/serializer (unified/remark), rich text utilities
 - `@next-md-editor/{ui,themes,mdx,blocks,editor-react}` — Stub packages (not yet implemented)
+
+## Custom coding rules
+
+- **Strict Typing**: Never use the `any` type anywhere in the codebase. Use explicit TS types (such as `Block[]` or `RichText`) or `unknown` and narrow with type guards.

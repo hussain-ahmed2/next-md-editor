@@ -87,7 +87,7 @@ export function SlashCommandMenu({
               fontSize: "14px",
               width: "100%",
             }}
-            onMouseEnter={(e) => {
+            onMouseEnter={() => {
                // Prevent interfering with keyboard navigation heavily, but allow hover highlight
             }}
           >

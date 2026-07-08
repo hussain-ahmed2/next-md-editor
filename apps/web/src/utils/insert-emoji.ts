@@ -2,13 +2,14 @@ export function insertEmoji(emoji: string): void {
   const sel = window.getSelection();
   if (sel && sel.rangeCount > 0) {
     const range = sel.getRangeAt(0);
+    const emojiNode = document.createTextNode(emoji);
     if (range.collapsed) {
-      range.insertNode(document.createTextNode(emoji));
-      range.setStartAfter(range.endContainer);
+      range.insertNode(emojiNode);
+      range.setStartAfter(emojiNode);
     } else {
       range.deleteContents();
-      range.insertNode(document.createTextNode(emoji));
-      range.setStartAfter(range.endContainer);
+      range.insertNode(emojiNode);
+      range.setStartAfter(emojiNode);
     }
     range.collapse(true);
     sel.removeAllRanges();

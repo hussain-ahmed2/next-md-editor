@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useRef, useCallback } from "react";
 import { useEditorStore } from "@next-md-editor/editor-core";
 import type { Block } from "@next-md-editor/types";
 import { htmlToMarkdown } from "@/utils/editorShortcuts";
 import { renderInlineMarkdown } from "@/features/markdown/highlighter";
 import { CALLOUT_TYPES, type CalloutKey } from "@/constants/calloutTypes";
+import { useContentSync } from "@/hooks/useContentSync";
 
 export function CalloutBlock({ block }: { block: Block }) {
   const updateBlock = useEditorStore((s) => s.updateBlock);
@@ -15,55 +16,30 @@ export function CalloutBlock({ block }: { block: Block }) {
   const type = ((myBlock.props.type as string) ?? "note").toLowerCase() as CalloutKey;
   const config = CALLOUT_TYPES[type] ?? CALLOUT_TYPES.note;
 
-  const [isFocused, setIsFocused] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  // Sync state changes from store to DOM when they differ (e.g. on undo/redo)
-  useEffect(() => {
-    if (ref.current) {
-      const currentMarkdown = htmlToMarkdown(ref.current.innerHTML);
-      if (currentMarkdown !== text) {
-        ref.current.innerHTML = renderInlineMarkdown(text);
+  const { handleInput: syncInput, handleBlur: syncBlur } = useContentSync({
+    blockId: block.id,
+    ref,
+    storeValue: text,
+    updatePropName: "text",
+    parseHtml: htmlToMarkdown,
+    serializeToHtml: renderInlineMarkdown,
+  });
 
-        // Reset caret to the end if focused
-        if (document.activeElement === ref.current) {
-          const range = document.createRange();
-          range.selectNodeContents(ref.current);
-          range.collapse(false);
-          const selection = window.getSelection();
-          if (selection) {
-            selection.removeAllRanges();
-            selection.addRange(range);
-          }
-        }
-      }
-    }
-  }, [text]);
+  const handleInput = useCallback(
+    (e: React.FormEvent<HTMLDivElement>) => {
+      syncInput(e);
+    },
+    [syncInput],
+  );
 
-  // When entering focus, snap caret and ensure text is populated
-  useEffect(() => {
-    if (isFocused && ref.current) {
-      ref.current.innerHTML = renderInlineMarkdown(text);
-      const range = document.createRange();
-      range.selectNodeContents(ref.current);
-      range.collapse(false);
-      const selection = window.getSelection();
-      if (selection) {
-        selection.removeAllRanges();
-        selection.addRange(range);
-      }
-    }
-  }, [isFocused]);
-
-  const handleInput = (e: React.InputEvent<HTMLDivElement>) => {
-    const rawText = htmlToMarkdown(e.currentTarget.innerHTML);
-    updateBlock(block.id, { text: rawText });
-  };
-
-  const handleBlur = (e: React.FocusEvent<HTMLDivElement>) => {
-    setIsFocused(false);
-    updateBlock(block.id, { text: htmlToMarkdown(e.currentTarget.innerHTML) });
-  };
+  const handleBlur = useCallback(
+    () => {
+      syncBlur();
+    },
+    [syncBlur],
+  );
 
   return (
     <div
@@ -73,9 +49,8 @@ export function CalloutBlock({ block }: { block: Block }) {
         gap: 8,
         padding: "12px 14px",
         borderRadius: 6,
-        borderLeft: `4px solid ${config.accent}`,
         border: `1px solid ${config.border}`,
-        borderLeftWidth: 4,
+        borderLeft: `4px solid ${config.accent}`,
         background: config.bg,
         margin: "8px 0",
         transition: "all 0.15s ease",
@@ -114,7 +89,6 @@ export function CalloutBlock({ block }: { block: Block }) {
         contentEditable
         suppressContentEditableWarning
         data-block-id={block.id}
-        onFocus={() => setIsFocused(true)}
         onBlur={handleBlur}
         onInput={handleInput}
         style={{
@@ -124,13 +98,6 @@ export function CalloutBlock({ block }: { block: Block }) {
           outline: "none",
           minHeight: "1.6em",
         }}
-        {...(!isFocused
-          ? {
-              dangerouslySetInnerHTML: {
-                __html: renderInlineMarkdown(text) || "",
-              },
-            }
-          : {})}
       />
     </div>
   );

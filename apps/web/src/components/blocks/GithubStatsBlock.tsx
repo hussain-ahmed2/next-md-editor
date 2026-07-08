@@ -98,8 +98,11 @@ export function GithubStatsBlock({ block }: { block: Block }) {
   useEffect(() => {
     if (!username.trim()) return;
     let cancelled = false;
-    setLoading(true);
-    setError(null);
+    setTimeout(() => {
+      if (cancelled) return;
+      setLoading(true);
+      setError(null);
+    }, 0);
     fetch(`/api/github/${encodeURIComponent(username.trim())}`)
       .then((r) => (r.ok ? r.json() : r.json().then((j) => Promise.reject(j.error || r.statusText))))
       .then((data) => { if (!cancelled) { setStats(data as ComputedStats); setLoading(false); } })
@@ -202,7 +205,7 @@ export function GithubStatsBlock({ block }: { block: Block }) {
       {/* Title */}
         <div style={{ padding: "16px 16px 12px" }}>
           <span style={{ fontSize: 16, fontWeight: 700, color: c.link }}>{stats.name ?? stats.login}</span>
-          <span style={{ fontSize: 16, fontWeight: 700, color: c.textPrimary }}>'s GitHub Statistics</span>
+          <span style={{ fontSize: 16, fontWeight: 700, color: c.textPrimary }}>&apos;s GitHub Statistics</span>
         </div>
         <div style={{ height: 1, background: c.border, margin: "0 16px" }} />
 
@@ -213,8 +216,8 @@ export function GithubStatsBlock({ block }: { block: Block }) {
             {[
               { icon: "★", label: "Stars", value: stats.totalStars },
               { icon: "⑂", label: "Forks", value: stats.totalForks },
-              { icon: "⊞", label: "All-time contributions", value: (stats as any).contributions ?? 0 },
-              { icon: "⊙", label: "Repos contributed to", value: (stats as any).reposContributedTo ?? 0 },
+              { icon: "⊞", label: "All-time contributions", value: stats.contributions ?? 0 },
+              { icon: "⊙", label: "Repos contributed to", value: stats.reposContributedTo ?? 0 },
               { icon: "⊡", label: "Repos", value: stats.totalRepos },
               { icon: "♡", label: "Followers", value: stats.followers },
             ].map((s) => (
