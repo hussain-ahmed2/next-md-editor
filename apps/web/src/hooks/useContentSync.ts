@@ -81,14 +81,23 @@ export function useContentSync<T>({
     const el = ref.current;
     if (!el) return;
 
-    // Check if the DOM matches the store representation
+    // Check if the DOM matches the store representation exactly
     const expectedHtml = serializeToHtmlRef.current(storeValue);
     if (el.innerHTML === expectedHtml) return;
+
+    // If the element is focused, check if the DOM's parsed value logically matches the storeValue.
+    // This prevents overwriting transient DOM states (like a trailing space) while the user is actively typing.
+    const isFocused = document.activeElement === el;
+    if (isFocused) {
+      const parsedDom = parseHtmlRef.current(el.innerHTML);
+      if (JSON.stringify(parsedDom) === JSON.stringify(storeValue)) {
+        return;
+      }
+    }
 
     // Save caret position if focused
     let savedStart = -1;
     let savedEnd = -1;
-    const isFocused = document.activeElement === el;
     if (isFocused) {
       const sel = window.getSelection();
       if (sel && sel.rangeCount > 0 && sel.anchorNode && sel.focusNode && el.contains(sel.anchorNode) && el.contains(sel.focusNode)) {

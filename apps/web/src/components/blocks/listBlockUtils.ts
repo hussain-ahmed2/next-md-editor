@@ -27,9 +27,32 @@ export function htmlToItems(html: string): ListItemData[] {
   const doc = parser.parseFromString(html, "text/html");
   const list = doc.body.firstElementChild;
   if (!list || (list.tagName !== "UL" && list.tagName !== "OL")) return [];
+
+  normalizeListDom(list);
+
   return Array.from(list.children)
     .filter((el) => el.tagName === "LI")
     .map((li) => parseListItem(li));
+}
+
+function normalizeListDom(list: Element) {
+  const children = Array.from(list.children);
+  let lastLi: Element | null = null;
+  for (const child of children) {
+    if (child.tagName === "LI") {
+      lastLi = child;
+      // Also normalize any lists already inside this LI
+      for (const nested of Array.from(child.children)) {
+        if (nested.tagName === "UL" || nested.tagName === "OL") {
+          normalizeListDom(nested);
+        }
+      }
+    } else if ((child.tagName === "UL" || child.tagName === "OL") && lastLi) {
+      // execCommand('indent') often creates UL/OL as siblings of LI
+      lastLi.appendChild(child);
+      normalizeListDom(child);
+    }
+  }
 }
 
 function parseListItem(li: Element): ListItemData {
@@ -62,7 +85,7 @@ function parseListItem(li: Element): ListItemData {
       nestedLists.length > 0
         ? Array.from(nestedLists[0].children)
             .filter((el) => el.tagName === "LI")
-            .map((li) => parseListItem(li))
+            .map((childLi) => parseListItem(childLi))
         : undefined,
   };
 }

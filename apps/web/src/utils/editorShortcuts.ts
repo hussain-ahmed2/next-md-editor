@@ -8,7 +8,7 @@ import { htmlToMarkdown as baseHtmlToMarkdown } from "@next-md-editor/markdown";
  * Uses the robust unified/rehype AST parser package under the hood.
  */
 export function htmlToMarkdown(html: string): string {
-  return baseHtmlToMarkdown(html);
+	return baseHtmlToMarkdown(html);
 }
 
 /**
@@ -20,106 +20,106 @@ export function htmlToMarkdown(html: string): string {
  * - Link (Ctrl/Cmd+K): Prompts for hyperlinking, wrapped programmatically.
  */
 export function handleEditorKeyboardShortcuts(
-  e: React.KeyboardEvent<HTMLDivElement>,
-  block: Block,
-  blocks: Block[],
-  selectedBlockIds: string[],
-  addBlock: (block: Block, index?: number) => void,
-  removeBlocks: (ids: string[]) => void,
-  updateBlock: (id: string, props: Record<string, unknown>) => void,
-  selectBlock: (id: string | null, extend?: boolean) => void,
+	e: React.KeyboardEvent<HTMLDivElement>,
+	block: Block,
+	blocks: Block[],
+	selectedBlockIds: string[],
+	addBlock: (block: Block, index?: number) => void,
+	removeBlocks: (ids: string[]) => void,
+	updateBlock: (id: string, props: Record<string, unknown>) => void,
+	selectBlock: (id: string | null, extend?: boolean) => void,
 ) {
-  const hasMeta = e.ctrlKey || e.metaKey;
-  const key = e.key.toLowerCase();
+	const hasMeta = e.ctrlKey || e.metaKey;
+	const key = e.key.toLowerCase();
 
-  // Handle Shift + ArrowUp/ArrowDown for multi-selection
-  if (e.shiftKey && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
-    const currentIndex = blocks.findIndex((b) => b.id === block.id);
-    if (currentIndex !== -1) {
-      e.preventDefault();
-      const targetIndex = e.key === "ArrowUp" ? currentIndex - 1 : currentIndex + 1;
-      if (targetIndex >= 0 && targetIndex < blocks.length) {
-        selectBlock(blocks[targetIndex].id, true);
-        // Focus management usually handled by useEffect in block, but we can rely on state
-      }
-    }
-    return;
-  }
+	// Handle Shift + ArrowUp/ArrowDown for multi-selection
+	if (e.shiftKey && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
+		const currentIndex = blocks.findIndex((b) => b.id === block.id);
+		if (currentIndex !== -1) {
+			e.preventDefault();
+			const targetIndex = e.key === "ArrowUp" ? currentIndex - 1 : currentIndex + 1;
+			if (targetIndex >= 0 && targetIndex < blocks.length) {
+				selectBlock(blocks[targetIndex].id, true);
+				// Focus management usually handled by useEffect in block, but we can rely on state
+			}
+		}
+		return;
+	}
 
-  // 1. Enter Key creates a new Paragraph Block below the current block
-  if (e.key === "Enter" && !e.shiftKey) {
-    e.preventDefault();
-    const currentIndex = blocks.findIndex((b) => b.id === block.id);
-    if (currentIndex !== -1) {
-      addBlock(
-        {
-          id: uuidv4(),
-          type: "paragraph",
-          props: { text: "" },
-        },
-        currentIndex + 1
-      );
-    }
-    return;
-  }
+	// 1. Enter Key creates a new Paragraph Block below the current block
+	if (e.key === "Enter" && !e.shiftKey) {
+		e.preventDefault();
+		const currentIndex = blocks.findIndex((b) => b.id === block.id);
+		if (currentIndex !== -1) {
+			addBlock(
+				{
+					id: uuidv4(),
+					type: "paragraph",
+					props: { text: "" },
+				},
+				currentIndex + 1,
+			);
+		}
+		return;
+	}
 
-  // 2. Backspace Key
-  if (e.key === "Backspace" || e.key === "Delete") {
-    // If multiple blocks are selected, delete all of them
-    if (selectedBlockIds.length > 1) {
-      e.preventDefault();
-      removeBlocks(selectedBlockIds);
-      return;
-    }
+	// 2. Backspace Key
+	if (e.key === "Backspace" || e.key === "Delete") {
+		// If multiple blocks are selected, delete all of them
+		if (selectedBlockIds.length > 1) {
+			e.preventDefault();
+			removeBlocks(selectedBlockIds);
+			return;
+		}
 
-    const rawText = e.currentTarget.textContent ?? "";
-    if (rawText === "" && e.key === "Backspace") {
-      e.preventDefault();
-      const currentIndex = blocks.findIndex((b) => b.id === block.id);
-      if (currentIndex > 0) {
-        const previousBlock = blocks[currentIndex - 1];
-        selectBlock(previousBlock.id);
-      } else {
-        selectBlock(null);
-      }
-      removeBlocks([block.id]);
-      return;
-    }
-  }
+		const rawText = e.currentTarget.textContent ?? "";
+		if (rawText === "" && e.key === "Backspace") {
+			e.preventDefault();
+			const currentIndex = blocks.findIndex((b) => b.id === block.id);
+			if (currentIndex > 0) {
+				const previousBlock = blocks[currentIndex - 1];
+				selectBlock(previousBlock.id);
+			} else {
+				selectBlock(null);
+			}
+			removeBlocks([block.id]);
+			return;
+		}
+	}
 
-  // 3. Bold, Italic, Link visual shortcuts
-  if (hasMeta && (key === "b" || key === "i" || key === "k")) {
-    if (key === "k") {
-      e.preventDefault();
+	// 3. Bold, Italic, Link visual shortcuts
+	if (hasMeta && (key === "b" || key === "i" || key === "k")) {
+		if (key === "k") {
+			e.preventDefault();
 
-      const selection = window.getSelection();
-      if (!selection || selection.rangeCount === 0) return;
-      const range = selection.getRangeAt(0);
-      const selectedText = range.toString();
+			const selection = window.getSelection();
+			if (!selection || selection.rangeCount === 0) return;
+			const range = selection.getRangeAt(0);
+			const selectedText = range.toString();
 
-      // Extract leading/trailing space for clean GFM formatting
-      let startSpace = "";
-      let endSpace = "";
-      let cleanText = selectedText;
+			// Extract leading/trailing space for clean GFM formatting
+			let startSpace = "";
+			let endSpace = "";
+			let cleanText = selectedText;
 
-      const startMatch = selectedText.match(/^(\s+)/);
-      if (startMatch) {
-        startSpace = startMatch[1];
-        cleanText = cleanText.slice(startSpace.length);
-      }
+			const startMatch = selectedText.match(/^(\s+)/);
+			if (startMatch) {
+				startSpace = startMatch[1];
+				cleanText = cleanText.slice(startSpace.length);
+			}
 
-      const endMatch = selectedText.match(/(\s+)$/);
-      if (endMatch) {
-        endSpace = endMatch[1];
-        cleanText = cleanText.slice(0, cleanText.length - endSpace.length);
-      }
+			const endMatch = selectedText.match(/(\s+)$/);
+			if (endMatch) {
+				endSpace = endMatch[1];
+				cleanText = cleanText.slice(0, cleanText.length - endSpace.length);
+			}
 
-      const textNode = document.createTextNode(startSpace + "[" + cleanText + "](url)" + endSpace);
-      range.deleteContents();
-      range.insertNode(textNode);
+			const textNode = document.createTextNode(startSpace + "[" + cleanText + "](url)" + endSpace);
+			range.deleteContents();
+			range.insertNode(textNode);
 
-      updateBlock(block.id, { text: htmlToMarkdown(e.currentTarget.innerHTML) });
-    }
-    // For 'b' and 'i', browser native styling takes over, converted back to **markdown** on blur
-  }
+			updateBlock(block.id, { text: htmlToMarkdown(e.currentTarget.innerHTML) });
+		}
+		// For 'b' and 'i', browser native styling takes over, converted back to **markdown** on blur
+	}
 }

@@ -86,7 +86,10 @@ export const useEditorStore = create<EditorState>()(
 
       selectBlock: (id, extend) =>
         set((state) => {
-          if (!id) return { selectedBlockIds: [] };
+          if (!id) {
+            if (state.selectedBlockIds.length === 0) return {};
+            return { selectedBlockIds: [] };
+          }
           if (extend && state.selectedBlockIds.length > 0) {
             const lastId = state.selectedBlockIds[state.selectedBlockIds.length - 1];
             const startIdx = state.blocks.findIndex((b) => b.id === lastId);
@@ -96,6 +99,9 @@ export const useEditorStore = create<EditorState>()(
               const range = state.blocks.slice(start, end + 1).map((b) => b.id);
               return { selectedBlockIds: [...new Set([...state.selectedBlockIds, ...range])] };
             }
+          }
+          if (state.selectedBlockIds.length === 1 && state.selectedBlockIds[0] === id) {
+            return {};
           }
           return { selectedBlockIds: [id] };
         }),

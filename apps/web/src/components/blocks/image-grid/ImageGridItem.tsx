@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Trash2 } from "lucide-react";
+import { Trash2, Edit2 } from "lucide-react";
 import type { GridImage } from "./types";
 
 interface ImageGridItemProps {
@@ -80,7 +80,7 @@ export function ImageGridItem({
               gap: 4,
             }}
           >
-            ✏️ Edit
+            <Edit2 size={10} /> Edit
           </button>
           <button
             onClick={(e) => onRemove(img.id, e)}
