@@ -26,6 +26,7 @@ function buildToc(blocks: Block[]): TocItem[] {
 
 export function TableOfContents({ onClose }: { onClose?: () => void }) {
 	const blocks = useEditorStore((s) => s.blocks);
+	const selectBlock = useEditorStore((s) => s.selectBlock);
 	const items = buildToc(blocks);
 
 	if (items.length === 0) {
@@ -37,6 +38,7 @@ export function TableOfContents({ onClose }: { onClose?: () => void }) {
 	}
 
 	const handleClick = (id: string) => {
+		selectBlock(id);
 		const el = document.querySelector(`[data-block-id="${id}"]`) as HTMLElement;
 		if (el) {
 			el.scrollIntoView({ behavior: "smooth", block: "start" });
