@@ -41,6 +41,16 @@ export function TableOfContents({ onClose }: { onClose?: () => void }) {
 		if (el) {
 			el.scrollIntoView({ behavior: "smooth", block: "start" });
 			el.focus({ preventScroll: true });
+			
+			// Move cursor to the end of the text
+			const selection = window.getSelection();
+			if (selection) {
+				const range = document.createRange();
+				range.selectNodeContents(el);
+				range.collapse(false); // false = collapse to the end
+				selection.removeAllRanges();
+				selection.addRange(range);
+			}
 		}
 		onClose?.();
 	};
