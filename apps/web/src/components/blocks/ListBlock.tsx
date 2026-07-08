@@ -47,6 +47,18 @@ export function ListBlock({ block }: { block: Block }) {
     if (el.innerHTML === newHtml) return;
 
     const isFocusedNow = document.activeElement === el;
+    
+    // If focused and the DOM parses to the exact same logical items as the store,
+    // do not rewrite the DOM. This prevents cursor jumping when the browser's native
+    // HTML (e.g. <li><br></li>) slightly differs from our serializer (e.g. <li></li>)
+    // but represents the same content.
+    if (isFocusedNow) {
+      const currentParsed = htmlToItems(el.innerHTML);
+      if (areItemsEqual(currentParsed, items)) {
+        return;
+      }
+    }
+
     let savedStart = -1;
     let savedEnd = -1;
     if (isFocusedNow) {
