@@ -2,10 +2,11 @@
 
 import { useState, useRef, useCallback } from "react";
 import { Sparkles, Square, RotateCw, FileDown, X } from "lucide-react";
-import { useEditorStore, BlockRegistry } from "@next-md-editor/editor-core";
-import { parseMarkdown } from "@/features/markdown/serializer";
+import { useEditorStore } from "@next-md-editor/editor-core";
+import { parseMarkdown, serializeToMarkdown } from "@/features/markdown/serializer";
 import { v4 as uuidv4 } from "uuid";
 import type { Block } from "@next-md-editor/types";
+import { AiDialogHeader } from "./ai-dialog/AiDialogHeader";
 
 interface BlockAiDialogProps {
   blockId: string;
@@ -18,49 +19,6 @@ export const TEXT_BLOCK_TYPES = new Set([
   "heading", "paragraph", "quote", "code", "bullet-list", "numbered-list",
   "callout", "collapsible", "table",
 ]);
-
-function getBlockContentText(block: Block): string {
-  try {
-    const def = BlockRegistry.get(block.type);
-    if (def?.serializer) {
-      const md = def.serializer(block);
-      if (md) return md;
-    }
-  } catch {}
-  switch (block.type) {
-    case "heading":
-      return (block.props.text as string) ?? "";
-    case "paragraph": {
-      const content = block.props.content;
-      if (Array.isArray(content)) {
-        return content.map((s: Record<string, unknown>) => s.text ?? "").join("");
-      }
-      return (block.props.text as string) ?? "";
-    }
-    case "quote":
-      return (block.props.text as string) ?? "";
-    case "code":
-      return "```" + (block.props.language ?? "") + "\n" + (block.props.code ?? "") + "\n```";
-    case "bullet-list":
-    case "numbered-list": {
-      const items = block.props.items as { content?: { text?: string }[]; text?: string }[] | undefined;
-      if (!items) return "";
-      const prefix = block.type === "bullet-list" ? "- " : "1. ";
-      return items.map((item) => {
-        if (item.content) {
-          return prefix + item.content.map((s) => s.text ?? "").join("");
-        }
-        return prefix + (item.text ?? "");
-      }).join("\n");
-    }
-    case "callout":
-      return "> [" + (block.props.type ?? "note") + "] " + (block.props.text ?? "");
-    case "collapsible":
-      return "<details>\n<summary>" + (block.props.summary ?? "") + "</summary>\n" + (block.props.content ?? "") + "\n</details>";
-    default:
-      return JSON.stringify(block.props);
-  }
-}
 
 function extractContentProps(block: Block): Record<string, unknown> {
   switch (block.type) {
@@ -118,7 +76,7 @@ export function BlockAiDialog({ blockId, onClose }: BlockAiDialogProps) {
     const abort = new AbortController();
     abortRef.current = abort;
 
-    const contentText = getBlockContentText(block);
+    const contentText = serializeToMarkdown([block]);
 
     try {
       const res = await fetch("/api/generate", {
@@ -129,15 +87,16 @@ export function BlockAiDialog({ blockId, onClose }: BlockAiDialogProps) {
             {
               role: "system",
               content:
-                "You are a content editor. The user will provide their current block content and a modification request. "
-                + "Respond with ONLY the modified content as markdown. "
-                + "Keep the SAME block type as the original (e.g., if the original is a heading, output a heading). "
-                + "Only change the block type if the user explicitly asks you to. "
+                "You are an expert markdown editor. The user will provide their current markdown block and a modification request. "
+                + "Respond with ONLY the modified content as raw markdown. "
+                + "Keep the SAME markdown structure as the original (e.g., if the original is a table, output a table; if it's a heading, output a heading). "
+                + "Only change the structure if the user explicitly asks you to. "
+                + "Do not include markdown code block wrappers (like ```markdown) unless the original block was a code block. "
                 + "Do not include explanations or metadata.",
             },
             {
               role: "user",
-              content: "Block type: " + block.type + "\n\nCurrent content:\n---\n" + contentText + "\n---\n\nModification request: " + promptText,
+              content: "Current markdown:\n---\n" + contentText + "\n---\n\nModification request: " + promptText,
             },
           ],
         }),
@@ -256,51 +215,7 @@ export function BlockAiDialog({ blockId, onClose }: BlockAiDialogProps) {
           overflow: "hidden",
         }}
       >
-        {/* Header */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "14px 18px",
-            borderBottom: "1px solid var(--border)",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <Sparkles size={16} style={{ color: "var(--accent)" }} />
-            <span style={{ fontWeight: 700, fontSize: 14, color: "var(--text-primary)" }}>
-              AI Block Editor
-            </span>
-            <span
-              style={{
-                fontSize: 10,
-                fontWeight: 600,
-                color: "var(--text-muted)",
-                textTransform: "uppercase",
-                letterSpacing: "0.04em",
-                background: "var(--bg-surface)",
-                padding: "2px 6px",
-                borderRadius: 4,
-              }}
-            >
-              {blockLabel}
-            </span>
-          </div>
-          <button
-            onClick={onClose}
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              color: "var(--text-muted)",
-              padding: 4,
-              borderRadius: 4,
-              display: "flex",
-            }}
-          >
-            <X size={16} />
-          </button>
-        </div>
+        <AiDialogHeader blockLabel={blockLabel} onClose={onClose} />
 
         {/* Body */}
         <div style={{ padding: "16px 18px", overflowY: "auto", flex: 1 }}>
@@ -325,7 +240,7 @@ export function BlockAiDialog({ blockId, onClose }: BlockAiDialogProps) {
               fontFamily: "inherit",
             }}
           >
-            {block ? getBlockContentText(block) || <span style={{ fontStyle: "italic", opacity: 0.5 }}>Empty</span> : "Block not found"}
+            {block ? serializeToMarkdown([block]) || <span style={{ fontStyle: "italic", opacity: 0.5 }}>Empty</span> : "Block not found"}
           </div>
 
           {state === "input" && (
@@ -383,8 +298,27 @@ export function BlockAiDialog({ blockId, onClose }: BlockAiDialogProps) {
 
           {state === "streaming" && (
             <>
-              <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 6 }}>
-                Generating...
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                  Generating
+                </div>
+                <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <style>
+                    {`
+                      .ai_bounce { animation: ai_bounce_anim 1.05s infinite; fill: var(--accent); }
+                      .ai_bounce_2 { animation-delay: .1s; }
+                      .ai_bounce_3 { animation-delay: .2s; }
+                      @keyframes ai_bounce_anim {
+                        0%, 57.14% { animation-timing-function: cubic-bezier(0.33,.66,.66,1); transform: translateY(0); }
+                        28.57% { animation-timing-function: cubic-bezier(0.33,0,.66,.33); transform: translateY(-4px); }
+                        100% { transform: translateY(0); }
+                      }
+                    `}
+                  </style>
+                  <circle className="ai_bounce" cx="4" cy="12" r="2.5" />
+                  <circle className="ai_bounce ai_bounce_2" cx="12" cy="12" r="2.5" />
+                  <circle className="ai_bounce ai_bounce_3" cx="20" cy="12" r="2.5" />
+                </svg>
               </div>
               <div
                 ref={previewRef}

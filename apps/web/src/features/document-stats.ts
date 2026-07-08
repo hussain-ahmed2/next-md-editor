@@ -2,30 +2,35 @@
 
 import type { Block, RichText } from "@next-md-editor/types";
 
-function richTextToPlainText(rt: RichText): string {
-  return rt.map((s) => s.text).join("");
+function htmlToPlainText(html: unknown): string {
+  if (typeof html !== "string") {
+    if (Array.isArray(html)) {
+      // Fallback for legacy RichText format if it exists
+      return html.map((s) => s.text || "").join("");
+    }
+    return "";
+  }
+  // Basic HTML tag stripping for word counting
+  return html.replace(/<[^>]*>?/gm, "").trim();
 }
 
 function extractBlockText(block: Block): string {
   const p = block.props;
-  switch (block.type) {
-    case "heading":
-    case "paragraph":
-      return richTextToPlainText((p.content as RichText) ?? []);
-    case "quote":
-    case "callout":
-      return (p.text as string) ?? "";
-    case "code":
-      return (p.code as string) ?? "";
-    case "bullet-list":
-    case "numbered-list": {
-      const items = p.items as Array<{ content: RichText }> | undefined;
-      if (!items) return "";
-      return items.map((i) => richTextToPlainText(i.content ?? [])).join(" ");
-    }
-    default:
-      return "";
+  // In Lexical migration, all text-based blocks store their HTML content in p.content
+  // or fall back to legacy properties (p.text)
+  if (p.content !== undefined) {
+    return htmlToPlainText(p.content);
   }
+  
+  if (p.text !== undefined) {
+     return typeof p.text === "string" ? p.text : htmlToPlainText(p.text);
+  }
+
+  if (p.code !== undefined) {
+    return typeof p.code === "string" ? p.code : "";
+  }
+  
+  return "";
 }
 
 export interface DocStats {
