@@ -13,42 +13,42 @@ import { BlockAiDialog, TEXT_BLOCK_TYPES } from "./BlockAiDialog";
 type FormatAction = "bold" | "italic" | "code" | "strikethrough" | "link";
 
 function findBlockById(blocks: Block[], id: string): Block | undefined {
-  for (const block of blocks) {
-    if (block.id === id) return block;
-    if (block.children) {
-      const found = findBlockById(block.children, id);
-      if (found) return found;
-    }
-  }
-  return undefined;
+	for (const block of blocks) {
+		if (block.id === id) return block;
+		if (block.children) {
+			const found = findBlockById(block.children, id);
+			if (found) return found;
+		}
+	}
+	return undefined;
 }
 
 function getParentLinkUrl(sel: Selection | null): string | null {
-  if (!sel || !sel.rangeCount) return null;
-  const node = sel.anchorNode;
-  if (!node) return null;
-  let el: Element | null = node.nodeType === Node.ELEMENT_NODE ? node as Element : node.parentElement;
-  while (el && el.getAttribute("contenteditable") !== "true") {
-    if (el.tagName === "A") return (el as HTMLAnchorElement).getAttribute("href");
-    el = el.parentElement;
-  }
-  return null;
+	if (!sel || !sel.rangeCount) return null;
+	const node = sel.anchorNode;
+	if (!node) return null;
+	let el: Element | null = node.nodeType === Node.ELEMENT_NODE ? (node as Element) : node.parentElement;
+	while (el && el.getAttribute("contenteditable") !== "true") {
+		if (el.tagName === "A") return (el as HTMLAnchorElement).getAttribute("href");
+		el = el.parentElement;
+	}
+	return null;
 }
 
 function isInCodeElement(sel: Selection | null): boolean {
-  if (!sel || !sel.rangeCount) return false;
-  const node = sel.anchorNode;
-  if (!node) return false;
-  let el: Element | null = node.nodeType === Node.ELEMENT_NODE ? node as Element : node.parentElement;
-  while (el && el.getAttribute("contenteditable") !== "true") {
-    if (el.tagName === "CODE" || el.tagName === "PRE") return true;
-    el = el.parentElement;
-  }
-  return false;
+	if (!sel || !sel.rangeCount) return false;
+	const node = sel.anchorNode;
+	if (!node) return false;
+	let el: Element | null = node.nodeType === Node.ELEMENT_NODE ? (node as Element) : node.parentElement;
+	while (el && el.getAttribute("contenteditable") !== "true") {
+		if (el.tagName === "CODE" || el.tagName === "PRE") return true;
+		el = el.parentElement;
+	}
+	return false;
 }
 
 interface BlockToolbarProps {
-  blockId: string;
+	blockId: string;
 }
 
 export function BlockToolbar({ blockId }: BlockToolbarProps) {
@@ -69,7 +69,9 @@ export function BlockToolbar({ blockId }: BlockToolbarProps) {
 	useEffect(() => {
 		if (linkDialog) {
 			const tr = toolbarRef.current?.getBoundingClientRect();
-			const pos = tr ? { top: tr.bottom + 4, left: tr.left + tr.width / 2 } : { top: 80, left: window.innerWidth / 2 };
+			const pos = tr
+				? { top: tr.bottom + 4, left: tr.left + tr.width / 2 }
+				: { top: 80, left: window.innerWidth / 2 };
 			setLinkPos(pos);
 		} else {
 			setLinkPos(null);
@@ -109,63 +111,69 @@ export function BlockToolbar({ blockId }: BlockToolbarProps) {
 		return () => document.removeEventListener("selectionchange", handleSelectionChange);
 	}, [updateFormats, getContentEditable]);
 
-	const apply = useCallback((action: FormatAction) => {
-		const el = getContentEditable();
-		if (!el) return;
+	const apply = useCallback(
+		(action: FormatAction) => {
+			const el = getContentEditable();
+			if (!el) return;
 
-		switch (action) {
-			case "bold":
-				document.execCommand("bold");
-				break;
-			case "italic":
-				document.execCommand("italic");
-				break;
-			case "strikethrough":
-				document.execCommand("strikeThrough");
-				break;
-			case "code":
-				const sel = window.getSelection();
-				if (sel && sel.rangeCount > 0 && !sel.getRangeAt(0).collapsed) {
-					if (isInCodeElement(sel)) {
-						document.execCommand("insertHTML", false, sel.toString());
+			switch (action) {
+				case "bold":
+					document.execCommand("bold");
+					break;
+				case "italic":
+					document.execCommand("italic");
+					break;
+				case "strikethrough":
+					document.execCommand("strikeThrough");
+					break;
+				case "code":
+					const sel = window.getSelection();
+					if (sel && sel.rangeCount > 0 && !sel.getRangeAt(0).collapsed) {
+						if (isInCodeElement(sel)) {
+							document.execCommand("insertHTML", false, sel.toString());
+						} else {
+							document.execCommand("insertHTML", false, "<code>" + sel.toString() + "</code>");
+						}
 					} else {
-						document.execCommand("insertHTML", false, "<code>" + sel.toString() + "</code>");
+						return;
 					}
-				} else {
+					break;
+				case "link": {
+					const s = window.getSelection();
+					if (s && s.rangeCount > 0) savedLinkRangeRef.current = s.getRangeAt(0).cloneRange();
+					setLinkDialog({ url: linkUrl || "https://" });
 					return;
 				}
-				break;
-			case "link": {
-				const s = window.getSelection();
-				if (s && s.rangeCount > 0) savedLinkRangeRef.current = s.getRangeAt(0).cloneRange();
-				setLinkDialog({ url: linkUrl || "https://" });
-				return;
 			}
-		}
 
-		el.dispatchEvent(new Event("input", { bubbles: true }));
-	}, [getContentEditable, linkUrl]);
+			el.dispatchEvent(new Event("input", { bubbles: true }));
+		},
+		[getContentEditable, linkUrl],
+	);
 
-	const applyLink = useCallback((url: string) => {
-		const el = getContentEditable();
-		if (!el) return;
-		const saved = savedLinkRangeRef.current;
-		if (saved) {
-			el.focus();
-			const sel = window.getSelection();
-			if (sel) {
-				sel.removeAllRanges();
-				sel.addRange(saved);
+	const applyLink = useCallback(
+		(url: string) => {
+			const el = getContentEditable();
+			if (!el) return;
+			const saved = savedLinkRangeRef.current;
+			if (saved) {
+				el.focus();
+				const sel = window.getSelection();
+				if (sel) {
+					sel.removeAllRanges();
+					sel.addRange(saved);
+				}
 			}
-		}
-		document.execCommand("unlink");
-		if (url) {
-			document.execCommand("createLink", false, url);
-		}
-		el.dispatchEvent(new Event("input", { bubbles: true }));
-		savedLinkRangeRef.current = null;
-		setLinkDialog(null);
-	}, [getContentEditable]);
+			document.execCommand("unlink");
+			if (url) {
+				document.execCommand("createLink", false, url);
+			}
+			el.dispatchEvent(new Event("input", { bubbles: true }));
+			savedLinkRangeRef.current = null;
+			setLinkDialog(null);
+		},
+		[getContentEditable],
+	);
 
 	const removeLink = useCallback(() => {
 		const el = getContentEditable();
@@ -185,24 +193,27 @@ export function BlockToolbar({ blockId }: BlockToolbarProps) {
 		setLinkDialog(null);
 	}, [getContentEditable]);
 
-	const handleEmoji = useCallback((emoji: string) => {
-		setEmojiPicker(false);
+	const handleEmoji = useCallback(
+		(emoji: string) => {
+			setEmojiPicker(false);
 
-		const el = getContentEditable();
-		const savedRange = savedEmojiRangeRef.current;
-		savedEmojiRangeRef.current = null;
+			const el = getContentEditable();
+			const savedRange = savedEmojiRangeRef.current;
+			savedEmojiRangeRef.current = null;
 
-		if (el && savedRange) {
-			el.focus();
-			const sel = window.getSelection();
-			if (sel) {
-				sel.removeAllRanges();
-				sel.addRange(savedRange);
+			if (el && savedRange) {
+				el.focus();
+				const sel = window.getSelection();
+				if (sel) {
+					sel.removeAllRanges();
+					sel.addRange(savedRange);
+				}
 			}
-		}
 
-		insertEmoji(emoji);
-	}, [getContentEditable]);
+			insertEmoji(emoji);
+		},
+		[getContentEditable],
+	);
 
 	const handleEmojiClick = useCallback(() => {
 		const el = getContentEditable();
@@ -314,7 +325,13 @@ export function BlockToolbar({ blockId }: BlockToolbarProps) {
 					>
 						<Smile size={14} />
 					</button>
-					{emojiPicker && <EmojiPicker onSelect={handleEmoji} onClose={() => setEmojiPicker(false)} buttonRef={emojiBtnRef} />}
+					{emojiPicker && (
+						<EmojiPicker
+							onSelect={handleEmoji}
+							onClose={() => setEmojiPicker(false)}
+							buttonRef={emojiBtnRef}
+						/>
+					)}
 				</div>
 				<div style={{ width: 1, height: 16, background: "var(--border-subtle)", margin: "0 4px" }} />
 				{(() => {
