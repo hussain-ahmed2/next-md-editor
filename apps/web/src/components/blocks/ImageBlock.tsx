@@ -156,6 +156,7 @@ export function ImageBlock({ block }: { block: Block }) {
             overflow: "hidden",
             border: "1px solid var(--border-subtle)",
             background: "var(--bg-surface)",
+            minHeight: 120,
           }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
