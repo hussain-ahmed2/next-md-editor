@@ -23,12 +23,12 @@ export function useDragAndDrop() {
   const selectedBlockIds = useEditorStore((s) => s.selectedBlockIds);
 
   // Carries the sidebar block type across the tab switch on mobile.
-  // onDragStart stores the type here, then flushSync removes the sidebar.
+  // onDragStart stores the block here, then flushSync removes the sidebar.
   // onDragEnd reads from here since the original drag source is gone.
-  const pendingMobileDragType = useRef<string | null>(null);
+  const pendingMobileDragBlock = useRef<Block | null>(null);
 
-  const setPendingMobileDragType = useCallback((type: string | null) => {
-    pendingMobileDragType.current = type;
+  const setPendingMobileDragBlock = useCallback((block: Block | null) => {
+    pendingMobileDragBlock.current = block;
   }, []);
 
   const handleDragEnd = useCallback(
@@ -38,16 +38,14 @@ export function useDragAndDrop() {
       const target = operation.target;
 
       // ── Mobile sidebar drag (source destroyed by tab switch) ─────────────
-      if (pendingMobileDragType.current) {
-        const type = pendingMobileDragType.current;
-        pendingMobileDragType.current = null;
+      if (pendingMobileDragBlock.current) {
+        const dragBlock = pendingMobileDragBlock.current;
+        pendingMobileDragBlock.current = null;
         if (canceled) return;
 
-        const def = BlockRegistry.get(type);
         const newBlock = {
+          ...dragBlock,
           id: uuidv4(),
-          type,
-          props: { ...(def?.defaultProps ?? {}) },
         };
 
         if (!target) {
@@ -161,5 +159,5 @@ export function useDragAndDrop() {
     [blocks, addBlock, moveBlocks, selectedBlockIds],
   );
 
-  return { sensors: SENSORS, handleDragEnd, setPendingMobileDragType };
+  return { sensors: SENSORS, handleDragEnd, setPendingMobileDragBlock };
 }

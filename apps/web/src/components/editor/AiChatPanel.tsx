@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { Sparkles, Send, Square, FileDown, X, Brain, User, RotateCw, Loader2 } from "lucide-react";
+import { Sparkles, Send, Square, FileDown, X, User, RotateCw, Loader2 } from "lucide-react";
 import { useUIStore } from "@/store/uiStore";
 import { useEditorStore } from "@next-md-editor/editor-core";
 import { parseMarkdown } from "@/features/markdown/serializer";
 import { README_PROMPTS, type PromptTemplate } from "@/data/readme-prompts";
 import { v4 as uuidv4 } from "uuid";
+import type { Block } from "@next-md-editor/types";
 import { AiDraggableBlock } from "./AiDraggableBlock";
 
 interface Message {
@@ -41,6 +42,7 @@ const QUICK_PROMPTS: PromptTemplate[] = [
 export function AiChatPanel() {
   const isOpen = useUIStore((s) => s.isAiChatOpen);
   const setOpen = useUIStore((s) => s.setAiChatOpen);
+  const isMobile = useUIStore((s) => s.isMobile);
   const blocks = useEditorStore((s) => s.blocks);
   const selectedBlockIds = useEditorStore((s) => s.selectedBlockIds);
   const addBlock = useEditorStore((s) => s.addBlock);
@@ -61,6 +63,18 @@ export function AiChatPanel() {
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
   }, [messages]);
+
+  const parsedBlocksCache = useRef<Map<string, Block[]>>(new Map());
+
+  const getParsedBlocks = useCallback((content: string) => {
+    if (!parsedBlocksCache.current.has(content)) {
+      parsedBlocksCache.current.set(
+        content,
+        parseMarkdown(content).map((b) => ({ ...b, id: b.id || uuidv4() }))
+      );
+    }
+    return parsedBlocksCache.current.get(content)!;
+  }, []);
 
   const sendPrompt = useCallback(async (text: string) => {
     if (!text.trim() || streaming) return;
@@ -217,9 +231,9 @@ export function AiChatPanel() {
           position: "fixed",
           top: 0,
           right: 0,
-          bottom: 0,
+          bottom: isMobile ? 42 : 0,
           zIndex: 9998,
-          width: 380,
+          width: 480,
           maxWidth: "100vw",
           background: "var(--bg-elevated)",
           borderLeft: "1px solid var(--border)",
@@ -240,7 +254,7 @@ export function AiChatPanel() {
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <Brain size={16} style={{ color: "var(--accent)" }} />
+            <Sparkles size={16} style={{ color: "var(--accent)" }} />
             <span style={{ fontWeight: 700, fontSize: 14, color: "var(--text-primary)" }}>
               AI Assistant
             </span>
@@ -358,13 +372,13 @@ export function AiChatPanel() {
                   justifyContent: msg.role === "user" ? "flex-end" : "flex-start",
                 }}
               >
-                {msg.role === "user" ? <User size={10} /> : <Brain size={10} />}
+                {msg.role === "user" ? <User size={10} /> : <Sparkles size={10} />}
                 {msg.role === "user" ? "You" : "AI"}
               </div>
               {msg.role === "assistant" && (!streaming || i !== messages.length - 1) && msg.content ? (
                 <div style={{ display: "flex", flexDirection: "column", gap: 0, marginTop: 4 }}>
-                  {parseMarkdown(msg.content).map((b, bIdx) => (
-                    <AiDraggableBlock key={b.id || `ai-${i}-${bIdx}`} block={{...b, id: b.id || uuidv4()}} />
+                  {getParsedBlocks(msg.content).map((b: Block) => (
+                    <AiDraggableBlock key={b.id} block={b} />
                   ))}
                 </div>
               ) : (
@@ -438,7 +452,12 @@ export function AiChatPanel() {
             ref={inputRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
+            onKeyDown={(e) => {
+              e.stopPropagation();
+              handleKeyDown(e);
+            }}
+            onKeyUp={(e) => e.stopPropagation()}
+            onKeyPress={(e) => e.stopPropagation()}
             placeholder="Ask for content, edits, or ask a question..."
             rows={2}
             style={{

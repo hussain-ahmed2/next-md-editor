@@ -656,14 +656,19 @@ function serializeBlock(
     switch (block.type) {
       case "heading": {
         const level = (block.props.level as number) ?? 1;
-        text = `${"#".repeat(level)} ${(block.props.text as string) ?? ""}`;
+        const html = typeof block.props.content === "string" ? block.props.content : undefined;
+        const inlineMd = html ? htmlToMarkdown(html) : ((block.props.text as string) ?? "");
+        text = `${"#".repeat(level)} ${inlineMd}`;
         break;
       }
-      case "paragraph":
-        text = richTextToMarkdown((block.props.content as RichText) ?? []);
+      case "paragraph": {
+        const html = typeof block.props.content === "string" ? block.props.content : undefined;
+        text = html ? htmlToMarkdown(html) : richTextToMarkdown((block.props.content as RichText) ?? []);
         break;
+      }
       case "quote": {
-        const t = (block.props.text as string) ?? "";
+        const html = typeof block.props.content === "string" ? block.props.content : undefined;
+        const t = html ? htmlToMarkdown(html) : ((block.props.text as string) ?? "");
         text = t.split("\n").map((l) => `> ${l}`).join("\n");
         break;
       }
@@ -683,7 +688,8 @@ function serializeBlock(
         break;
       }
       case "callout": {
-        const t = (block.props.text as string) ?? "";
+        const html = typeof block.props.content === "string" ? block.props.content : undefined;
+        const t = html ? htmlToMarkdown(html) : ((block.props.text as string) ?? "");
         const type = ((block.props.type as string) ?? "note").toUpperCase();
         text = `> [!${type}]\n${t.split("\n").map((l) => `> ${l}`).join("\n")}`;
         break;
@@ -700,15 +706,20 @@ function serializeBlock(
       }
       case "bullet-list":
       case "numbered-list": {
-        const items = block.props.items as Array<Record<string, unknown>> | undefined;
-        if (items && items.length > 0) {
-          const ordered = block.type === "numbered-list";
-          text = items
-            .map((item) => serializeListItem(item, ordered ? "1." : "-"))
-            .join("\n");
+        const content = typeof block.props.content === "string" ? block.props.content : undefined;
+        if (content) {
+          text = htmlToMarkdown(content);
         } else {
-          const html = (block.props.html as string) ?? "";
-          text = htmlToMarkdown(html);
+          const items = block.props.items as Array<Record<string, unknown>> | undefined;
+          if (items && items.length > 0) {
+            const ordered = block.type === "numbered-list";
+            text = items
+              .map((item) => serializeListItem(item, ordered ? "1." : "-"))
+              .join("\n");
+          } else {
+            const html = (block.props.html as string) ?? "";
+            text = htmlToMarkdown(html);
+          }
         }
         break;
       }
