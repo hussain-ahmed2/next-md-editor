@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { Sparkles, Send, Square, FileDown, X, Brain, User, RotateCw } from "lucide-react";
+import { Sparkles, Send, Square, FileDown, X, Brain, User, RotateCw, Loader2 } from "lucide-react";
 import { useUIStore } from "@/store/uiStore";
 import { useEditorStore } from "@next-md-editor/editor-core";
 import { parseMarkdown } from "@/features/markdown/serializer";
 import { README_PROMPTS, type PromptTemplate } from "@/data/readme-prompts";
 import { v4 as uuidv4 } from "uuid";
+import { AiDraggableBlock } from "./AiDraggableBlock";
 
 interface Message {
   role: "user" | "assistant";
@@ -360,9 +361,24 @@ export function AiChatPanel() {
                 {msg.role === "user" ? <User size={10} /> : <Brain size={10} />}
                 {msg.role === "user" ? "You" : "AI"}
               </div>
-              <div style={bubbleStyle(msg.role)}>
-                {msg.content || (msg.role === "assistant" ? "..." : "")}
-              </div>
+              {msg.role === "assistant" && (!streaming || i !== messages.length - 1) && msg.content ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: 0, marginTop: 4 }}>
+                  {parseMarkdown(msg.content).map((b, bIdx) => (
+                    <AiDraggableBlock key={b.id || `ai-${i}-${bIdx}`} block={{...b, id: b.id || uuidv4()}} />
+                  ))}
+                </div>
+              ) : (
+                <div style={bubbleStyle(msg.role)}>
+                  {msg.content ? (
+                    msg.content
+                  ) : msg.role === "assistant" ? (
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, opacity: 0.7 }}>
+                      <Loader2 size={12} style={{ animation: "spin 1s linear infinite" }} />
+                      Thinking...
+                    </div>
+                  ) : ""}
+                </div>
+              )}
             </div>
           ))}
 

@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from "uuid";
 import { DragEndEvent, DragDropManager } from "@dnd-kit/react";
 import { PointerSensor, PointerActivationConstraints } from "@dnd-kit/dom";
 import { isSortable } from "@dnd-kit/react/sortable";
+import type { Block } from "@next-md-editor/types";
 import { CANVAS_ROOT_ID } from "@/components/editor/EditorCanvas";
 
 // Module-level sensor config — PointerSensor handles mouse + touch via Pointer Events API
@@ -95,11 +96,15 @@ export function useDragAndDrop() {
         if (!target) return;
 
         const type = source.data.type as string;
-        const def = BlockRegistry.get(type);
-        const newBlock = {
+        const dragBlock = source.data.block as Block | undefined;
+        
+        const newBlock = dragBlock ? {
+          ...dragBlock,
+          id: uuidv4(),
+        } : {
           id: uuidv4(),
           type,
-          props: { ...(def?.defaultProps ?? {}) },
+          props: { ...(BlockRegistry.get(type)?.defaultProps ?? {}) },
         };
 
         // Compute exact insert index from final cursor position + hovered target

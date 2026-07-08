@@ -3,13 +3,15 @@
 import React, { useState, useRef, useEffect } from "react";
 import { LayoutTemplate, ChevronDown } from "lucide-react";
 import { useEditorStore } from "@next-md-editor/editor-core";
-import { TEMPLATES } from "@/constants/templates";
+import { TEMPLATES, type TemplateDef } from "@/constants/templates";
 import { parseMarkdown } from "@/features/markdown/serializer";
 import { ToolbarButton } from "./ToolbarButton";
+import { AiTemplateModal } from "./AiTemplateModal";
 
 export function TemplateMenu() {
   const setBlocks = useEditorStore((s) => s.setBlocks);
   const [templateOpen, setTemplateOpen] = useState(false);
+  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
   const templateRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -24,9 +26,13 @@ export function TemplateMenu() {
     }
   }, [templateOpen]);
 
-  const handleLoadTemplate = (markdown: string) => {
-    const parsedBlocks = parseMarkdown(markdown);
-    setBlocks(parsedBlocks);
+  const handleLoadTemplate = (tmpl: TemplateDef) => {
+    if (tmpl.isAiTemplate) {
+      setIsAiModalOpen(true);
+    } else if (tmpl.markdown) {
+      const parsedBlocks = parseMarkdown(tmpl.markdown);
+      setBlocks(parsedBlocks);
+    }
     setTemplateOpen(false);
   };
 
@@ -62,7 +68,7 @@ export function TemplateMenu() {
           {TEMPLATES.map((tmpl) => (
             <button
               key={tmpl.id}
-              onClick={() => handleLoadTemplate(tmpl.markdown)}
+              onClick={() => handleLoadTemplate(tmpl)}
               style={{
                 display: "flex",
                 flexDirection: "column",
@@ -88,6 +94,7 @@ export function TemplateMenu() {
           ))}
         </div>
       )}
+      {isAiModalOpen && <AiTemplateModal isOpen={isAiModalOpen} onClose={() => setIsAiModalOpen(false)} />}
     </div>
   );
 }

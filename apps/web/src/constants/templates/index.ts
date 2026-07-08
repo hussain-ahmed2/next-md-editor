@@ -2,7 +2,8 @@ export interface TemplateDef {
   id: string;
   name: string;
   description: string;
-  markdown: string;
+  markdown?: string;
+  isAiTemplate?: boolean;
 }
 
 const BASE = process.env.NEXT_PUBLIC_FRONTEND_URL ?? "";
@@ -324,5 +325,11 @@ export const TEMPLATES: TemplateDef[] = [
     name: "Demo",
     description: "Showcase all editor features and block types",
     markdown: DEMO,
+  },
+  {
+    id: "ai-readme",
+    name: "✨ AI Auto-README",
+    description: "Generate a comprehensive README.md tailored to your project",
+    isAiTemplate: true,
   },
 ];
