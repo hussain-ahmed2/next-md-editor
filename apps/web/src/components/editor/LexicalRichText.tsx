@@ -8,7 +8,7 @@ import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin';
 import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import { $generateHtmlFromNodes, $generateNodesFromDOM } from '@lexical/html';
-import { $getRoot, $insertNodes, EditorState, LexicalEditor, $createParagraphNode } from 'lexical';
+import { $getRoot, $insertNodes, EditorState, LexicalEditor, $createParagraphNode, $setSelection } from 'lexical';
 import { LexicalErrorBoundary } from '@lexical/react/LexicalErrorBoundary';
 
 import { HeadingNode, QuoteNode } from '@lexical/rich-text';
@@ -124,6 +124,9 @@ function HtmlSyncPlugin({ initialHtml }: { initialHtml: string }) {
                 last.remove();
               }
             }
+            
+            // Clear selection so the browser doesn't automatically scroll down to this block
+            $setSelection(null);
           } else {
             root.append($createParagraphNode());
           }
@@ -152,6 +155,7 @@ function HtmlSyncPlugin({ initialHtml }: { initialHtml: string }) {
                 const last = root.getLastChild();
                 if (last && last !== first && last.getType() === 'paragraph' && last.getTextContent() === '') last.remove();
               }
+              $setSelection(null);
             } else {
               root.append($createParagraphNode());
             }
