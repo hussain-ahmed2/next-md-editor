@@ -46,6 +46,9 @@ interface UnistNode {
   children?: UnistNode[];
   cols?: number;
   images?: Array<{ id: string; url: string; alt: string }>;
+  usernames?: string[];
+  avatarSize?: number;
+  techs?: Array<{ id: string; name: string; color: string; logo: string }>;
   username?: string;
   variant?: string;
   theme?: string;
@@ -53,7 +56,15 @@ interface UnistNode {
   content?: string;
   open?: boolean;
   badges?: Array<{ id: string; text: string; color: string; logo?: string; url?: string }>;
+  logoUrl?: string;
+  description?: string;
+  primaryBtnText?: string;
+  primaryBtnUrl?: string;
+  secondaryBtnText?: string;
+  secondaryBtnUrl?: string;
   alignment?: string;
+  items?: Array<{ id: string; text: string; completed: boolean }>;
+  checked?: boolean | null;
 }
 
 // ── Extract raw text from AST node via source position ────────────────────────
@@ -62,6 +73,12 @@ function extractRawText(node: UnistNode, markdown: string): string {
   if (node.position) {
     return markdown.slice(node.position.start.offset, node.position.end.offset);
   }
+  return "";
+}
+
+function getText(node: UnistNode): string {
+  if (node.type === "text" || node.type === "inlineCode" || node.type === "html") return node.value || "";
+  if (node.children) return node.children.map(getText).join("");
   return "";
 }
 
@@ -146,6 +163,163 @@ function remarkCustomBlocks() {
           return index + 1;
         }
 
+        const techStackMatch = val.match(/^<!--\s*tech-stack\s*-->$/);
+        if (techStackMatch) {
+          const techs: Array<{ id: string; name: string; color: string; logo: string }> = [];
+          let consumed = 0;
+          let alignment = "left";
+
+          const nextHtml = index + 1 < (uParent.children?.length ?? 0) ? uParent.children?.[index + 1] : null;
+          if (nextHtml?.type === "html") {
+            const htmlVal = ((nextHtml as UnistNode).value ?? "").trim();
+            const alignMatch = htmlVal.match(/align="?(center|right|left)"?/i);
+            if (alignMatch) {
+              alignment = alignMatch[1].toLowerCase();
+            }
+            const imgRegex = /<img\s+[^>]*src="https:\/\/img\.shields\.io\/badge\/([^-]+)-([0-9a-fA-F]+)\?style=[^&]+&logo=([^&]+)&logoColor=white"[^>]*alt="([^"]+)"/gi;
+            let match;
+            while ((match = imgRegex.exec(htmlVal)) !== null) {
+              const [_, nameRaw, color, logo, name] = match;
+              techs.push({
+                id: name.toLowerCase().replace(/[^a-z0-9]/g, ""),
+                name,
+                color,
+                logo,
+              });
+            }
+            if (techs.length > 0) consumed = 1;
+          }
+
+          if (techs.length > 0) {
+            const node: UnistNode = {
+              type: "customTechStack",
+              techs,
+              alignment,
+            };
+            uParent.children?.splice(index, consumed + 1, node);
+            return index + 1;
+          }
+        }
+
+        const heroMatch = val.match(/^<!--\s*hero\s*-->$/);
+        if (heroMatch) {
+          let logoUrl = "", title = "Project Title", description = "An awesome open-source project.";
+          let primaryBtnText = "Get Started", primaryBtnUrl = "#";
+          let secondaryBtnText = "Documentation", secondaryBtnUrl = "#";
+          let consumed = 0;
+
+          const nextHtml = index + 1 < (uParent.children?.length ?? 0) ? uParent.children?.[index + 1] : null;
+          if (nextHtml?.type === "html") {
+            const htmlVal = ((nextHtml as UnistNode).value ?? "").trim();
+            consumed = 1;
+            
+            const logoMatch = htmlVal.match(/<img src="([^"]+)" alt="Logo"/);
+            if (logoMatch) logoUrl = logoMatch[1];
+
+            const titleMatch = htmlVal.match(/<h1>(.*?)<\/h1>/);
+            if (titleMatch) title = titleMatch[1];
+
+            const descMatch = htmlVal.match(/<p>(.*?)<\/p>/);
+            if (descMatch) description = descMatch[1];
+
+            const btnRegex = /<a href="([^"]+)"><img src="https:\/\/img\.shields\.io\/badge\/[^"]+" alt="([^"]+)" \/><\/a>/g;
+            let match;
+            const buttons: { url: string; text: string }[] = [];
+            while ((match = btnRegex.exec(htmlVal)) !== null) {
+              buttons.push({ url: match[1], text: match[2] });
+            }
+            if (buttons[0]) {
+              primaryBtnUrl = buttons[0].url;
+              primaryBtnText = buttons[0].text;
+            }
+            if (buttons[1]) {
+              secondaryBtnUrl = buttons[1].url;
+              secondaryBtnText = buttons[1].text;
+            }
+          }
+
+          const node: UnistNode = {
+            type: "customHero",
+            logoUrl,
+            title,
+            description,
+            primaryBtnText,
+            primaryBtnUrl,
+            secondaryBtnText,
+            secondaryBtnUrl,
+          };
+          uParent.children?.splice(index, consumed + 1, node);
+          return index + 1;
+        }
+
+        const roadmapMatch = val.match(/^<!--\s*roadmap\s*-->$/);
+        if (roadmapMatch) {
+          const items: Array<{ id: string; text: string; completed: boolean }> = [];
+          let consumed = 0;
+
+          const nextNode = index + 1 < (uParent.children?.length ?? 0) ? uParent.children?.[index + 1] : null;
+          if (nextNode?.type === "list") {
+             consumed = 1;
+             const listItems = nextNode.children || [];
+             listItems.forEach((li) => {
+               if (li.type === "listItem") {
+                 let text = "";
+                 if (li.children && li.children.length > 0) {
+                   const para = li.children[0];
+                   if (para.type === "paragraph" && para.children) {
+                     text = getText(para).trim();
+                   }
+                 }
+                 items.push({
+                   id: uuidv4(),
+                   text: text,
+                   completed: !!li.checked,
+                 });
+               }
+             });
+          }
+
+          if (items.length === 0) {
+            items.push({ id: uuidv4(), text: "New Task", completed: false });
+          }
+
+          const node: UnistNode = {
+            type: "customRoadmap",
+            items,
+          };
+          uParent.children?.splice(index, consumed + 1, node);
+          return index + 1;
+        }
+
+        const contributorsMatch = val.match(/^<!--\s*contributors\s*-->$/);
+        if (contributorsMatch) {
+          const usernames: string[] = [];
+          let consumed = 0;
+          let avatarSize = 48;
+
+          const nextHtml = index + 1 < (uParent.children?.length ?? 0) ? uParent.children?.[index + 1] : null;
+          if (nextHtml?.type === "html") {
+            const htmlVal = ((nextHtml as UnistNode).value ?? "").trim();
+            const imgRegex = /src="https:\/\/github\.com\/([^"?.]+)\.png[^"]*"[^>]*width="(\d+)"/gi;
+            let match;
+            while ((match = imgRegex.exec(htmlVal)) !== null) {
+              usernames.push(match[1]);
+              avatarSize = parseInt(match[2], 10) || 48;
+            }
+            if (usernames.length > 0) consumed = 1;
+          }
+
+          if (usernames.length > 0) {
+            const node: UnistNode = {
+              type: "customContributors",
+              usernames,
+              avatarSize,
+            };
+            uParent.children?.splice(index, consumed + 1, node);
+            return index + 1;
+          }
+        }
+
         const detailsMatch = val.match(/^<details\s*(open)?>([\s\S]*)<\/details>$/i);
         if (detailsMatch) {
           const inner = detailsMatch[2].trim();
@@ -172,7 +346,7 @@ function remarkCustomBlocks() {
           const nextHtml = index + 1 < (uParent.children?.length ?? 0) ? uParent.children?.[index + 1] : null;
           if (nextHtml?.type === "html") {
             const htmlVal = ((nextHtml as UnistNode).value ?? "").trim();
-            const alignMatch = htmlVal.match(/text-align:\s*(center|right)/i);
+            const alignMatch = htmlVal.match(/align="?(center|right)"?/i) || htmlVal.match(/text-align:\s*(center|right)/i);
             if (alignMatch) {
               alignment = alignMatch[1].toLowerCase();
               const imgRegex = /<img\s+[^>]*src="([^"]+)"[^>]*alt="([^"]*)"/gi;
@@ -356,6 +530,50 @@ function nodeToBlock(node: UnistNode, markdown: string): Block | null {
         props: {
           cols: node.cols as number,
           images: node.images as Array<{ id: string; url: string; alt: string }>,
+        },
+      };
+
+    case "customContributors":
+      return {
+        id: uuidv4(),
+        type: "contributors",
+        props: {
+          usernames: node.usernames as string[],
+          avatarSize: node.avatarSize as number,
+        },
+      };
+
+    case "customTechStack":
+      return {
+        id: uuidv4(),
+        type: "tech-stack",
+        props: {
+          techs: node.techs as Array<{ id: string; name: string; color: string; logo: string }>,
+          alignment: node.alignment as string,
+        },
+      };
+
+    case "customHero":
+      return {
+        id: uuidv4(),
+        type: "hero",
+        props: {
+          logoUrl: node.logoUrl as string,
+          title: node.title as string,
+          description: node.description as string,
+          primaryBtnText: node.primaryBtnText as string,
+          primaryBtnUrl: node.primaryBtnUrl as string,
+          secondaryBtnText: node.secondaryBtnText as string,
+          secondaryBtnUrl: node.secondaryBtnUrl as string,
+        },
+      };
+
+    case "customRoadmap":
+      return {
+        id: uuidv4(),
+        type: "roadmap",
+        props: {
+          items: node.items as Array<{ id: string; text: string; completed: boolean }>,
         },
       };
 
@@ -749,6 +967,82 @@ function serializeBlock(
         text = parts.join("\n\n");
         break;
       }
+      case "contributors": {
+        const usernames = (block.props.usernames as string[]) ?? [];
+        const avatarSize = (block.props.avatarSize as number) ?? 48;
+        if (!usernames.length) break;
+
+        const parts: string[] = [];
+        parts.push("<!-- contributors -->");
+
+        const avatars = usernames.map((u) => 
+          `<a href="https://github.com/${u}"><img src="https://github.com/${u}.png?size=${avatarSize * 2}" width="${avatarSize}" style="border-radius: 50%;" alt="${u}" /></a>`
+        ).join("\n");
+
+        parts.push(`<div align="left" style="display: flex; gap: 12px;">\n${avatars}\n</div>`);
+        text = parts.join("\n\n");
+        break;
+      }
+      case "tech-stack": {
+        const techs = (block.props.techs as Array<{ id: string; name: string; color: string; logo: string }>) ?? [];
+        const alignment = (block.props.alignment as string) ?? "left";
+        if (!techs.length) break;
+
+        const parts: string[] = [];
+        parts.push("<!-- tech-stack -->");
+
+        const badges = techs.map((t) => 
+          `<img src="https://img.shields.io/badge/${encodeURIComponent(t.name.replace(/-/g, "--"))}-${t.color}?style=for-the-badge&logo=${t.logo}&logoColor=white" alt="${t.name}" />`
+        ).join("\n");
+
+        parts.push(`<div align="${alignment}">\n${badges}\n</div>`);
+        text = parts.join("\n\n");
+        break;
+      }
+      case "hero": {
+        const logoUrl = (block.props.logoUrl as string) ?? "";
+        const title = (block.props.title as string) ?? "Project Title";
+        const description = (block.props.description as string) ?? "An awesome open-source project.";
+        const primaryBtnText = (block.props.primaryBtnText as string) ?? "Get Started";
+        const primaryBtnUrl = (block.props.primaryBtnUrl as string) ?? "#";
+        const secondaryBtnText = (block.props.secondaryBtnText as string) ?? "Documentation";
+        const secondaryBtnUrl = (block.props.secondaryBtnUrl as string) ?? "#";
+
+        const parts: string[] = [];
+        parts.push("<!-- hero -->");
+
+        const btn1 = `<a href="${primaryBtnUrl}"><img src="https://img.shields.io/badge/${encodeURIComponent(primaryBtnText.replace(/-/g, "--"))}-000000?style=for-the-badge" alt="${primaryBtnText}" /></a>`;
+        const btn2 = `<a href="${secondaryBtnUrl}"><img src="https://img.shields.io/badge/${encodeURIComponent(secondaryBtnText.replace(/-/g, "--"))}-ffffff?style=for-the-badge" alt="${secondaryBtnText}" /></a>`;
+
+        const html = [
+          `<div align="center">`,
+          logoUrl ? `  <img src="${logoUrl}" alt="Logo" width="100" />` : "",
+          `  <h1>${title}</h1>`,
+          `  <p>${description}</p>`,
+          `  <div style="display: flex; gap: 16px; justify-content: center; align-items: center; flex-wrap: wrap;">`,
+          `    ${btn1}`,
+          `    ${btn2}`,
+          `  </div>`,
+          `</div>`
+        ].filter(Boolean).join("\n");
+
+        parts.push(html);
+        text = parts.join("\n\n");
+        break;
+      }
+      case "roadmap": {
+        const items = (block.props.items as Array<{ id: string; text: string; completed: boolean }>) ?? [];
+        if (!items.length) break;
+
+        const parts: string[] = [];
+        parts.push("<!-- roadmap -->");
+
+        const list = items.map((item) => `- [${item.completed ? "x" : " "}] ${item.text}`).join("\n");
+        parts.push(list);
+
+        text = parts.join("\n\n");
+        break;
+      }
       case "github-stats": {
         const username = (block.props.username as string) ?? "";
         const variant = (block.props.variant as string) ?? "default";
@@ -788,7 +1082,7 @@ function serializeBlock(
             const logo = badge.logo ? `&logo=${encodeURIComponent(badge.logo)}&logoColor=white` : "";
             return `<img src="https://img.shields.io/badge/${encodeURIComponent(badge.text.replace(/-/g, "--"))}-${color}?style=for-the-badge${logo}" alt="${badge.text}" />`;
           }).join("\n");
-          parts.push(`<div style="text-align:${alignment}">\n${htmlImgs}\n</div>`);
+          parts.push(`<div align="${alignment}">\n${htmlImgs}\n</div>`);
         }
 
         text = parts.join("\n\n");

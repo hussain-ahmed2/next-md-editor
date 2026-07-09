@@ -13,6 +13,12 @@ import { BadgeGroupBlock } from "@/components/blocks/BadgeGroupBlock";
 import { GithubStatsBlock } from "@/components/blocks/GithubStatsBlock";
 import { CollapsibleBlock } from "@/components/blocks/CollapsibleBlock";
 import { AiContentBlock } from "@/components/blocks/AiContentBlock";
+import { ContributorsBlock } from "@/components/blocks/ContributorsBlock";
+import { TechStackBlock } from "@/components/blocks/TechStackBlock";
+import { HeroBlock } from "@/components/blocks/HeroBlock";
+import { RoadmapBlock } from "@/components/blocks/RoadmapBlock";
+import { useEditorStore } from "@next-md-editor/editor-core";
+import type { RichText } from "@next-md-editor/types";
 
 export function initRegistry() {
   BlockRegistry.register({
@@ -84,6 +90,54 @@ export function initRegistry() {
         { id: "1", url: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=600&auto=format&fit=crop", alt: "Fluid abstract shapes" },
         { id: "2", url: "https://images.unsplash.com/photo-1634017839464-5c339ebe3cb4?q=80&w=600&auto=format&fit=crop", alt: "Glossy 3D composition" }
       ]
+    },
+  });
+
+  BlockRegistry.register({
+    type: "contributors",
+    component: ContributorsBlock,
+    defaultProps: {
+      usernames: ["torvalds", "gaearon", "yyx990803"],
+      avatarSize: 48,
+    },
+  });
+
+  BlockRegistry.register({
+    type: "tech-stack",
+    component: TechStackBlock,
+    defaultProps: {
+      techs: [
+        { id: "react", name: "React", color: "20232A", logo: "react" },
+        { id: "typescript", name: "TypeScript", color: "3178C6", logo: "typescript" },
+        { id: "tailwindcss", name: "Tailwind CSS", color: "06B6D4", logo: "tailwindcss" }
+      ],
+      alignment: "left",
+    },
+  });
+
+  BlockRegistry.register({
+    type: "hero",
+    component: HeroBlock,
+    defaultProps: {
+      logoUrl: "",
+      title: "Project Title",
+      description: "An awesome open-source project.",
+      primaryBtnText: "Get Started",
+      primaryBtnUrl: "#",
+      secondaryBtnText: "Documentation",
+      secondaryBtnUrl: "#",
+    },
+  });
+
+  BlockRegistry.register({
+    type: "roadmap",
+    component: RoadmapBlock,
+    defaultProps: {
+      items: [
+        { id: "1", text: "Planning & Design", completed: true },
+        { id: "2", text: "Core functionality", completed: false },
+        { id: "3", text: "Launch!", completed: false },
+      ],
     },
   });
 

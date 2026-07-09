@@ -33,6 +33,10 @@ export type BlockType =
   | "badge-group"
   | "github-stats"
   | "collapsible"
+  | "contributors"
+  | "tech-stack"
+  | "hero"
+  | "roadmap"
   | string;
 
 export interface Block {

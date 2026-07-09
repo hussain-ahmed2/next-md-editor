@@ -8,7 +8,7 @@ import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin';
 import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import { $generateHtmlFromNodes, $generateNodesFromDOM } from '@lexical/html';
-import { $getRoot, $insertNodes, EditorState, LexicalEditor, $createParagraphNode } from 'lexical';
+import { $getRoot, $insertNodes, EditorState, LexicalEditor, $createParagraphNode, $setSelection } from 'lexical';
 import { LexicalErrorBoundary } from '@lexical/react/LexicalErrorBoundary';
 
 import { HeadingNode, QuoteNode } from '@lexical/rich-text';
@@ -106,11 +106,30 @@ function HtmlSyncPlugin({ initialHtml }: { initialHtml: string }) {
           const root = $getRoot();
           root.clear();
           
-          const p = $createParagraphNode();
-          root.append(p);
-          p.select();
-          
-          $insertNodes(nodes);
+          if (nodes.length > 0) {
+            const p = $createParagraphNode();
+            root.append(p);
+            p.select();
+            $insertNodes(nodes);
+
+            // Cleanup any lingering empty paragraphs that $insertNodes might have left
+            const children = root.getChildren();
+            if (children.length > 1) {
+              const first = children[0];
+              if (first.getType() === 'paragraph' && first.getTextContent() === '') {
+                first.remove();
+              }
+              const last = root.getLastChild();
+              if (last && last !== first && last.getType() === 'paragraph' && last.getTextContent() === '') {
+                last.remove();
+              }
+            }
+            
+            // Clear selection so the browser doesn't automatically scroll down to this block
+            $setSelection(null);
+          } else {
+            root.append($createParagraphNode());
+          }
         });
       }
     } else {
@@ -124,9 +143,22 @@ function HtmlSyncPlugin({ initialHtml }: { initialHtml: string }) {
             const nodes = $generateNodesFromDOM(editor, dom);
             const root = $getRoot();
             root.clear();
-            const p = $createParagraphNode();
-            root.append(p);
-            $insertNodes(nodes);
+            if (nodes.length > 0) {
+              const p = $createParagraphNode();
+              root.append(p);
+              p.select();
+              $insertNodes(nodes);
+              const children = root.getChildren();
+              if (children.length > 1) {
+                const first = children[0];
+                if (first.getType() === 'paragraph' && first.getTextContent() === '') first.remove();
+                const last = root.getLastChild();
+                if (last && last !== first && last.getType() === 'paragraph' && last.getTextContent() === '') last.remove();
+              }
+              $setSelection(null);
+            } else {
+              root.append($createParagraphNode());
+            }
           }
         });
       }
@@ -196,7 +228,7 @@ export function LexicalRichText({
                   lineHeight: 'inherit',
                   color: 'inherit',
                   outline: 'none',
-                  minHeight: '1.75em',
+                  minHeight: 'inherit',
                 }}
               />
             }
