@@ -172,7 +172,7 @@ function remarkCustomBlocks() {
           const nextHtml = index + 1 < (uParent.children?.length ?? 0) ? uParent.children?.[index + 1] : null;
           if (nextHtml?.type === "html") {
             const htmlVal = ((nextHtml as UnistNode).value ?? "").trim();
-            const alignMatch = htmlVal.match(/text-align:\s*(center|right)/i);
+            const alignMatch = htmlVal.match(/align="?(center|right)"?/i) || htmlVal.match(/text-align:\s*(center|right)/i);
             if (alignMatch) {
               alignment = alignMatch[1].toLowerCase();
               const imgRegex = /<img\s+[^>]*src="([^"]+)"[^>]*alt="([^"]*)"/gi;
@@ -788,7 +788,7 @@ function serializeBlock(
             const logo = badge.logo ? `&logo=${encodeURIComponent(badge.logo)}&logoColor=white` : "";
             return `<img src="https://img.shields.io/badge/${encodeURIComponent(badge.text.replace(/-/g, "--"))}-${color}?style=for-the-badge${logo}" alt="${badge.text}" />`;
           }).join("\n");
-          parts.push(`<div style="text-align:${alignment}">\n${htmlImgs}\n</div>`);
+          parts.push(`<div align="${alignment}">\n${htmlImgs}\n</div>`);
         }
 
         text = parts.join("\n\n");
