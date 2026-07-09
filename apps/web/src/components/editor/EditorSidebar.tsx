@@ -20,6 +20,11 @@ import {
 	GitFork,
 	ChevronDown,
 	Sparkles,
+	Users,
+	LayoutTemplate,
+	Tags,
+	PanelTop,
+	ListTodo,
 } from "lucide-react";
 
 interface SidebarBlock {
@@ -99,8 +104,32 @@ const BLOCK_PALETTE: SidebarBlock[] = [
 	{
 		type: "badge-group",
 		label: "Badge Group",
-		icon: <Award size={18} />,
-		description: "Badge group with shields.io style",
+		icon: <Tags size={18} />,
+		description: "Group of technology or status badges",
+	},
+	{
+		type: "tech-stack",
+		label: "Smart Tech Stack",
+		icon: <LayoutTemplate size={18} />,
+		description: "Quickly build a tech stack with auto-badges",
+	},
+	{
+		type: "hero",
+		label: "Hero Header",
+		icon: <PanelTop size={18} />,
+		description: "Big title, description, and action buttons",
+	},
+	{
+		type: "roadmap",
+		label: "Project Roadmap",
+		icon: <ListTodo size={18} />,
+		description: "Track progress with interactive task lists",
+	},
+	{
+		type: "contributors",
+		label: "Contributors",
+		icon: <Users size={18} />,
+		description: "Showcase open-source contributors",
 	},
 	{
 		type: "github-stats",
