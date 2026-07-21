@@ -162,6 +162,11 @@ Builds all packages and creates an optimized production bundle.
 
 ---
 
+## Credits
+
+The GitHub stats card designs, themes, and rank algorithm are adapted from
+[anuraghazra/github-readme-stats](https://github.com/anuraghazra/github-readme-stats) (MIT license).
+
 ## License
 
 MIT

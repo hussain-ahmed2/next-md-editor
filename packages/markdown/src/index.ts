@@ -51,6 +51,7 @@ interface UnistNode {
   techs?: Array<{ id: string; name: string; color: string; logo: string }>;
   username?: string;
   variant?: string;
+  cardConfig?: Record<string, unknown>;
   theme?: string;
   summary?: string;
   content?: string;
@@ -150,6 +151,36 @@ function remarkCustomBlocks() {
             };
             uParent.children?.splice(index, consumed + 1, gridNode);
             return index + 1;
+          }
+        }
+
+        // New form carries the full card config as JSON; legacy form is a bare username
+        const statsJsonMatch = val.match(/^<!--\s*github-stats:\s*(\{[\s\S]*\})\s*-->$/);
+        if (statsJsonMatch) {
+          try {
+            const config = JSON.parse(statsJsonMatch[1]) as Record<string, unknown>;
+            const statsNode: UnistNode = {
+              type: "customGithubStats",
+              username: (config.username as string) ?? "",
+              cardConfig: config,
+            };
+            // Swallow the following paragraph when it is the rendered card image
+            let consumed = 1;
+            const next = uParent.children?.[index + 1] as UnistNode | undefined;
+            if (next?.type === "paragraph") {
+              const first = (next.children as UnistNode[] | undefined)?.[0];
+              if (
+                first?.type === "image" &&
+                typeof first.url === "string" &&
+                /\/api(\/cards\/(stats|top-langs|pin)|\/top-langs|\/pin)?\?/.test(first.url as string)
+              ) {
+                consumed = 2;
+              }
+            }
+            uParent.children?.splice(index, consumed, statsNode);
+            return index + 1;
+          } catch {
+            // Malformed JSON — fall through to the legacy matcher
           }
         }
 
@@ -577,7 +608,15 @@ function nodeToBlock(node: UnistNode, markdown: string): Block | null {
         },
       };
 
-    case "customGithubStats":
+    case "customGithubStats": {
+      const cardConfig = node.cardConfig as Record<string, unknown> | undefined;
+      if (cardConfig) {
+        return {
+          id: uuidv4(),
+          type: "github-stats",
+          props: cardConfig,
+        };
+      }
       return {
         id: uuidv4(),
         type: "github-stats",
@@ -587,6 +626,7 @@ function nodeToBlock(node: UnistNode, markdown: string): Block | null {
           theme: (node.theme as string) ?? "auto",
         },
       };
+    }
 
     case "customCollapsible":
       return {
@@ -1045,6 +1085,35 @@ function serializeBlock(
       }
       case "github-stats": {
         const username = (block.props.username as string) ?? "";
+        const card = (block.props.card as string) ?? "";
+        if (username && card) {
+          // New card model: marker comment (for round-trip) + rendered image
+          const base = process.env.NEXT_PUBLIC_FRONTEND_URL ?? "";
+          const params = new URLSearchParams();
+          params.set("username", username);
+          const repo = (block.props.repo as string) ?? "";
+          const theme = (block.props.theme as string) ?? "default";
+          const layout = (block.props.layout as string) ?? "normal";
+          if (card === "pin" && repo) params.set("repo", repo);
+          if (theme !== "default") params.set("theme", theme);
+          if (block.props.showIcons && card === "stats") params.set("show_icons", "true");
+          if (block.props.hideBorder) params.set("hide_border", "true");
+          if (block.props.hideRank && card === "stats") params.set("hide_rank", "true");
+          if (layout !== "normal" && card === "top-langs") params.set("layout", layout);
+
+          const instance =
+            block.props.useOwnInstance && typeof block.props.instanceUrl === "string"
+              ? (block.props.instanceUrl as string).replace(/\/+$/, "")
+              : "";
+          const url = instance
+            ? `${instance}${card === "stats" ? "/api" : card === "top-langs" ? "/api/top-langs" : "/api/pin"}?${params.toString()}`
+            : `${base}/api/cards/${card === "stats" ? "stats" : card === "top-langs" ? "top-langs" : "pin"}?${params.toString()}`;
+
+          const marker = `<!-- github-stats: ${JSON.stringify(block.props)} -->`;
+          text = `${marker}\n\n![GitHub Stats](${url})`;
+          break;
+        }
+        // Legacy variant-based block
         const variant = (block.props.variant as string) ?? "default";
         const theme = (block.props.theme as string) ?? "auto";
         if (username) {

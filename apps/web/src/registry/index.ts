@@ -144,7 +144,7 @@ export function initRegistry() {
   BlockRegistry.register({
     type: "github-stats",
     component: GithubStatsBlock,
-    defaultProps: { username: "", variant: "default", theme: "auto" },
+    defaultProps: { username: "", card: "stats", theme: "default" },
   });
 
   BlockRegistry.register({

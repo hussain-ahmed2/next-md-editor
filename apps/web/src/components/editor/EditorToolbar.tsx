@@ -11,6 +11,7 @@ import { ExportMenu } from "./toolbar/ExportMenu";
 import { Divider, ToolbarButton } from "./toolbar/ToolbarButton";
 import { ThemeToggle } from "./toolbar/ThemeToggle";
 import { TableOfContents } from "./TableOfContents";
+import { UserMenu } from "@/components/auth/UserMenu";
 
 export function EditorToolbar() {
   const [tocOpen, setTocOpen] = useState(false);
@@ -125,6 +126,7 @@ export function EditorToolbar() {
           <span className="btn-label">AI Chat</span>
         </ToolbarButton>
         <ThemeToggle />
+        <UserMenu />
         <ExportMenu />
       </div>
     </header>
