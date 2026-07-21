@@ -1,244 +1,285 @@
-"use client";
+import Link from "next/link";
+import type { Metadata } from "next";
+import {
+  ArrowRight,
+  Blocks,
+  FileDown,
+  FolderTree,
+  HardDrive,
+  LayoutTemplate,
+  MousePointerClick,
+  Sparkles,
+  Zap,
+} from "lucide-react";
 
-import { EditorToolbar } from "@/components/editor/EditorToolbar";
-import { EditorSidebar } from "@/components/editor/EditorSidebar";
-import { EditorCanvas } from "@/components/editor/EditorCanvas";
-import { SourceEditor } from "@/components/editor/SourceEditor";
-import { MarkdownPreview } from "@/components/editor/MarkdownPreview";
-import { useCallback, useEffect, useState } from "react";
-import { flushSync } from "react-dom";
-import { DragDropProvider, DragOverlay, DragStartEvent } from "@dnd-kit/react";
-import { useUIStore } from "@/store/uiStore";
-import { BlockRegistry } from "@next-md-editor/editor-core";
-
-// Custom hooks
-import { useEditorPersistence } from "@/hooks/useEditorPersistence";
-import { useDragAndDrop } from "@/hooks/useDragAndDrop";
-import { useSynchronizedScroll } from "@/hooks/useSynchronizedScroll";
-
-// Extracted components
-import { ResizeBar } from "@/components/editor/ResizeBar";
-import { MobileBottomBar } from "@/components/editor/MobileBottomBar";
-import { DragOverlayContent } from "@/components/editor/DragOverlayContent";
-import { SearchReplaceOverlay } from "@/components/editor/SearchReplaceOverlay";
-import { AiChatPanel } from "@/components/editor/AiChatPanel";
-
-// Disable dropAnimation entirely — the default "snap back" animation causes
-// a brief flicker of the drag overlay at the original block position after
-// a canvas reorder. null = instant removal with no animation.
-function ActiveDragOverlay() {
-    return (
-        <DragOverlay dropAnimation={null}>
-            <DragOverlayContent />
-        </DragOverlay>
-    );
+function GithubIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+      <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z" />
+    </svg>
+  );
 }
 
-export default function EditorPage() {
-    const [mounted, setMounted] = useState(false);
+export const metadata: Metadata = {
+  title: "next-md-editor — The IDE for your README",
+  description:
+    "A block-based visual markdown workspace with an IDE-style file tree, GitHub-accurate preview, GitHub stats cards, and one-click export. Free, local-first, open source.",
+  alternates: { canonical: "/" },
+};
 
-    const isMobile = useUIStore((s) => s.isMobile);
-    const setIsMobile = useUIStore((s) => s.setIsMobile);
-    const mobileTab = useUIStore((s) => s.mobileTab);
-    const previewOpen = useUIStore((s) => s.previewOpen);
-    const previewRatio = useUIStore((s) => s.previewRatio);
-    const editorMode = useUIStore((s) => s.editorMode);
-    const isResizingSidebar = useUIStore((s) => s.isResizingSidebar);
-    const isResizingPreview = useUIStore((s) => s.isResizingPreview);
+const FEATURES = [
+  {
+    icon: Blocks,
+    title: "Notion-style block editor",
+    text: "Compose documents from rich blocks — headings, tables, callouts, code, images, badges, tech stacks — with slash commands and a floating format toolbar.",
+  },
+  {
+    icon: FolderTree,
+    title: "IDE project tree",
+    text: "Organize markdown files in folders like a JetBrains IDE. Create, rename, drag to reorganize, and switch between files with editor tabs.",
+  },
+  {
+    icon: HardDrive,
+    title: "Local-first & private",
+    text: "Everything is saved instantly to your browser's local storage. No account required, no server round-trips, your documents never leave your machine.",
+  },
+  {
+    icon: GithubIcon,
+    title: "GitHub stats cards",
+    text: "Embed beautiful GitHub stats, top-languages, and repo cards with dozens of themes — rendered by our built-in API or your own Vercel instance.",
+  },
+  {
+    icon: FileDown,
+    title: "Import & export anything",
+    text: "Import .md files or whole ZIP projects. Export a single file, a standalone HTML page, a print-perfect PDF, or your entire workspace as a ZIP.",
+  },
+  {
+    icon: MousePointerClick,
+    title: "First-class drag & drop",
+    text: "Drag blocks from the palette, reorder the canvas, move files between folders, or drop markdown files straight from your desktop.",
+  },
+  {
+    icon: LayoutTemplate,
+    title: "GitHub-accurate preview",
+    text: "The live preview uses GitHub's own markdown styling, so what you see is exactly what your README will look like — including mermaid diagrams.",
+  },
+  {
+    icon: Sparkles,
+    title: "AI-assisted writing",
+    text: "Generate sections, improve wording, or scaffold a whole README from a prompt with the built-in AI assistant.",
+  },
+  {
+    icon: Zap,
+    title: "Fast and production-ready",
+    text: "React 19 with the React Compiler, fine-grained state updates, and a source mode with CodeMirror when you want raw markdown.",
+  },
+];
 
-    // Initialize and run persistence side effects
-    useEditorPersistence();
+const BLOCK_TYPES = [
+  "Heading",
+  "Paragraph",
+  "Quote",
+  "Code",
+  "Table",
+  "Callout",
+  "Image grid",
+  "Badges",
+  "Tech stack",
+  "Hero",
+  "Roadmap",
+  "Contributors",
+  "GitHub stats",
+  "Collapsible",
+  "Mermaid",
+  "AI content",
+];
 
-    const setMobileTab = useUIStore((s) => s.setMobileTab);
+function IdeMockup() {
+  return (
+    <div className="landing-mockup" aria-hidden="true">
+      <div className="landing-mockup-titlebar">
+        <span className="landing-mockup-dot" />
+        <span className="landing-mockup-dot" />
+        <span className="landing-mockup-dot" />
+      </div>
+      <div className="landing-mockup-body">
+        <div className="landing-mockup-tree">
+          <div className="landing-mockup-tree-row">▾ my-project</div>
+          <div className="landing-mockup-tree-row active">
+            <span className="indent" />
+            README.md
+          </div>
+          <div className="landing-mockup-tree-row">
+            <span className="indent" />
+            CONTRIBUTING.md
+          </div>
+          <div className="landing-mockup-tree-row">
+            <span className="indent" />▾ docs
+          </div>
+          <div className="landing-mockup-tree-row">
+            <span className="indent" />
+            <span className="indent" />
+            getting-started.md
+          </div>
+          <div className="landing-mockup-tree-row">
+            <span className="indent" />
+            <span className="indent" />
+            api-reference.md
+          </div>
+          <div className="landing-mockup-tree-row">
+            <span className="indent" />
+            CHANGELOG.md
+          </div>
+        </div>
+        <div className="landing-mockup-editor">
+          <div className="landing-mockup-tabs">
+            <div className="landing-mockup-tab active">README.md</div>
+            <div className="landing-mockup-tab">getting-started.md</div>
+          </div>
+          <div className="landing-mockup-content">
+            <div className="landing-mockup-h1" />
+            <div className="landing-mockup-badges">
+              <span className="landing-mockup-badge" />
+              <span className="landing-mockup-badge" />
+              <span className="landing-mockup-badge" />
+            </div>
+            <div className="landing-mockup-line" style={{ width: "92%" }} />
+            <div className="landing-mockup-line" style={{ width: "78%" }} />
+            <div className="landing-mockup-line" style={{ width: "85%" }} />
+            <div className="landing-mockup-code">
+              <div className="landing-mockup-line" style={{ width: "55%", opacity: 0.6 }} />
+              <div className="landing-mockup-line" style={{ width: "70%", opacity: 0.6 }} />
+              <div
+                className="landing-mockup-line"
+                style={{ width: "40%", opacity: 0.6, marginBottom: 0 }}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
-    // Only two things needed from the hook now
-    const { sensors, handleDragEnd, setPendingMobileDragBlock } = useDragAndDrop();
+export default function LandingPage() {
+  return (
+    <div className="landing-root">
+      <nav className="landing-nav">
+        <Link href="/" className="landing-nav-brand">
+          <span className="landing-logo">M</span>
+          next-md-editor
+        </Link>
+        <div className="landing-nav-links">
+          <a href="#features" className="landing-nav-link">
+            Features
+          </a>
+          <a
+            href="https://github.com/hussain-ahmed2/next-md-editor"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="landing-nav-link"
+          >
+            GitHub
+          </a>
+          <Link href="/editor" className="landing-btn landing-btn-primary landing-btn-sm">
+            Open Editor
+          </Link>
+        </div>
+      </nav>
 
-    const handleDragStart = useCallback(
-        (event: DragStartEvent) => {
-            if (!isMobile) return;
-            const source = event.operation.source;
-            if (!source?.data?.isSidebarItem) return;
-
-            const dragBlock = source.data.block
-                ? source.data.block
-                : {
-                      type: source.data.type as string,
-                      props: { ...(BlockRegistry.get(source.data.type as string)?.defaultProps ?? {}) },
-                  };
-
-            setPendingMobileDragBlock(dragBlock);
-
-            flushSync(() => {
-                setMobileTab("editor");
-                useUIStore.getState().setAiChatOpen(false);
-            });
-        },
-        [isMobile, setMobileTab, setPendingMobileDragBlock],
-    );
-
-    const { refA: canvasScrollRef, refB: previewScrollRef } = useSynchronizedScroll();
-
-    useEffect(() => {
-        setTimeout(() => {
-            setMounted(true);
-        }, 0);
-    }, []);
-
-    useEffect(() => {
-        const checkMobile = () => {
-            setTimeout(() => {
-                setIsMobile(window.innerWidth < 768);
-            }, 0);
-        };
-        checkMobile();
-        window.addEventListener("resize", checkMobile);
-        return () => window.removeEventListener("resize", checkMobile);
-    }, [setIsMobile]);
-
-    if (!mounted) {
-        return (
-            <div
-                style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    height: "100vh",
-                    overflow: "hidden",
-                    background: "var(--bg-base)",
-                }}
+      <main>
+        <section className="landing-hero">
+          <div className="landing-hero-glow" />
+          <span className="landing-badge">Free · Open source · No sign-up required</span>
+          <h1>
+            The <em>IDE</em> for your README
+          </h1>
+          <p className="landing-hero-sub">
+            A block-based visual markdown workspace with a real project tree, GitHub-accurate live
+            preview, stats cards, and one-click export. Your files stay in your browser — private by
+            default.
+          </p>
+          <div className="landing-hero-ctas">
+            <Link href="/editor" className="landing-btn landing-btn-primary">
+              Start writing <ArrowRight size={16} />
+            </Link>
+            <a
+              href="https://github.com/hussain-ahmed2/next-md-editor"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="landing-btn landing-btn-secondary"
             >
-                <div
-                    style={{
-                        height: 48,
-                        background: "var(--bg-elevated)",
-                        borderBottom: "1px solid var(--border)",
-                    }}
-                />
-                <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
-                    <div
-                        style={{
-                            width: 220,
-                            background: "var(--bg-elevated)",
-                            borderRight: "1px solid var(--border)",
-                        }}
-                    />
-                    <div style={{ flex: 1, background: "var(--bg-base)" }} />
+              <GithubIcon size={16} /> Star on GitHub
+            </a>
+          </div>
+          <IdeMockup />
+        </section>
+
+        <section id="features" className="landing-section">
+          <h2 className="landing-section-title">Everything a great README needs</h2>
+          <p className="landing-section-sub">
+            From your first heading to a fully deployed stats card — write, organize, and ship
+            markdown without leaving the browser.
+          </p>
+          <div className="landing-features">
+            {FEATURES.map((f) => (
+              <div key={f.title} className="landing-feature">
+                <div className="landing-feature-icon">
+                  <f.icon size={18} />
                 </div>
-            </div>
-        );
-    }
+                <h3>{f.title}</h3>
+                <p>{f.text}</p>
+              </div>
+            ))}
+          </div>
+        </section>
 
-    return (
-        <DragDropProvider sensors={sensors} onDragEnd={handleDragEnd} onDragStart={handleDragStart}>
-            <div
-                style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    height: "100vh",
-                    overflow: "hidden",
-                    background: "var(--bg-base)",
-                    userSelect: isResizingSidebar || isResizingPreview ? "none" : "auto",
-                }}
-            >
-                <EditorToolbar />
-                <SearchReplaceOverlay />
-                <AiChatPanel />
+        <section className="landing-section">
+          <h2 className="landing-section-title">18+ ready-made blocks</h2>
+          <p className="landing-section-sub">
+            Drag them in, tweak the props, and the editor writes clean GitHub-Flavored Markdown for
+            you.
+          </p>
+          <div className="landing-blocks">
+            {BLOCK_TYPES.map((b) => (
+              <span key={b} className="landing-block-chip">
+                {b}
+              </span>
+            ))}
+          </div>
+        </section>
 
-                {editorMode === "source" ? (
-                    <div
-                        style={{
-                            display: "flex",
-                            flex: 1,
-                            overflow: "hidden",
-                            position: "relative",
-                        }}
-                    >
-                        <div
-                            style={{
-                                flex: `${Math.round((1 - previewRatio) * 100)} 1 0`,
-                                display: "flex",
-                                overflow: "hidden",
-                                minWidth: 0,
-                            }}
-                        >
-                            <SourceEditor />
-                        </div>
-                        {!isMobile && previewOpen && (
-                            <>
-                                <ResizeBar pane="preview" />
-                                <div
-                                    style={{
-                                        flex: `${Math.round(previewRatio * 100)} 1 0`,
-                                        display: "flex",
-                                        overflow: "hidden",
-                                        minWidth: 0,
-                                    }}
-                                >
-                                    <MarkdownPreview />
-                                </div>
-                            </>
-                        )}
-                    </div>
-                ) : (
-                    <div
-                        style={{
-                            display: "flex",
-                            flex: 1,
-                            overflow: "hidden",
-                            position: "relative",
-                        }}
-                    >
-                        {isMobile ? (
-                            <>
-                                <div
-                                    style={{
-                                        display: mobileTab === "blocks" ? "flex" : "none",
-                                        flex: 1,
-                                        overflow: "hidden",
-                                    }}
-                                >
-                                    <EditorSidebar />
-                                </div>
-                                <div
-                                    style={{
-                                        display: mobileTab === "editor" ? "flex" : "none",
-                                        flex: 1,
-                                        overflow: "hidden",
-                                    }}
-                                >
-                                    <EditorCanvas scrollRef={canvasScrollRef} />
-                                </div>
-                                <div
-                                    style={{
-                                        display: mobileTab === "preview" ? "flex" : "none",
-                                        flex: 1,
-                                        overflow: "hidden",
-                                    }}
-                                >
-                                    <MarkdownPreview scrollRef={previewScrollRef} />
-                                </div>
-                            </>
-                        ) : (
-                            <>
-                                <EditorSidebar />
-                                <ResizeBar pane="sidebar" />
-                                <EditorCanvas scrollRef={canvasScrollRef} />
-                                {previewOpen && (
-                                    <>
-                                        <ResizeBar pane="preview" />
-                                        <MarkdownPreview scrollRef={previewScrollRef} />
-                                    </>
-                                )}
-                            </>
-                        )}
-                    </div>
-                )}
+        <section className="landing-section">
+          <div className="landing-cta">
+            <h2>Your next README starts here</h2>
+            <p>No installs, no accounts — the editor opens instantly in your browser.</p>
+            <Link href="/editor" className="landing-btn landing-btn-primary">
+              Open the editor <ArrowRight size={16} />
+            </Link>
+          </div>
+        </section>
+      </main>
 
-                {/* ActiveDragOverlay must be inside DragDropProvider to use useDragOperation() */}
-                <ActiveDragOverlay />
-
-                {isMobile && <MobileBottomBar />}
-            </div>
-        </DragDropProvider>
-    );
+      <footer className="landing-footer">
+        <span>
+          © {new Date().getFullYear()} next-md-editor · MIT License · GitHub stats card design
+          adapted from{" "}
+          <a
+            href="https://github.com/anuraghazra/github-readme-stats"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            github-readme-stats
+          </a>
+        </span>
+        <a
+          href="https://github.com/hussain-ahmed2/next-md-editor"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Contribute on GitHub
+        </a>
+      </footer>
+    </div>
+  );
 }
