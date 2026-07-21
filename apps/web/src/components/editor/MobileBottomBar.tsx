@@ -1,6 +1,6 @@
 "use client";
 
-import { LayoutGrid, Edit3, Eye } from "lucide-react";
+import { LayoutGrid, Edit3, Eye, FolderTree } from "lucide-react";
 import { useUIStore } from "@/store/uiStore";
 
 export function MobileBottomBar() {
@@ -22,6 +22,35 @@ export function MobileBottomBar() {
         flexShrink: 0,
       }}
     >
+      {/* Files Tab */}
+      <button
+        onClick={() => onTabChange("files")}
+        style={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 2,
+          border: "none",
+          background: "transparent",
+          color: activeTab === "files" ? "var(--accent)" : "var(--text-secondary)",
+          cursor: "pointer",
+          transition: "all 0.2s ease",
+          padding: "2px 0",
+          height: "100%",
+        }}
+      >
+        <FolderTree
+          size={14}
+          style={{
+            transform: activeTab === "files" ? "scale(1.08)" : "scale(1)",
+            transition: "transform 0.2s ease",
+          }}
+        />
+        <span style={{ fontSize: 9.5, fontWeight: 600, letterSpacing: "0.01em" }}>Files</span>
+      </button>
+
       {/* Blocks Tab */}
       <button
         onClick={() => onTabChange("blocks")}

@@ -5,16 +5,26 @@ import { EditorSidebar } from "@/components/editor/EditorSidebar";
 import { EditorCanvas } from "@/components/editor/EditorCanvas";
 import { SourceEditor } from "@/components/editor/SourceEditor";
 import { MarkdownPreview } from "@/components/editor/MarkdownPreview";
+import { PlainFileEditor } from "@/components/editor/PlainFileEditor";
 import { useCallback, useEffect, useState } from "react";
 import { flushSync } from "react-dom";
 import { DragDropProvider, DragOverlay, DragStartEvent } from "@dnd-kit/react";
 import { useUIStore } from "@/store/uiStore";
 import { BlockRegistry } from "@next-md-editor/editor-core";
+import { FileText } from "lucide-react";
 
 // Custom hooks
-import { useEditorPersistence } from "@/hooks/useEditorPersistence";
+import { useActiveFilePersistence } from "@/hooks/useActiveFilePersistence";
 import { useDragAndDrop } from "@/hooks/useDragAndDrop";
 import { useSynchronizedScroll } from "@/hooks/useSynchronizedScroll";
+
+// Workspace chrome
+import { ToolWindowStrip } from "@/components/workspace/ToolWindowStrip";
+import { FileTree } from "@/components/workspace/FileTree";
+import { EditorTabs } from "@/components/workspace/EditorTabs";
+import { StatusBar } from "@/components/workspace/StatusBar";
+import { useWorkspaceStore } from "@/store/workspaceStore";
+import { getFileFormat } from "@/lib/workspace-storage";
 
 // Extracted components
 import { ResizeBar } from "@/components/editor/ResizeBar";
@@ -34,6 +44,18 @@ function ActiveDragOverlay() {
     );
 }
 
+function EmptyEditorState() {
+    return (
+        <div className="ws-empty-editor">
+            <FileText size={40} strokeWidth={1.2} />
+            <span>No file open</span>
+            <span style={{ fontSize: 12 }}>
+                Select or create a file in the Project tool window to start writing.
+            </span>
+        </div>
+    );
+}
+
 export default function EditorPage() {
     const [mounted, setMounted] = useState(false);
 
@@ -45,13 +67,18 @@ export default function EditorPage() {
     const editorMode = useUIStore((s) => s.editorMode);
     const isResizingSidebar = useUIStore((s) => s.isResizingSidebar);
     const isResizingPreview = useUIStore((s) => s.isResizingPreview);
+    const sidebarWidth = useUIStore((s) => s.sidebarWidth);
+    const activeToolWindow = useUIStore((s) => s.activeToolWindow);
 
-    // Initialize and run persistence side effects
-    useEditorPersistence();
+    const activeFileName = useWorkspaceStore((s) =>
+        s.activeFileId ? (s.nodes[s.activeFileId]?.name ?? null) : null,
+    );
+
+    // Initialize and run workspace + persistence side effects
+    useActiveFilePersistence();
 
     const setMobileTab = useUIStore((s) => s.setMobileTab);
 
-    // Only two things needed from the hook now
     const { sensors, handleDragEnd, setPendingMobileDragBlock } = useDragAndDrop();
 
     const handleDragStart = useCallback(
@@ -117,7 +144,7 @@ export default function EditorPage() {
                 <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
                     <div
                         style={{
-                            width: 220,
+                            width: 260,
                             background: "var(--bg-elevated)",
                             borderRight: "1px solid var(--border)",
                         }}
@@ -127,6 +154,17 @@ export default function EditorPage() {
             </div>
         );
     }
+
+    const isTextFile = activeFileName !== null && getFileFormat(activeFileName) === "text";
+    const hasActiveFile = activeFileName !== null;
+
+    // The center editing surface for the active file (canvas/plain/empty)
+    const renderEditingSurface = (scrollRef?: React.Ref<HTMLDivElement>) => {
+        if (!hasActiveFile) return <EmptyEditorState />;
+        if (isTextFile) return <PlainFileEditor fileName={activeFileName} />;
+        if (editorMode === "source") return <SourceEditor />;
+        return <EditorCanvas scrollRef={scrollRef} />;
+    };
 
     return (
         <DragDropProvider sensors={sensors} onDragEnd={handleDragEnd} onDragStart={handleDragStart}>
@@ -144,52 +182,41 @@ export default function EditorPage() {
                 <SearchReplaceOverlay />
                 <AiChatPanel />
 
-                {editorMode === "source" ? (
+                <div style={{ display: "flex", flex: 1, overflow: "hidden", position: "relative" }}>
+                    {!isMobile && <ToolWindowStrip />}
+
+                    {!isMobile && activeToolWindow === "project" && (
+                        <aside className="ws-toolwindow" style={{ width: sidebarWidth, minWidth: 120 }}>
+                            <FileTree />
+                        </aside>
+                    )}
+                    {!isMobile && activeToolWindow === "blocks" && <EditorSidebar />}
+                    {!isMobile && activeToolWindow !== null && <ResizeBar pane="sidebar" />}
+
                     <div
                         style={{
                             display: "flex",
+                            flexDirection: "column",
                             flex: 1,
                             overflow: "hidden",
-                            position: "relative",
+                            minWidth: 0,
                         }}
                     >
-                        <div
-                            style={{
-                                flex: `${Math.round((1 - previewRatio) * 100)} 1 0`,
-                                display: "flex",
-                                overflow: "hidden",
-                                minWidth: 0,
-                            }}
-                        >
-                            <SourceEditor />
-                        </div>
-                        {!isMobile && previewOpen && (
-                            <>
-                                <ResizeBar pane="preview" />
+                        {!isMobile && <EditorTabs />}
+
+                        {isMobile ? (
+                            <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
                                 <div
                                     style={{
-                                        flex: `${Math.round(previewRatio * 100)} 1 0`,
-                                        display: "flex",
+                                        display: mobileTab === "files" ? "flex" : "none",
+                                        flexDirection: "column",
+                                        flex: 1,
                                         overflow: "hidden",
-                                        minWidth: 0,
+                                        background: "var(--toolwindow-bg)",
                                     }}
                                 >
-                                    <MarkdownPreview />
+                                    <FileTree />
                                 </div>
-                            </>
-                        )}
-                    </div>
-                ) : (
-                    <div
-                        style={{
-                            display: "flex",
-                            flex: 1,
-                            overflow: "hidden",
-                            position: "relative",
-                        }}
-                    >
-                        {isMobile ? (
-                            <>
                                 <div
                                     style={{
                                         display: mobileTab === "blocks" ? "flex" : "none",
@@ -202,11 +229,13 @@ export default function EditorPage() {
                                 <div
                                     style={{
                                         display: mobileTab === "editor" ? "flex" : "none",
+                                        flexDirection: "column",
                                         flex: 1,
                                         overflow: "hidden",
                                     }}
                                 >
-                                    <EditorCanvas scrollRef={canvasScrollRef} />
+                                    <EditorTabs />
+                                    {renderEditingSurface(canvasScrollRef)}
                                 </div>
                                 <div
                                     style={{
@@ -217,22 +246,48 @@ export default function EditorPage() {
                                 >
                                     <MarkdownPreview scrollRef={previewScrollRef} />
                                 </div>
-                            </>
+                            </div>
                         ) : (
-                            <>
-                                <EditorSidebar />
-                                <ResizeBar pane="sidebar" />
-                                <EditorCanvas scrollRef={canvasScrollRef} />
-                                {previewOpen && (
+                            <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+                                {editorMode === "source" && !isTextFile && hasActiveFile ? (
+                                    <div
+                                        style={{
+                                            flex: `${Math.round((1 - previewRatio) * 100)} 1 0`,
+                                            display: "flex",
+                                            overflow: "hidden",
+                                            minWidth: 0,
+                                        }}
+                                    >
+                                        <SourceEditor />
+                                    </div>
+                                ) : (
+                                    renderEditingSurface(canvasScrollRef)
+                                )}
+                                {!isTextFile && hasActiveFile && previewOpen && (
                                     <>
                                         <ResizeBar pane="preview" />
-                                        <MarkdownPreview scrollRef={previewScrollRef} />
+                                        {editorMode === "source" ? (
+                                            <div
+                                                style={{
+                                                    flex: `${Math.round(previewRatio * 100)} 1 0`,
+                                                    display: "flex",
+                                                    overflow: "hidden",
+                                                    minWidth: 0,
+                                                }}
+                                            >
+                                                <MarkdownPreview />
+                                            </div>
+                                        ) : (
+                                            <MarkdownPreview scrollRef={previewScrollRef} />
+                                        )}
                                     </>
                                 )}
-                            </>
+                            </div>
                         )}
                     </div>
-                )}
+                </div>
+
+                <StatusBar />
 
                 {/* ActiveDragOverlay must be inside DragDropProvider to use useDragOperation() */}
                 <ActiveDragOverlay />

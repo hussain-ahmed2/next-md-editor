@@ -1,22 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { CheckCheck, Loader2, ListTree, Search, Sparkles } from "lucide-react";
+import Link from "next/link";
+import { ListTree, Search, Sparkles } from "lucide-react";
 import { useUIStore } from "@/store/uiStore";
-import { useEditorStore } from "@next-md-editor/editor-core";
 import { UndoRedoButtons } from "./toolbar/UndoRedoButtons";
 import { ModeToggle } from "./toolbar/ModeToggle";
 import { TemplateMenu } from "./toolbar/TemplateMenu";
 import { FileActions } from "./toolbar/FileActions";
 import { Divider, ToolbarButton } from "./toolbar/ToolbarButton";
 import { ThemeToggle } from "./toolbar/ThemeToggle";
-import { getDocStats } from "@/features/document-stats";
 import { TableOfContents } from "./TableOfContents";
 
 export function EditorToolbar() {
-  const saveStatus = useUIStore((s) => s.saveStatus);
-  const blocks = useEditorStore((s) => s.blocks);
-  const stats = getDocStats(blocks);
   const [tocOpen, setTocOpen] = useState(false);
 
   return (
@@ -25,17 +21,27 @@ export function EditorToolbar() {
       alignItems: "center",
       justifyContent: "space-between",
       padding: "0 20px",
-      height: 52,
+      height: 44,
       background: "var(--bg-surface)",
       borderBottom: "1px solid var(--border-subtle)",
       flexShrink: 0,
     }}>
-      {/* Logo */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      {/* Logo — links back to the landing page */}
+      <Link
+        href="/"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          textDecoration: "none",
+          marginRight: "auto",
+        }}
+        title="Back to home"
+      >
         <div style={{
-          width: 28,
-          height: 28,
-          borderRadius: 8,
+          width: 26,
+          height: 26,
+          borderRadius: "var(--radius-sm)",
           background: "linear-gradient(135deg, var(--accent), var(--accent-hover))",
           display: "flex",
           alignItems: "center",
@@ -45,43 +51,10 @@ export function EditorToolbar() {
           color: "#fff",
           boxShadow: "0 2px 8px var(--accent-glow)",
         }}>M</div>
-        <span className="app-name" style={{ fontWeight: 700, fontSize: 15, color: "var(--text-primary)", letterSpacing: "-0.01em" }}>
+        <span className="app-name" style={{ fontWeight: 700, fontSize: 14, color: "var(--text-primary)", letterSpacing: "-0.01em" }}>
           next-md-editor
         </span>
-      </div>
-
-      {/* Save Status Indicator */}
-      <div style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 6,
-        fontSize: 12,
-        color: "var(--text-secondary)",
-        marginLeft: 16,
-        marginRight: "auto",
-        transition: "opacity 0.2s ease",
-      }}>
-        {saveStatus === "saving" && (
-          <>
-            <Loader2 size={13} style={{ color: "var(--warning)", animation: "spin 1s linear infinite" }} />
-            <span className="save-status-label" style={{ color: "var(--text-secondary)", opacity: 0.8, fontWeight: 500 }}>Saving changes…</span>
-          </>
-        )}
-        {saveStatus === "saved" && (
-          <>
-            <CheckCheck size={13} style={{ color: "var(--success)" }} />
-            <span className="save-status-label" style={{ color: "var(--text-secondary)", opacity: 0.8, fontWeight: 500 }}>Saved to browser</span>
-          </>
-        )}
-        {stats.words > 0 && (
-          <>
-            <span style={{ color: "var(--text-muted)", margin: "0 2px" }}>·</span>
-            <span style={{ color: "var(--text-muted)", fontSize: 11, whiteSpace: "nowrap" }}>
-              {stats.words} words · {stats.readingTime}
-            </span>
-          </>
-        )}
-      </div>
+      </Link>
 
       {/* Actions */}
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>

@@ -2,17 +2,23 @@
 
 import { create } from "zustand";
 
+export type ToolWindow = "project" | "blocks";
+export type MobileTab = "files" | "blocks" | "editor" | "preview";
+
 interface UIState {
   sidebarWidth: number;
   previewRatio: number;
   isResizingSidebar: boolean;
   isResizingPreview: boolean;
-  mobileTab: "blocks" | "editor" | "preview";
+  mobileTab: MobileTab;
   previewOpen: boolean;
   isMobile: boolean;
   saveStatus: "saving" | "saved" | "idle";
   editorMode: "canvas" | "source";
   sourceText: string;
+  /** Content buffer for the active non-markdown (plain text) file. */
+  plainText: string;
+  activeToolWindow: ToolWindow | null;
   isSearchOpen: boolean;
   searchQuery: string;
   isAiChatOpen: boolean;
@@ -21,7 +27,10 @@ interface UIState {
   setPreviewRatio: (ratio: number) => void;
   setIsResizingSidebar: (isResizing: boolean) => void;
   setIsResizingPreview: (isResizing: boolean) => void;
-  setMobileTab: (tab: "blocks" | "editor" | "preview") => void;
+  setMobileTab: (tab: MobileTab) => void;
+  setPlainText: (text: string) => void;
+  setActiveToolWindow: (win: ToolWindow | null) => void;
+  toggleToolWindow: (win: ToolWindow) => void;
   setPreviewOpen: (open: boolean) => void;
   setIsMobile: (isMobile: boolean) => void;
   setSaveStatus: (status: "saving" | "saved" | "idle") => void;
@@ -46,6 +55,8 @@ export const useUIStore = create<UIState>((set, get) => ({
   saveStatus: "idle",
   editorMode: "canvas",
   sourceText: "",
+  plainText: "",
+  activeToolWindow: "project",
   isSearchOpen: false,
   searchQuery: "",
   isAiChatOpen: false,
@@ -55,6 +66,10 @@ export const useUIStore = create<UIState>((set, get) => ({
   setIsResizingSidebar: (isResizing) => set({ isResizingSidebar: isResizing }),
   setIsResizingPreview: (isResizing) => set({ isResizingPreview: isResizing }),
   setMobileTab: (tab) => set({ mobileTab: tab }),
+  setPlainText: (text) => set({ plainText: text }),
+  setActiveToolWindow: (win) => set({ activeToolWindow: win }),
+  toggleToolWindow: (win) =>
+    set((s) => ({ activeToolWindow: s.activeToolWindow === win ? null : win })),
   setPreviewOpen: (open) => set({ previewOpen: open }),
   setIsMobile: (isMobile) => set({ isMobile }),
   setSaveStatus: (status) => set({ saveStatus: status }),

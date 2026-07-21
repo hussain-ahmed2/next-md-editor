@@ -1,0 +1,286 @@
+/* ============================================================
+   IDE workspace chrome — tool windows, file tree, tabs, status bar
+   ============================================================ */
+
+/* ── Tool-window strip (far-left icon rail) ─────────── */
+.ws-strip {
+  width: 40px;
+  flex-shrink: 0;
+  background: var(--bg-surface);
+  border-right: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 0;
+  gap: 4px;
+}
+.ws-strip-btn {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.ws-strip-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+.ws-strip-btn.active { background: var(--accent-muted); color: var(--accent); }
+
+/* ── Tool window (Project / Blocks panel) ───────────── */
+.ws-toolwindow {
+  background: var(--toolwindow-bg);
+  border-right: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.ws-toolwindow-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 32px;
+  padding: 0 8px 0 12px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+.ws-toolwindow-actions { display: flex; gap: 2px; }
+.ws-icon-btn {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.ws-icon-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+
+/* ── File tree ──────────────────────────────────────── */
+.ws-tree {
+  flex: 1;
+  overflow: auto;
+  padding: 4px 0 24px;
+  outline: none;
+  font-size: var(--font-ui-size);
+  user-select: none;
+}
+.ws-tree-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: var(--tree-row-height);
+  padding-right: 8px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+.ws-tree-row:hover { background: var(--bg-hover); }
+.ws-tree-row.active {
+  background: var(--accent-muted);
+  color: var(--text-primary);
+}
+.ws-tree-row.focused { border-color: var(--accent); }
+.ws-tree-row.drop-target {
+  background: var(--accent-muted);
+  border-color: var(--accent);
+}
+.ws-tree-row .ws-tree-chevron {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--text-muted);
+  transition: transform 0.12s ease;
+}
+.ws-tree-row .ws-tree-chevron.expanded { transform: rotate(90deg); }
+.ws-tree-row .ws-tree-icon { flex-shrink: 0; display: flex; color: var(--text-muted); }
+.ws-tree-row.active .ws-tree-icon { color: var(--accent); }
+.ws-tree-row .ws-tree-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.ws-tree-input {
+  flex: 1;
+  min-width: 0;
+  background: var(--bg-base);
+  border: 1px solid var(--accent);
+  border-radius: 2px;
+  color: var(--text-primary);
+  font-size: var(--font-ui-size);
+  font-family: var(--font-sans);
+  padding: 1px 4px;
+  outline: none;
+}
+.ws-tree-empty {
+  padding: 16px 12px;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+/* ── Context menu ───────────────────────────────────── */
+.ws-context-menu {
+  position: fixed;
+  z-index: 1000;
+  min-width: 180px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  padding: 4px;
+  font-size: 13px;
+}
+.ws-context-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 10px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  text-align: left;
+  font-size: 13px;
+  font-family: var(--font-sans);
+}
+.ws-context-item:hover { background: var(--bg-hover); }
+.ws-context-item.danger { color: var(--danger); }
+.ws-context-item.danger:hover { background: var(--danger-muted); }
+.ws-context-sep { height: 1px; margin: 4px 6px; background: var(--border-subtle); }
+.ws-context-shortcut { margin-left: auto; color: var(--text-muted); font-size: 11px; }
+
+/* ── Editor tabs ────────────────────────────────────── */
+.ws-tabs {
+  display: flex;
+  align-items: stretch;
+  height: var(--tab-height);
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-subtle);
+  overflow-x: auto;
+  overflow-y: hidden;
+  flex-shrink: 0;
+  scrollbar-width: thin;
+}
+.ws-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px 0 12px;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  border-right: 1px solid var(--border-subtle);
+  cursor: pointer;
+  white-space: nowrap;
+  position: relative;
+  font-family: var(--font-sans);
+}
+.ws-tab:hover { background: var(--bg-hover); color: var(--text-primary); }
+.ws-tab.active {
+  background: var(--bg-base);
+  color: var(--text-primary);
+}
+.ws-tab.active::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--accent);
+}
+.ws-tab-dirty {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
+}
+.ws-tab-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.1s;
+  flex-shrink: 0;
+  padding: 0;
+}
+.ws-tab:hover .ws-tab-close,
+.ws-tab.active .ws-tab-close { opacity: 1; }
+.ws-tab-close:hover { background: var(--bg-hover); color: var(--text-primary); }
+
+/* ── Status bar ─────────────────────────────────────── */
+.ws-statusbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--statusbar-height);
+  padding: 0 12px;
+  background: var(--bg-surface);
+  border-top: 1px solid var(--border-subtle);
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  gap: 12px;
+  overflow: hidden;
+}
+.ws-statusbar-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  overflow: hidden;
+}
+.ws-statusbar-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+.ws-statusbar-path {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* ── Editor empty state ─────────────────────────────── */
+.ws-empty-editor {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--text-muted);
+  background: var(--bg-base);
+  font-size: 13px;
+}
