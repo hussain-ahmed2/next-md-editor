@@ -7,7 +7,7 @@ import { useUIStore } from "@/store/uiStore";
 import { UndoRedoButtons } from "./toolbar/UndoRedoButtons";
 import { ModeToggle } from "./toolbar/ModeToggle";
 import { TemplateMenu } from "./toolbar/TemplateMenu";
-import { FileActions } from "./toolbar/FileActions";
+import { ExportMenu } from "./toolbar/ExportMenu";
 import { Divider, ToolbarButton } from "./toolbar/ToolbarButton";
 import { ThemeToggle } from "./toolbar/ThemeToggle";
 import { TableOfContents } from "./TableOfContents";
@@ -125,7 +125,7 @@ export function EditorToolbar() {
           <span className="btn-label">AI Chat</span>
         </ToolbarButton>
         <ThemeToggle />
-        <FileActions />
+        <ExportMenu />
       </div>
     </header>
   );

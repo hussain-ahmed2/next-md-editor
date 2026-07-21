@@ -29,6 +29,11 @@ interface WorkspaceState extends WorkspaceMeta {
   createFolder: (parentId: string | null, name: string) => string | null;
   /** Create a file with the given content already in place, then open it. */
   importFile: (parentId: string | null, name: string, content: FileContent) => string | null;
+  /**
+   * Bulk-import a whole project (e.g. from a ZIP) under a new top-level
+   * folder. `files` paths are archive-relative ("docs/intro.md").
+   */
+  importProject: (rootName: string, files: { path: string; content: FileContent }[]) => void;
   renameNode: (id: string, name: string) => boolean;
   deleteNode: (id: string) => void;
   duplicateFile: (id: string) => string | null;
@@ -116,6 +121,52 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     }));
     persist(get());
     return node.id;
+  },
+
+  importProject: (rootName, files) => {
+    if (files.length === 0) return;
+    flushPendingSave();
+    const state = get();
+    const nodes = { ...state.nodes };
+
+    const rootFolder = makeNode(uniqueSiblingName(nodes, null, rootName || "imported"), "folder", null);
+    nodes[rootFolder.id] = rootFolder;
+    const expandedFolderIds = [...state.expandedFolderIds, rootFolder.id];
+
+    // Path segments → folder node id, so shared parents are created once
+    const folderByPath = new Map<string, string>([["", rootFolder.id]]);
+    const ensureFolder = (dirPath: string): string => {
+      const known = folderByPath.get(dirPath);
+      if (known) return known;
+      const segments = dirPath.split("/");
+      const name = segments[segments.length - 1];
+      const parentId = ensureFolder(segments.slice(0, -1).join("/"));
+      const folder = makeNode(uniqueSiblingName(nodes, parentId, name), "folder", parentId);
+      nodes[folder.id] = folder;
+      folderByPath.set(dirPath, folder.id);
+      expandedFolderIds.push(folder.id);
+      return folder.id;
+    };
+
+    let firstFileId: string | null = null;
+    for (const file of files) {
+      const segments = file.path.split("/");
+      const fileName = segments[segments.length - 1];
+      if (!isValidNodeName(fileName)) continue;
+      const parentId = ensureFolder(segments.slice(0, -1).join("/"));
+      const node = makeNode(uniqueSiblingName(nodes, parentId, fileName), "file", parentId);
+      nodes[node.id] = node;
+      saveFileContent(node.id, file.content);
+      firstFileId ??= node.id;
+    }
+
+    set((s) => ({
+      nodes,
+      expandedFolderIds,
+      openTabIds: firstFileId ? [...s.openTabIds, firstFileId] : s.openTabIds,
+      activeFileId: firstFileId ?? s.activeFileId,
+    }));
+    persist(get());
   },
 
   createFolder: (parentId, name) => {
