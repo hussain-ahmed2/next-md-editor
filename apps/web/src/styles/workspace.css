@@ -272,6 +272,15 @@
   color: var(--text-muted);
 }
 
+/* ── Canvas block perf ──────────────────────────────── */
+/* Skip layout/paint for blocks far outside the viewport. Keeps long
+   documents fast without list virtualization (which would fight
+   dnd-kit measuring and unmount Lexical editors). */
+.canvas-block {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 48px;
+}
+
 /* ── Editor empty state ─────────────────────────────── */
 .ws-empty-editor {
   flex: 1;

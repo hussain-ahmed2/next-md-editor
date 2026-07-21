@@ -1,97 +1,94 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { BlockRegistry } from "@next-md-editor/editor-core";
 
-interface SlashCommandMenuProps {
-  isOpen: boolean;
-  position: { top: number; left: number } | null;
-  searchText: string;
-  selectedIndex: number;
-  onSelect: (type: string, defaultProps: Record<string, unknown>) => void;
+export interface SlashMenuItem {
+  type: string;
+  label: string;
+  defaultProps: Record<string, unknown>;
 }
 
+interface SlashCommandMenuProps {
+  position: { top: number; left: number };
+  items: SlashMenuItem[];
+  selectedIndex: number;
+  onSelect: (item: SlashMenuItem) => void;
+}
+
+/** Presentational dropdown for the Lexical SlashCommandPlugin. */
 export function SlashCommandMenu({
-  isOpen,
   position,
-  searchText,
+  items,
   selectedIndex,
   onSelect,
 }: SlashCommandMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll to selected index
+  // Keep the selected row in view while arrowing through
   useEffect(() => {
-    if (isOpen && menuRef.current) {
-      const selectedEl = menuRef.current.children[selectedIndex + 1] as HTMLElement; // +1 to skip the "Basic Blocks" header
-      if (selectedEl) {
-        selectedEl.scrollIntoView({ block: "nearest" });
-      }
-    }
-  }, [selectedIndex, isOpen]);
-
-  if (!isOpen || !position) return null;
-
-  const allBlocks = BlockRegistry.getAll();
-  
-  // Filter options based on searchText
-  const filteredBlocks = allBlocks.filter((def) => 
-    def.type.toLowerCase().includes(searchText.toLowerCase())
-  );
-
-  if (filteredBlocks.length === 0) return null;
+    const menu = menuRef.current;
+    if (!menu) return;
+    const selectedEl = menu.children[selectedIndex + 1] as HTMLElement | undefined; // +1 skips the header
+    selectedEl?.scrollIntoView({ block: "nearest" });
+  }, [selectedIndex]);
 
   return (
     <div
       ref={menuRef}
       style={{
         position: "absolute",
-        top: position.top + 24, // below the text
+        top: position.top + 6,
         left: position.left,
-        zIndex: 50,
+        zIndex: 60,
         background: "var(--bg-elevated)",
         border: "1px solid var(--border)",
         borderRadius: "var(--radius-md)",
         boxShadow: "var(--shadow-lg)",
-        padding: "4px",
+        padding: 4,
         display: "flex",
         flexDirection: "column",
-        minWidth: "180px",
-        maxHeight: "300px",
+        minWidth: 200,
+        maxHeight: 280,
         overflowY: "auto",
       }}
     >
-      <div style={{ padding: "4px 8px", fontSize: 11, color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase" }}>
-        Basic Blocks
+      <div
+        style={{
+          padding: "4px 8px",
+          fontSize: 11,
+          color: "var(--text-muted)",
+          fontWeight: 600,
+          textTransform: "uppercase",
+          letterSpacing: "0.06em",
+        }}
+      >
+        Insert block
       </div>
-      {filteredBlocks.map((def, index) => {
+      {items.map((item, index) => {
         const isSelected = index === selectedIndex;
         return (
           <button
-            key={def.type}
+            key={item.type}
             onMouseDown={(e) => {
               e.preventDefault();
-              onSelect(def.type, def.defaultProps || {});
+              onSelect(item);
             }}
             style={{
               padding: "6px 8px",
               display: "flex",
               alignItems: "center",
-              gap: "8px",
-              background: isSelected ? "var(--bg-hover)" : "transparent",
+              gap: 8,
               border: "none",
               borderRadius: "var(--radius-sm)",
+              background: isSelected ? "var(--accent-muted)" : "transparent",
+              color: isSelected ? "var(--text-primary)" : "var(--text-secondary)",
+              fontSize: 13,
+              fontFamily: "var(--font-sans)",
               cursor: "pointer",
               textAlign: "left",
-              color: "var(--text-primary)",
-              fontSize: "14px",
-              width: "100%",
-            }}
-            onMouseEnter={() => {
-               // Prevent interfering with keyboard navigation heavily, but allow hover highlight
             }}
           >
-            <span style={{ textTransform: "capitalize" }}>{def.type}</span>
+            {item.label}
           </button>
         );
       })}

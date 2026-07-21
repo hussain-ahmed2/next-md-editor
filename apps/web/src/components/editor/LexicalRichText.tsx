@@ -169,6 +169,7 @@ function HtmlSyncPlugin({ initialHtml }: { initialHtml: string }) {
 }
 
 import { TabIndentationPlugin } from '@lexical/react/LexicalTabIndentationPlugin';
+import { SlashCommandPlugin } from './plugins/SlashCommandPlugin';
 
 export function LexicalRichText({
   blockId,
@@ -243,6 +244,7 @@ export function LexicalRichText({
         <ListPlugin />
         <TabIndentationPlugin />
         <EscapeFormatPlugin />
+        <SlashCommandPlugin blockId={blockId} />
         <OnChangePlugin onChange={onChange} ignoreSelectionChange />
         <HtmlSyncPlugin initialHtml={initialHtml} />
       </div>

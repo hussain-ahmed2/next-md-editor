@@ -6,6 +6,7 @@ import { PointerSensor, PointerActivationConstraints } from "@dnd-kit/dom";
 import { isSortable } from "@dnd-kit/react/sortable";
 import type { Block } from "@next-md-editor/types";
 import { CANVAS_ROOT_ID } from "@/components/editor/EditorCanvas";
+import { useWorkspaceStore } from "@/store/workspaceStore";
 
 // Module-level sensor config — PointerSensor handles mouse + touch via Pointer Events API
 const SENSORS = [
@@ -88,6 +89,18 @@ export function useDragAndDrop() {
       }
 
       if (!source || canceled) return;
+
+      // ── Project tree node → folder / root move ───────────────────────────
+      if (source.data?.isTreeNode === true) {
+        if (!target) return;
+        const nodeId = source.data.nodeId as string;
+        if (target.data?.isTreeFolderDrop === true) {
+          useWorkspaceStore.getState().moveNode(nodeId, target.data.folderId as string);
+        } else if (target.data?.isTreeRootDrop === true) {
+          useWorkspaceStore.getState().moveNode(nodeId, null);
+        }
+        return;
+      }
 
       // ── Desktop sidebar → canvas drop ────────────────────────────────────
       if (source.data?.isSidebarItem === true) {

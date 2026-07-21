@@ -1,7 +1,7 @@
 "use client";
 
 import { create } from "zustand";
-import type { FileNode, WorkspaceMeta } from "@next-md-editor/types";
+import type { FileContent, FileNode, WorkspaceMeta } from "@next-md-editor/types";
 import {
   collectDescendantIds,
   deleteFileContent,
@@ -27,6 +27,8 @@ interface WorkspaceState extends WorkspaceMeta {
   init: () => void;
   createFile: (parentId: string | null, name: string) => string | null;
   createFolder: (parentId: string | null, name: string) => string | null;
+  /** Create a file with the given content already in place, then open it. */
+  importFile: (parentId: string | null, name: string, content: FileContent) => string | null;
   renameNode: (id: string, name: string) => boolean;
   deleteNode: (id: string) => void;
   duplicateFile: (id: string) => string | null;
@@ -85,6 +87,27 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     set((s) => ({
       nodes: { ...s.nodes, [node.id]: node },
       openTabIds: s.openTabIds.includes(node.id) ? s.openTabIds : [...s.openTabIds, node.id],
+      activeFileId: node.id,
+      expandedFolderIds:
+        parentId && !s.expandedFolderIds.includes(parentId)
+          ? [...s.expandedFolderIds, parentId]
+          : s.expandedFolderIds,
+    }));
+    persist(get());
+    return node.id;
+  },
+
+  importFile: (parentId, name, content) => {
+    if (!isValidNodeName(name)) return null;
+    const state = get();
+    const finalName = uniqueSiblingName(state.nodes, parentId, name.trim());
+    const node = makeNode(finalName, "file", parentId);
+    // Content must exist in storage before the persistence hook loads the file.
+    saveFileContent(node.id, content);
+    flushPendingSave();
+    set((s) => ({
+      nodes: { ...s.nodes, [node.id]: node },
+      openTabIds: [...s.openTabIds, node.id],
       activeFileId: node.id,
       expandedFolderIds:
         parentId && !s.expandedFolderIds.includes(parentId)

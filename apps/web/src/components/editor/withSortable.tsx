@@ -51,6 +51,7 @@ export function withSortable<P extends { block?: Block }>(
       <div
         ref={ref}
         id={id}
+        className="canvas-block"
         style={{
           opacity: isDragging ? 0.3 : 1,
           position: "relative",

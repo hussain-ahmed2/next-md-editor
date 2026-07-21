@@ -17,9 +17,14 @@ import {
   Trash2,
 } from "lucide-react";
 import type { FileNode } from "@next-md-editor/types";
+import { useDraggable, useDroppable } from "@dnd-kit/react";
+import { CollisionPriority } from "@dnd-kit/abstract";
 import { useWorkspaceStore } from "@/store/workspaceStore";
 import { getExtension, isMarkdownFile, sortedChildren } from "@/lib/workspace-storage";
 import { useUIStore } from "@/store/uiStore";
+
+export const TREE_ROOT_DROP_ID = "tree-root-drop";
+export const TREE_NODE_TYPE = "tree-node";
 
 const CODE_EXTS = new Set(["js", "jsx", "ts", "tsx", "css", "html", "yml", "yaml", "sh", "py", "toml", "xml"]);
 
@@ -90,6 +95,103 @@ function InlineNameInput({
   );
 }
 
+interface FileTreeRowProps {
+  node: FileNode;
+  depth: number;
+  isExpanded: boolean;
+  isActive: boolean;
+  isFocused: boolean;
+  isRenaming: boolean;
+  onRowClick: () => void;
+  onRowDoubleClick: () => void;
+  onRowContextMenu: (e: React.MouseEvent) => void;
+  onRenameCommit: (value: string) => void;
+  onRenameCancel: () => void;
+}
+
+function FileTreeRow({
+  node,
+  depth,
+  isExpanded,
+  isActive,
+  isFocused,
+  isRenaming,
+  onRowClick,
+  onRowDoubleClick,
+  onRowContextMenu,
+  onRenameCommit,
+  onRenameCancel,
+}: FileTreeRowProps) {
+  const isFolder = node.kind === "folder";
+
+  const { ref: dragRef, isDragging } = useDraggable({
+    id: `tree-${node.id}`,
+    type: TREE_NODE_TYPE,
+    data: { isTreeNode: true, nodeId: node.id, nodeName: node.name, nodeKind: node.kind },
+    disabled: isRenaming,
+  });
+
+  // Folders are drop targets for other tree nodes. Higher collision
+  // priority than the tree background so a folder row wins over "root".
+  const { ref: dropRef, isDropTarget } = useDroppable({
+    id: `treedrop-${node.id}`,
+    accept: TREE_NODE_TYPE,
+    disabled: !isFolder,
+    collisionPriority: CollisionPriority.High,
+    data: { isTreeFolderDrop: true, folderId: node.id },
+  });
+
+  const setRefs = (el: HTMLDivElement | null) => {
+    (dragRef as (el: Element | null) => void)(el);
+    if (isFolder) (dropRef as (el: Element | null) => void)(el);
+  };
+
+  return (
+    <div
+      ref={setRefs}
+      className={`ws-tree-row${isActive ? " active" : ""}${isFocused && !isActive ? " focused" : ""}${
+        isDropTarget ? " drop-target" : ""
+      }`}
+      style={{ paddingLeft: 8 + depth * 14, opacity: isDragging ? 0.4 : 1 }}
+      data-tree-node-id={node.id}
+      onClick={onRowClick}
+      onDoubleClick={(e) => {
+        e.stopPropagation();
+        onRowDoubleClick();
+      }}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        onRowContextMenu(e);
+      }}
+    >
+      <span className={`ws-tree-chevron${isExpanded ? " expanded" : ""}`}>
+        {isFolder && <ChevronRight size={13} />}
+      </span>
+      <span className="ws-tree-icon">
+        {isFolder ? (
+          isExpanded ? (
+            <FolderOpen size={15} />
+          ) : (
+            <Folder size={15} />
+          )
+        ) : (
+          <FileTypeIcon name={node.name} />
+        )}
+      </span>
+      {isRenaming ? (
+        <InlineNameInput
+          defaultValue={node.name}
+          onCommit={onRenameCommit}
+          onCancel={onRenameCancel}
+        />
+      ) : (
+        <span className="ws-tree-name">{node.name}</span>
+      )}
+    </div>
+  );
+}
+
 export function FileTree() {
   const nodes = useWorkspaceStore((s) => s.nodes);
   const activeFileId = useWorkspaceStore((s) => s.activeFileId);
@@ -111,6 +213,14 @@ export function FileTree() {
   const [creating, setCreating] = useState<CreatingState | null>(null);
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const treeRef = useRef<HTMLDivElement>(null);
+
+  // The tree background is a drop target meaning "move to root"
+  const { ref: rootDropRef, isDropTarget: isRootDropTarget } = useDroppable({
+    id: TREE_ROOT_DROP_ID,
+    accept: TREE_NODE_TYPE,
+    collisionPriority: CollisionPriority.Low,
+    data: { isTreeRootDrop: true },
+  });
 
   const expanded = new Set(expandedFolderIds);
 
@@ -237,59 +347,32 @@ export function FileTree() {
   const renderNode = (node: FileNode, depth: number): React.ReactNode => {
     const isFolder = node.kind === "folder";
     const isExpanded = isFolder && expanded.has(node.id);
-    const isActive = node.id === activeFileId;
-    const isFocused = node.id === focusedId;
-    const isRenaming = node.id === renamingNodeId;
 
     return (
       <div key={node.id}>
-        <div
-          className={`ws-tree-row${isActive ? " active" : ""}${isFocused && !isActive ? " focused" : ""}`}
-          style={{ paddingLeft: 8 + depth * 14 }}
-          data-tree-node-id={node.id}
-          onClick={() => {
+        <FileTreeRow
+          node={node}
+          depth={depth}
+          isExpanded={isExpanded}
+          isActive={node.id === activeFileId}
+          isFocused={node.id === focusedId}
+          isRenaming={node.id === renamingNodeId}
+          onRowClick={() => {
             setFocusedId(node.id);
             if (isFolder) toggleFolder(node.id);
             else handleOpenFile(node.id);
           }}
-          onDoubleClick={(e) => {
-            e.stopPropagation();
-            setRenamingNodeId(node.id);
-          }}
-          onContextMenu={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
+          onRowDoubleClick={() => setRenamingNodeId(node.id)}
+          onRowContextMenu={(e) => {
             setFocusedId(node.id);
             setContextMenu({ x: e.clientX, y: e.clientY, nodeId: node.id });
           }}
-        >
-          <span className={`ws-tree-chevron${isExpanded ? " expanded" : ""}`}>
-            {isFolder && <ChevronRight size={13} />}
-          </span>
-          <span className="ws-tree-icon">
-            {isFolder ? (
-              isExpanded ? (
-                <FolderOpen size={15} />
-              ) : (
-                <Folder size={15} />
-              )
-            ) : (
-              <FileTypeIcon name={node.name} />
-            )}
-          </span>
-          {isRenaming ? (
-            <InlineNameInput
-              defaultValue={node.name}
-              onCommit={(value) => {
-                renameNode(node.id, value);
-                setRenamingNodeId(null);
-              }}
-              onCancel={() => setRenamingNodeId(null)}
-            />
-          ) : (
-            <span className="ws-tree-name">{node.name}</span>
-          )}
-        </div>
+          onRenameCommit={(value) => {
+            renameNode(node.id, value);
+            setRenamingNodeId(null);
+          }}
+          onRenameCancel={() => setRenamingNodeId(null)}
+        />
         {isFolder && isExpanded && (
           <div>
             {creating && creating.parentId === node.id && renderCreatingRow(depth + 1)}
@@ -339,8 +422,12 @@ export function FileTree() {
         </span>
       </div>
       <div
-        ref={treeRef}
+        ref={(el) => {
+          treeRef.current = el;
+          (rootDropRef as (node: Element | null) => void)(el);
+        }}
         className="ws-tree"
+        style={isRootDropTarget ? { background: "var(--accent-muted)" } : undefined}
         tabIndex={0}
         role="tree"
         onKeyDown={handleKeyDown}

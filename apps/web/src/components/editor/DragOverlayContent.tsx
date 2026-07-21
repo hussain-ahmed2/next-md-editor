@@ -13,6 +13,32 @@ export function DragOverlayContent() {
   // Library clears source when idle — overlay renders nothing
   if (!source) return null;
 
+  // ── Project tree node overlay ─────────────────────────────────────────────
+  if (source.data?.isTreeNode === true) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          padding: "5px 12px",
+          background: "var(--bg-elevated)",
+          border: "1px solid var(--accent)",
+          borderRadius: "var(--radius-sm)",
+          boxShadow: "var(--shadow-md)",
+          cursor: "grabbing",
+          pointerEvents: "none",
+          userSelect: "none",
+          width: "max-content",
+          fontSize: 13,
+          color: "var(--text-primary)",
+        }}
+      >
+        {source.data.nodeKind === "folder" ? "📁" : "📄"} {source.data.nodeName as string}
+      </div>
+    );
+  }
+
   // ── Sidebar item overlay ──────────────────────────────────────────────────
   if (source.data?.isSidebarItem === true) {
     const label = source.data.label as string;

@@ -17,6 +17,8 @@ import { FileText } from "lucide-react";
 import { useActiveFilePersistence } from "@/hooks/useActiveFilePersistence";
 import { useDragAndDrop } from "@/hooks/useDragAndDrop";
 import { useSynchronizedScroll } from "@/hooks/useSynchronizedScroll";
+import { useFileDrop } from "@/hooks/useFileDrop";
+import { useBlockKeyboardShortcuts } from "@/hooks/useBlockKeyboardShortcuts";
 
 // Workspace chrome
 import { ToolWindowStrip } from "@/components/workspace/ToolWindowStrip";
@@ -32,6 +34,7 @@ import { MobileBottomBar } from "@/components/editor/MobileBottomBar";
 import { DragOverlayContent } from "@/components/editor/DragOverlayContent";
 import { SearchReplaceOverlay } from "@/components/editor/SearchReplaceOverlay";
 import { AiChatPanel } from "@/components/editor/AiChatPanel";
+import { DropOverlay } from "@/components/editor/DropOverlay";
 
 // Disable dropAnimation entirely — the default "snap back" animation causes
 // a brief flicker of the drag overlay at the original block position after
@@ -76,6 +79,11 @@ export default function EditorPage() {
 
     // Initialize and run workspace + persistence side effects
     useActiveFilePersistence();
+
+    // Native OS file drop import + block keyboard operations
+    const { isDraggingFiles } = useFileDrop();
+    const isTextActive = activeFileName !== null && getFileFormat(activeFileName) === "text";
+    useBlockKeyboardShortcuts(!isTextActive);
 
     const setMobileTab = useUIStore((s) => s.setMobileTab);
 
@@ -288,6 +296,7 @@ export default function EditorPage() {
                 </div>
 
                 <StatusBar />
+                <DropOverlay visible={isDraggingFiles} />
 
                 {/* ActiveDragOverlay must be inside DragDropProvider to use useDragOperation() */}
                 <ActiveDragOverlay />
