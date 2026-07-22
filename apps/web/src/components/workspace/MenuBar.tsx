@@ -102,7 +102,8 @@ export function MenuBar() {
       { separator: true },
       { heading: "Export" },
       { label: "Download Active File", action: downloadActiveFile },
-      { label: "Copy as Markdown", disabled: !isDoc, action: () => void copyActiveAsMarkdown() },
+      // Copy works for any open file (plain-text files copy their raw text)
+      { label: "Copy as Markdown", action: () => void copyActiveAsMarkdown() },
       { label: "Export as HTML", disabled: !isDoc, action: exportActiveAsHtml },
       { label: "Export as PDF (Print)", disabled: !isDoc, action: exportActiveAsPdf },
       { label: "Export Project as ZIP", action: exportProjectZip },

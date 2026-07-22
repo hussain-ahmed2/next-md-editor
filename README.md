@@ -1,6 +1,11 @@
 # ⚡ Next MD Editor
 
-A professional-grade block-based visual markdown editor built with **Next.js 16**, **React 19**, **Zustand**, and **Turborepo**. Drag, drop, edit, and export GitHub-Flavored Markdown (GFM) with a live preview matching GitHub's rendering via `github-markdown-css`.
+**The IDE for your README.** A block-based visual markdown workspace with a PyCharm-style
+interface — project file tree, editor tabs, application menu bar, GitHub-accurate live preview,
+embeddable GitHub stats cards, and one-click export. Local-first: your documents live in your
+browser and never touch a server.
+
+Built with **Next.js 16**, **React 19** (React Compiler), **Lexical**, **Zustand**, and **Turborepo**.
 
 **Created by [Hussain Ahmed](https://github.com/hussain-ahmed2).**
 
@@ -12,63 +17,63 @@ A professional-grade block-based visual markdown editor built with **Next.js 16*
 
 ## Features
 
-### Core Editing
-- **Block-based editing** — each markdown element is a draggable, editable block
-- **Drag & drop** — reorder blocks via `@dnd-kit` with `DragOverlay` preserving block shape
-- **Slash commands** — type `/` in an empty paragraph to open the block-type menu (keyboard-navigable)
-- **Multi-block selection** — `Shift+Click` or `Shift+Arrow` for bulk reorder, drag, and delete
-- **Floating format toolbar** — appears on text selection for bold, italic, code, strikethrough, link
-- **Undo/redo** — 100-level history via Zundo temporal store (`Ctrl+Z` / `Ctrl+Y`)
-- **Nested lists** — full keyboard indent (`Tab`) and outdent (`Shift+Tab`) with auto-cycling numbering (1 → i → a)
+### IDE Workspace
+- **Project file tree** — create, rename (F2), delete, duplicate, and drag files/folders like a
+  JetBrains IDE, with context menus, keyboard navigation, and indent guides
+- **Editor tabs** — multiple open files with file-type icons, dirty indicators, middle-click close
+- **Application menu bar** — File / Edit / View / Help menus wired to every workspace action
+- **Tool windows** — Project tree and Blocks palette on a PyCharm-style tool-window strip
+- **Status bar** — file path, block/word counts, reading time, autosave state
+- **Local-first persistence** — the whole workspace autosaves to `localStorage` per file;
+  no account, no server round-trips (existing single-document data migrates automatically)
+- **Plain-text editing** — non-markdown files (`.txt`, `.json`, `.ts`, …) open in CodeMirror
+  with language highlighting; renaming `notes.md ↔ notes.txt` converts content both ways
+
+### Editing
+- **Block-based canvas** — each markdown element is a draggable, editable block (Lexical rich text)
+- **Slash commands** — type `/` for a fuzzy-searchable insert menu (`/tab` → Table)
+- **Floating format toolbar** — bold, italic, code, strikethrough, links on selection
+- **Keyboard block ops** — `Ctrl+D` duplicate, `Ctrl+Shift+↑/↓` move, `Esc` deselect, `Del` remove
+- **Drag & drop everywhere** — palette → canvas, canvas reorder, tree reorganization, and
+  native OS file drop (drop `.md` files straight from your desktop)
+- **Undo/redo** — 100-level history per file (`Ctrl+Z` / `Ctrl+Y`), never leaks across files
+- **Source mode** — raw markdown editing in CodeMirror with apply-back parsing
+- **Live preview** — GitHub's own markdown styling (`github-markdown-css`) plus mermaid diagrams
+- **AI assistant** — chat panel and AI content blocks backed by OpenRouter (optional)
 
 ### Blocks
-| Block | Description |
-|-------|-------------|
-| Heading | H1–H6 via dropdown selector |
-| Paragraph | Rich text with bold, italic, code, strikethrough, links |
-| Code Block | Syntax-highlighted via highlight.js, language selector, textarea overlay for editing |
-| Blockquote | Vertical bar styling |
-| Callout | GitHub-flavored alerts: Note, Tip, Important, Warning, Caution |
-| Bullet List | Nested unordered lists with indent/outdent |
-| Numbered List | Nested ordered lists with auto-renumbering |
-| Image | URL + alt text input with rendered preview |
-| Image Grid | 1–8 column visual grid, inline title/description editing, caption toggles |
-| Table | Editable cells, add/delete rows & columns, zebra striping |
-| Divider | Horizontal rule (`---`) |
+Heading, Paragraph, Quote, Code (highlight.js), Callout (GitHub alerts), Bullet/Numbered lists,
+Image, Image Grid, Table (visual grid editing), Divider, Badge Group (shields.io), Smart Tech
+Stack, Hero header, Project Roadmap, Contributors, GitHub Stats cards, Collapsible, AI Content.
 
-### Preview & Export
-- **Live markdown preview** — renders via `react-markdown` + `remark-gfm` with `github-markdown-css` for pixel-perfect GitHub styling
-- **Raw markdown viewer** — toggle between rendered preview and source
-- **Resizable sidebars** — drag-to-resize with double-click to collapse
-- **Import `.md` files** — upload and parse into blocks
-- **Download** — export as `.md` file
-- **Demo content** — loads comprehensive GFM example on page load
+### Import & Export
+- **Import** — single `.md`/text files, whole projects from ZIP, or native OS file drop
+- **Export** — active file as `.md`, standalone **HTML** (styling fully embedded, no external
+  stylesheets), print-perfect **PDF** (vector text, working links), or the entire workspace as a **ZIP**
 
-### GitHub Stats SVG
-Generate embeddable GitHub statistics cards with multiple layout variants and theme support. Accessible via `GET /api/github/:username/stats.svg`.
+### GitHub Stats Cards
+A port of [github-readme-stats](https://github.com/anuraghazra/github-readme-stats) served
+from this app's own API:
 
-| Variant | Description |
-|---------|-------------|
-| **Default** | Full layout: profile header, stat cards, language bar, top repos |
-| **Compact** | Condensed: stat cards + language bar (no profile header) |
-| **Minimal** | Bare: stat cards only |
-| **Classic** | Two-column layout: stats list + language breakdown |
+| Endpoint | Card |
+|----------|------|
+| `GET /api/cards/stats?username=<user>` | Stats card with rank ring |
+| `GET /api/cards/top-langs?username=<user>` | Top languages (`normal`, `compact`, `donut`, `donut-vertical`, `pie` layouts) |
+| `GET /api/cards/pin?username=<user>&repo=<repo>` | Repository pin card |
 
-| Theme | Behavior |
-|-------|----------|
-| `auto` | CSS custom properties with `prefers-color-scheme` media query |
-| `light` | Inlined light palette (works in `<img>` tags) |
-| `dark` | Inlined dark palette (works in `<img>` tags) |
+60+ themes (`dark`, `radical`, `gruvbox`, `tokyonight`, `onedark`, `dracula`, …) and the upstream
+option surface: `hide`, `show_icons`, `hide_border`, `hide_rank`, `custom_title`, gradient
+`bg_color`, `border_radius`, `card_width`, `langs_count`, `layout`, `rank_icon`, `cache_seconds`,
+and per-color overrides. Data is fetched via the GitHub GraphQL API (REST fallback without a
+token) and cached in Postgres.
 
-**Query parameters:** `?variant=default&theme=auto`
+The **GitHub Stats block** is a live card configurator: pick card type, theme, and options with an
+instant preview; the markdown serializer round-trips the configuration.
 
-The editor also includes a dedicated **GitHub Stats block** that renders the same cards inline and lets you switch variant/theme via dropdown controls.
-
-### Syntax Highlighting
-- Custom late-binding alphabetical-index tokenizer
-- Languages: TypeScript, JavaScript, CSS, HTML, Bash, JSON, Python, Rust
-- Exact GitHub Dark theme color tokens
-- Immune to HTML style attribute regex leakage
+### GitHub Sign-in & Personal Deployments
+- **Sign in with GitHub** (better-auth + Prisma) autofills your username in stats blocks
+- **Deploy wizard** walks you through running your own github-readme-stats instance on Vercel
+  (PAT → Vercel Deploy Button → URL verification); your cards then use your instance automatically
 
 ---
 
@@ -77,33 +82,33 @@ The editor also includes a dedicated **GitHub Stats block** that renders the sam
 ### Monorepo Structure
 
 ```
-apps/web                      → Next.js 16 app (blocks, UI, registry, SVG routes)
+apps/web                      → Next.js 16 app (IDE UI, blocks, registry, API routes)
 packages/
-  @next-md-editor/types       → Shared TypeScript interfaces (Block, EditorState, RichText)
-  @next-md-editor/editor-core → Zustand store + BlockRegistry singleton
+  @next-md-editor/types       → Shared TypeScript interfaces (Block, WorkspaceMeta, FileNode)
+  @next-md-editor/editor-core → Zustand + zundo document store, BlockRegistry singleton
   @next-md-editor/markdown    → Parser/serializer (unified/remark), rich text utilities
-  @next-md-editor/ui          → (stub) Shared UI components
-  @next-md-editor/themes      → (stub) Multiple theme support
-  @next-md-editor/mdx         → (stub) MDX support
-  @next-md-editor/blocks      → (stub) Third-party block plugins
-  @next-md-editor/editor-react → (stub) Drop-in React editor component
+  @next-md-editor/{ui,themes,mdx,blocks,editor-react} → (stubs) future packages
 ```
 
 ### Data Flow
 
 ```
-Markdown ↔ Block[] ↔ Zustand Store ↔ Block Components
+Markdown ↔ Block[] ↔ editor store (Zustand) ↔ Lexical block components
+                         ↕ per-file debounced autosave
+localStorage: nme:workspace:v1 (tree, tabs) + nme:file:<id> (content)
 ```
 
-- **Parsing:** `Markdown string → unified() + remarkParse + remarkGfm → mdast → nodeToBlock() → Block[]`
-- **Serialization:** `Block[] → serializeBlock() per block → clean GFM Markdown string`
-- **Rendering:** `Zustand store → EditorCanvas → SortableBlock (dnd-kit) → BlockRenderer → Block component`
+- **Parsing:** `markdown → unified() + remarkParse + remarkGfm → mdast → nodeToBlock() → Block[]`
+- **Serialization:** per-block serializers → clean GFM (custom blocks round-trip via HTML comment markers)
+- **Workspace:** `workspaceStore` owns the tree/tabs; a persistence bridge flushes pending saves
+  synchronously before any file switch so edits can never land on the wrong file
 
 ### Key Patterns
 
-- **Block Registry** — singleton mapping block types to React components, serializers, and parsers
-- **Rich Text Model** — `RichTextSpan[]` with manipulation utilities (merge, split, format toggle, DOM range restore)
-- **Headless packages** — `editor-core` and `markdown` have zero UI dependencies; can be consumed independently
+- **Block Registry** — singleton mapping block types to components, serializers, and parsers
+- **Headless packages** — `editor-core` and `markdown` have zero UI dependencies
+- **JetBrains design tokens** — the entire chrome is styled from CSS custom properties
+  (`styles/themes/{dark,light}.css`) with shared `.ide-*` control classes
 
 ---
 
@@ -111,54 +116,59 @@ Markdown ↔ Block[] ↔ Zustand Store ↔ Block Components
 
 ### Prerequisites
 
-- Node.js 18+
-- npm 10+
+- Node.js 20.9+ and npm 10+ (Next.js 16 requirement)
+- PostgreSQL (only needed for stats-card caching and GitHub sign-in)
 
 ### Installation
 
 ```bash
-git clone <repo-url>
+git clone https://github.com/imamhossain94/next-md-editor.git
 cd next-md-editor
-npm install
+npm install        # requires DATABASE_URL for prisma generate (see below)
+npm run dev        # open http://localhost:3000
 ```
 
-### Development
+### Environment
 
-```bash
-npm run dev
-```
+Copy `apps/web/.env.example` to `apps/web/.env` and fill in what you need:
 
-Starts the Next.js dev server and all package watchers. Open [http://localhost:3000](http://localhost:3000).
+| Variable | Needed for |
+|----------|------------|
+| `DATABASE_URL` | Prisma (stats cache, auth sessions) |
+| `GITHUB_TOKEN` | Full GraphQL stats pipeline (commits, language bytes, rank) |
+| `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` | GitHub sign-in |
+| `OPENROUTER_API_KEY` | AI assistant |
+| `NEXT_PUBLIC_FRONTEND_URL` | Absolute card URLs in exported markdown |
 
-### Build
+The editor itself (tree, tabs, blocks, import/export) works with **no environment at all** —
+documents are stored in the browser.
 
-```bash
-npm run build
-```
-
-Builds all packages and creates an optimized production bundle.
-
-### Other Commands
+### Commands
 
 | Command | Description |
 |---------|-------------|
+| `npm run dev` | Start dev servers (Next.js + package watchers) |
+| `npm run build` | Build all packages & the web app |
+| `npm run test` | Run all tests (vitest) |
 | `npm run lint` | Lint all packages |
-| `npm run test` | Run all tests |
-| `npm run clean` | Clean all build outputs |
+| `npm run clean` | Clean build outputs |
 
 ---
 
 ## Tech Stack
 
-- **Framework:** Next.js 16 (App Router, React 19)
-- **State Management:** Zustand + Zundo (undo/redo)
+- **Framework:** Next.js 16 (App Router), React 19 + React Compiler
+- **Rich text:** Lexical
+- **State:** Zustand + Zundo (undo/redo)
 - **Drag & Drop:** @dnd-kit
 - **Markdown:** unified, remark, rehype, react-markdown, remark-gfm
-- **Styling:** github-markdown-css, Tailwind CSS v4
-- **Syntax Highlighting:** highlight.js + custom late-binding tokenizer
+- **Code editing:** CodeMirror (@uiw/react-codemirror)
+- **Auth:** better-auth (GitHub OAuth, Prisma adapter)
+- **Database:** Prisma 7 (PostgreSQL)
+- **Compression:** fflate (ZIP import/export)
+- **Styling:** CSS custom properties (JetBrains-style tokens), github-markdown-css, Tailwind v4
 - **Monorepo:** Turborepo
-- **Database:** Prisma (PostgreSQL adapter)
-- **UI Icons:** Lucide React
+- **Icons:** Lucide React
 
 ---
 
