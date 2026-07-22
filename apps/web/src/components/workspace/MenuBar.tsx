@@ -37,7 +37,11 @@ function currentTheme(): "light" | "dark" {
 function toggleAppTheme(): void {
   const next = currentTheme() === "light" ? "dark" : "light";
   document.documentElement.dataset.theme = next;
-  localStorage.setItem("md-editor-theme", next);
+  try {
+    localStorage.setItem("md-editor-theme", next);
+  } catch {
+    /* private mode / quota — theme still applies for this session */
+  }
 }
 
 /** PyCharm-style application menu bar: File / Edit / View / Help. */

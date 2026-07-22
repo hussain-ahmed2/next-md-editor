@@ -31,6 +31,15 @@ export function EmojiPicker({ onSelect, onClose, buttonRef }: EmojiPickerProps) 
     setReady(true);
   }, [buttonRef]);
 
+  // Close on Escape for keyboard users
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
   const filtered = useMemo(() => {
     if (!query) return EMOJIS;
     const q = query.toLowerCase();

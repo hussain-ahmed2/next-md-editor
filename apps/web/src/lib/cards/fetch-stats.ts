@@ -85,9 +85,10 @@ async function fetchViaRest(username: string): Promise<CardUserData> {
     Accept: "application/vnd.github.v3+json",
     "User-Agent": "next-md-editor",
   };
+  const u = encodeURIComponent(username);
   const [profileRes, reposRes] = await Promise.all([
-    fetch(`https://api.github.com/users/${username}`, { headers }),
-    fetch(`https://api.github.com/users/${username}/repos?sort=pushed&per_page=100`, { headers }),
+    fetch(`https://api.github.com/users/${u}`, { headers }),
+    fetch(`https://api.github.com/users/${u}/repos?sort=pushed&per_page=100`, { headers }),
   ]);
   if (!profileRes.ok) throw new Error(`GitHub user not found (${profileRes.status})`);
   const profile = (await profileRes.json()) as {
@@ -256,7 +257,9 @@ export async function fetchRepoData(owner: string, repoName: string): Promise<Re
     };
   }
 
-  const res = await fetch(`https://api.github.com/repos/${owner}/${repoName}`, {
+  const res = await fetch(
+    `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repoName)}`,
+    {
     headers: { Accept: "application/vnd.github.v3+json", "User-Agent": "next-md-editor" },
   });
   if (!res.ok) throw new Error(`Repository not found (${res.status})`);

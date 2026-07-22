@@ -144,7 +144,12 @@ export function loadWorkspaceMeta(storage: KVStorage = defaultStorage()): Worksp
 }
 
 export function saveWorkspaceMeta(meta: WorkspaceMeta, storage: KVStorage = defaultStorage()): void {
-  storage.setItem(WORKSPACE_KEY, JSON.stringify(meta));
+  try {
+    storage.setItem(WORKSPACE_KEY, JSON.stringify(meta));
+  } catch (e) {
+    // Private-browsing / quota exceeded — keep the in-memory state usable
+    console.error("Failed to persist workspace metadata (storage full or unavailable):", e);
+  }
 }
 
 export function loadFileContent(id: string, storage: KVStorage = defaultStorage()): FileContent | null {
@@ -165,7 +170,11 @@ export function saveFileContent(
   content: FileContent,
   storage: KVStorage = defaultStorage(),
 ): void {
-  storage.setItem(fileKey(id), JSON.stringify(content));
+  try {
+    storage.setItem(fileKey(id), JSON.stringify(content));
+  } catch (e) {
+    console.error("Failed to persist file content (storage full or unavailable):", e);
+  }
 }
 
 export function deleteFileContent(id: string, storage: KVStorage = defaultStorage()): void {

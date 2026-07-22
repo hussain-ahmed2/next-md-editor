@@ -3,15 +3,22 @@ import remarkParse from "remark-parse";
 import remarkGfm from "remark-gfm";
 import remarkRehype from "remark-rehype";
 import rehypeRaw from "rehype-raw";
+import rehypeSanitize from "rehype-sanitize";
 import rehypeStringify from "rehype-stringify";
+import { markdownSanitizeSchema } from "@/lib/sanitize-schema";
 
-/** GFM markdown → HTML fragment (raw HTML in the markdown is preserved). */
+/**
+ * GFM markdown → sanitized HTML fragment. Raw HTML is preserved but cleaned
+ * with a GitHub-like schema so exported/printed documents cannot execute
+ * scripts or event handlers from untrusted markdown.
+ */
 export function markdownToHtml(markdown: string): string {
   return unified()
     .use(remarkParse)
     .use(remarkGfm)
     .use(remarkRehype, { allowDangerousHtml: true })
     .use(rehypeRaw)
+    .use(rehypeSanitize, markdownSanitizeSchema)
     .use(rehypeStringify)
     .processSync(markdown)
     .toString();

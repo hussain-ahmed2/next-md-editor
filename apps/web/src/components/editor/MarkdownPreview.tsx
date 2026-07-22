@@ -4,6 +4,8 @@ import React, { useState, useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
+import rehypeSanitize from "rehype-sanitize";
+import { markdownSanitizeSchema } from "@/lib/sanitize-schema";
 import { useEditorStore } from "@next-md-editor/editor-core";
 import { useWorkspaceStore } from "@/store/workspaceStore";
 import { serializeToMarkdown } from "@/features/markdown/serializer";
@@ -79,7 +81,7 @@ export function MarkdownPreview({ scrollRef }: { scrollRef?: React.Ref<HTMLDivEl
 						<div className="markdown-body" style={{ padding: "32px" }}>
 							<ReactMarkdown
 								remarkPlugins={[remarkGfm]}
-								rehypePlugins={[rehypeRaw]}
+								rehypePlugins={[rehypeRaw, [rehypeSanitize, markdownSanitizeSchema]]}
 								components={{ ...markdownComponents, ...tableComponents }}
 							>
 								{markdown}
