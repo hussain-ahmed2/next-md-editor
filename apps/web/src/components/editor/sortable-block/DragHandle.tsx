@@ -35,7 +35,7 @@ export function DragHandle({ handleRef, hovered, isSelected }: DragHandleProps) 
           cursor: "grab",
           color: hovered || isSelected ? "var(--text-muted)" : "transparent",
           transition: "color 0.15s",
-          borderRadius: 4,
+          borderRadius: "var(--radius-sm)",
           userSelect: "none",
           touchAction: "none",
         }}

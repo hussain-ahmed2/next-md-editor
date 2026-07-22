@@ -120,7 +120,7 @@ export function BadgeGroupBlock({ block }: { block: Block }) {
         outline: "none",
         width: "100%",
         padding: "12px",
-        borderRadius: "var(--radius-lg)",
+        borderRadius: "var(--radius-md)",
         border: "1px solid var(--border-subtle)",
         background: "var(--bg-surface)",
         display: "flex",
@@ -137,23 +137,31 @@ export function BadgeGroupBlock({ block }: { block: Block }) {
           justifyContent: "space-between",
           flexWrap: "wrap",
           gap: "4px 8px",
-          padding: "6px 8px",
-          background: "var(--bg-elevated)",
-          borderRadius: "var(--radius-md)",
-          border: "1px solid var(--border)",
+          padding: "4px 8px",
+          background: "var(--bg-surface)",
+          borderRadius: "var(--radius-sm)",
+          border: "1px solid var(--border-subtle)",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <Award size={14} style={{ color: "var(--accent)" }} />
-          <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text-primary)" }}>
-            BADGE GROUP
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <Award size={13} style={{ color: "var(--text-muted)" }} />
+          <span
+            style={{
+              fontSize: 11,
+              fontWeight: 600,
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
+              color: "var(--text-muted)",
+            }}
+          >
+            Badge Group
           </span>
-          <span style={{ fontSize: 10, color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
+          <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
             {badges.length} badges
           </span>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -161,19 +169,13 @@ export function BadgeGroupBlock({ block }: { block: Block }) {
             }}
             onMouseDown={(e) => e.stopPropagation()}
             title={`Alignment: ${alignment}`}
+            className="ide-btn"
             style={{
-              padding: "4px 8px",
-              fontSize: 10,
-              fontWeight: 700,
-              color: "var(--text-muted)",
-              fontFamily: "var(--font-mono)",
-              background: "var(--bg-surface)",
-              border: "1px solid var(--border)",
-              borderRadius: 4,
-              cursor: "pointer",
+              fontSize: 11,
               textTransform: "uppercase",
+              letterSpacing: "0.06em",
               minWidth: 60,
-              textAlign: "center",
+              transition: "background 0.1s, color 0.1s",
             }}
           >
             {alignment}
@@ -186,28 +188,10 @@ export function BadgeGroupBlock({ block }: { block: Block }) {
                 setShowPicker(!showPicker);
               }}
               onMouseDown={(e) => e.stopPropagation()}
-              style={{
-                border: "1px solid var(--border)",
-                background: "transparent",
-                color: "var(--text-primary)",
-                fontSize: 11,
-                fontWeight: 600,
-                padding: "4px 10px",
-                borderRadius: 6,
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: 4,
-                transition: "all 0.15s ease",
-              }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.background = "var(--bg-surface)")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.background = "transparent")
-              }
+              className="ide-btn"
+              style={{ transition: "background 0.1s, color 0.1s" }}
             >
-              <Plus size={11} /> Add Badge
+              <Plus size={13} /> Add Badge
             </button>
 
             {/* Icon Picker Popover */}

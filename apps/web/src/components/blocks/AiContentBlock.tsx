@@ -108,19 +108,6 @@ export function AiContentBlock({ block }: { block: Block }) {
     setError(null);
   }, []);
 
-  const btnBase: React.CSSProperties = {
-    display: "inline-flex",
-    alignItems: "center",
-    gap: 6,
-    padding: "6px 14px",
-    fontSize: 12,
-    fontWeight: 600,
-    border: "none",
-    borderRadius: 5,
-    cursor: "pointer",
-    fontFamily: "inherit",
-  };
-
   return (
     <div
       style={{
@@ -137,8 +124,8 @@ export function AiContentBlock({ block }: { block: Block }) {
           display: "flex",
           alignItems: "center",
           gap: 6,
-          padding: "8px 12px",
-          borderBottom: "1px solid var(--border)",
+          padding: "6px 12px",
+          borderBottom: "1px solid var(--border-subtle)",
           fontSize: 11,
           fontWeight: 600,
           color: "var(--text-muted)",
@@ -146,7 +133,7 @@ export function AiContentBlock({ block }: { block: Block }) {
           letterSpacing: "0.06em",
         }}
       >
-        <Sparkles size={12} style={{ color: "var(--accent)" }} />
+        <Sparkles size={13} style={{ color: "var(--accent)" }} />
         AI Content
       </div>
 
@@ -155,7 +142,7 @@ export function AiContentBlock({ block }: { block: Block }) {
         {state === "input" && (
           <>
             {/* Quick prompts */}
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
               {QUICK_PROMPTS.map((q) => (
                 <button
                   key={q.label}
@@ -163,13 +150,11 @@ export function AiContentBlock({ block }: { block: Block }) {
                     setPrompt(q.prompt);
                     handleGenerate(q.prompt);
                   }}
+                  className="ide-btn"
                   style={{
-                    ...btnBase,
-                    background: "var(--bg-elevated)",
-                    border: "1px solid var(--border)",
-                    color: "var(--text-primary)",
+                    height: 24,
                     fontSize: 11,
-                    padding: "4px 10px",
+                    border: "1px solid var(--border-subtle)",
                   }}
                 >
                   {q.label}
@@ -183,17 +168,14 @@ export function AiContentBlock({ block }: { block: Block }) {
               onChange={(e) => setPrompt(e.target.value)}
               placeholder="Describe what you want to generate..."
               rows={3}
+              className="ide-input"
               style={{
                 width: "100%",
-                padding: 8,
-                fontSize: 13,
-                fontFamily: "inherit",
-                border: "1px solid var(--border)",
-                borderRadius: 5,
-                background: "var(--bg-base)",
-                color: "var(--text-primary)",
+                height: "auto",
+                minHeight: 60,
+                padding: "6px 8px",
+                lineHeight: 1.5,
                 resize: "vertical",
-                outline: "none",
                 boxSizing: "border-box",
               }}
             />
@@ -203,12 +185,8 @@ export function AiContentBlock({ block }: { block: Block }) {
               <button
                 onClick={() => handleGenerate(prompt)}
                 disabled={!prompt.trim()}
-                style={{
-                  ...btnBase,
-                  background: "var(--accent)",
-                  color: "#fff",
-                  opacity: prompt.trim() ? 1 : 0.5,
-                }}
+                className="ide-btn primary"
+                style={{ opacity: prompt.trim() ? 1 : 0.5 }}
               >
                 <Sparkles size={13} />
                 Generate
@@ -219,7 +197,7 @@ export function AiContentBlock({ block }: { block: Block }) {
 
         {state === "streaming" && (
           <div>
-            <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 6 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 6 }}>
               Generating...
             </div>
             <div
@@ -233,10 +211,10 @@ export function AiContentBlock({ block }: { block: Block }) {
                 whiteSpace: "pre-wrap",
                 wordBreak: "break-word",
                 lineHeight: 1.5,
-                padding: 8,
+                padding: "6px 8px",
                 background: "var(--bg-base)",
-                borderRadius: 5,
-                border: "1px solid var(--border)",
+                borderRadius: "var(--radius-sm)",
+                border: "1px solid var(--border-subtle)",
               }}
             >
               {accumulated || "Waiting..."}
@@ -246,7 +224,7 @@ export function AiContentBlock({ block }: { block: Block }) {
 
         {state === "done" && (
           <div>
-            <div style={{ fontSize: 11, color: "var(--success)", marginBottom: 6 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--success)", marginBottom: 6 }}>
               Complete
             </div>
             <div
@@ -260,10 +238,10 @@ export function AiContentBlock({ block }: { block: Block }) {
                 whiteSpace: "pre-wrap",
                 wordBreak: "break-word",
                 lineHeight: 1.5,
-                padding: 8,
+                padding: "6px 8px",
                 background: "var(--bg-base)",
-                borderRadius: 5,
-                border: "1px solid var(--border)",
+                borderRadius: "var(--radius-sm)",
+                border: "1px solid var(--border-subtle)",
               }}
             >
               {accumulated}
@@ -288,38 +266,45 @@ export function AiContentBlock({ block }: { block: Block }) {
             display: "flex",
             justifyContent: "flex-end",
             gap: 6,
-            padding: "8px 12px",
-            borderTop: "1px solid var(--border)",
+            padding: "6px 12px",
+            borderTop: "1px solid var(--border-subtle)",
           }}
         >
           {state === "streaming" && (
-            <button onClick={handleStop} style={{ ...btnBase, background: "var(--danger)", color: "#fff" }}>
-              <Square size={12} /> Stop
+            <button
+              onClick={handleStop}
+              className="ide-btn"
+              style={{ background: "var(--danger)", color: "#fff" }}
+            >
+              <Square size={13} /> Stop
             </button>
           )}
           {state === "done" && (
             <>
               <button
                 onClick={handleDiscard}
-                style={{ ...btnBase, background: "var(--bg-elevated)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
+                className="ide-btn"
+                style={{ border: "1px solid var(--border)" }}
               >
-                <X size={12} /> Discard
+                <X size={13} /> Discard
               </button>
               <button
                 onClick={handleRegenerate}
-                style={{ ...btnBase, background: "var(--bg-elevated)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
+                className="ide-btn"
+                style={{ border: "1px solid var(--border)" }}
               >
-                <RotateCw size={12} /> Regenerate
+                <RotateCw size={13} /> Regenerate
               </button>
-              <button onClick={handleApply} style={{ ...btnBase, background: "var(--accent)", color: "#fff" }}>
-                <Check size={12} /> Apply
+              <button onClick={handleApply} className="ide-btn primary">
+                <Check size={13} /> Apply
               </button>
             </>
           )}
           {state === "error" && (
             <button
               onClick={() => setState("input")}
-              style={{ ...btnBase, background: "var(--bg-elevated)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
+              className="ide-btn"
+              style={{ border: "1px solid var(--border)" }}
             >
               Try Again
             </button>

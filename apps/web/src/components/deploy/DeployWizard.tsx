@@ -15,7 +15,7 @@ const stepTitleStyle: React.CSSProperties = {
   alignItems: "center",
   gap: 8,
   fontSize: 14,
-  fontWeight: 700,
+  fontWeight: 600,
   color: "var(--text-primary)",
   marginBottom: 6,
 };
@@ -38,21 +38,6 @@ const stepBodyStyle: React.CSSProperties = {
   color: "var(--text-secondary)",
   lineHeight: 1.6,
   margin: "0 0 16px 30px",
-};
-
-const linkBtnStyle: React.CSSProperties = {
-  display: "inline-flex",
-  alignItems: "center",
-  gap: 6,
-  padding: "6px 12px",
-  borderRadius: "var(--radius-sm)",
-  background: "var(--accent)",
-  color: "#fff",
-  fontSize: 12.5,
-  fontWeight: 600,
-  textDecoration: "none",
-  border: "none",
-  cursor: "pointer",
 };
 
 /**
@@ -102,23 +87,23 @@ export function DeployWizard({ username, onClose }: { username: string; onClose:
           overflow: "auto",
           background: "var(--bg-elevated)",
           border: "1px solid var(--border)",
-          borderRadius: "var(--radius-lg)",
-          boxShadow: "var(--shadow-lg)",
-          padding: 24,
+          borderRadius: "var(--radius-md)",
+          boxShadow: "var(--shadow-md)",
+          padding: 16,
         }}
         onMouseDown={(e) => e.stopPropagation()}
       >
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 16, fontWeight: 800, color: "var(--text-primary)" }}>
-            <Rocket size={18} style={{ color: "var(--accent)" }} />
+          <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>
+            <Rocket size={16} style={{ color: "var(--accent)" }} />
             Deploy your own stats instance
           </div>
           <button
             onClick={onClose}
-            style={{ background: "transparent", border: "none", color: "var(--text-muted)", cursor: "pointer" }}
+            className="ide-btn"
             aria-label="Close"
           >
-            <X size={18} />
+            <X size={16} />
           </button>
         </div>
 
@@ -134,7 +119,7 @@ export function DeployWizard({ username, onClose }: { username: string; onClose:
           Create a classic Personal Access Token with <code>repo</code> and <code>read:user</code>{" "}
           scopes. Copy it — Vercel will ask for it in the next step.
           <div style={{ marginTop: 8 }}>
-            <a href={PAT_URL} target="_blank" rel="noopener noreferrer" style={linkBtnStyle}>
+            <a href={PAT_URL} target="_blank" rel="noopener noreferrer" className="ide-btn primary" style={{ textDecoration: "none" }}>
               Create token <ExternalLink size={12} />
             </a>
           </div>
@@ -147,7 +132,7 @@ export function DeployWizard({ username, onClose }: { username: string; onClose:
           Vercel clones the github-readme-stats repository into your GitHub account and deploys it.
           Paste your token as the <code>PAT_1</code> environment variable when prompted.
           <div style={{ marginTop: 8 }}>
-            <a href={DEPLOY_URL} target="_blank" rel="noopener noreferrer" style={linkBtnStyle}>
+            <a href={DEPLOY_URL} target="_blank" rel="noopener noreferrer" className="ide-btn primary" style={{ textDecoration: "none" }}>
               Deploy with Vercel <ExternalLink size={12} />
             </a>
           </div>
@@ -169,19 +154,10 @@ export function DeployWizard({ username, onClose }: { username: string; onClose:
               setCheckState("idle");
             }}
             placeholder="https://your-instance.vercel.app"
-            style={{
-              flex: 1,
-              minWidth: 220,
-              padding: "7px 10px",
-              fontSize: 13,
-              borderRadius: "var(--radius-sm)",
-              border: "1px solid var(--border)",
-              background: "var(--bg-surface)",
-              color: "var(--text-primary)",
-              outline: "none",
-            }}
+            className="ide-input"
+            style={{ flex: 1, minWidth: 220 }}
           />
-          <button onClick={startValidation} style={linkBtnStyle} disabled={checkState === "checking"}>
+          <button onClick={startValidation} className="ide-btn primary" disabled={checkState === "checking"}>
             {checkState === "checking" ? (
               <>
                 <Loader2 size={12} style={{ animation: "spin 1s linear infinite" }} /> Checking…

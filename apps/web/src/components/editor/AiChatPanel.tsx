@@ -191,33 +191,18 @@ export function AiChatPanel() {
 
   const bubbleStyle = (role: "user" | "assistant"): React.CSSProperties => ({
     maxWidth: "85%",
-    padding: "10px 12px",
-    borderRadius: 10,
+    padding: "6px 10px",
+    borderRadius: "var(--radius-md)",
     fontSize: 13,
     lineHeight: 1.5,
     whiteSpace: "pre-wrap",
     wordBreak: "break-word",
     fontFamily: "inherit",
-    background: role === "user" ? "var(--accent)" : "var(--bg-surface)",
-    color: role === "user" ? "#fff" : "var(--text-primary)",
+    background: role === "user" ? "var(--accent-muted)" : "var(--bg-base)",
+    color: "var(--text-primary)",
     alignSelf: role === "user" ? "flex-end" : "flex-start",
-    border: role === "user" ? "none" : "1px solid var(--border)",
+    border: role === "user" ? "none" : "1px solid var(--border-subtle)",
   });
-
-  const btnBase: React.CSSProperties = {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    padding: "5px 12px",
-    fontSize: 11,
-    fontWeight: 600,
-    border: "none",
-    borderRadius: 6,
-    cursor: "pointer",
-    fontFamily: "inherit",
-    transition: "opacity 0.15s ease",
-  };
 
   const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant" && m.content);
 
@@ -235,62 +220,31 @@ export function AiChatPanel() {
           zIndex: 9998,
           width: 480,
           maxWidth: "100vw",
-          background: "var(--bg-elevated)",
-          borderLeft: "1px solid var(--border)",
-          boxShadow: "var(--shadow-xl)",
+          background: "var(--bg-surface)",
+          borderLeft: "1px solid var(--border-subtle)",
           display: isOpen ? "flex" : "none",
           flexDirection: "column",
-          animation: isOpen ? "slideIn 0.2s ease" : "none",
         }}
       >
         {/* Header */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "14px 16px",
-            borderBottom: "1px solid var(--border)",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <Sparkles size={16} style={{ color: "var(--accent)" }} />
-            <span style={{ fontWeight: 700, fontSize: 14, color: "var(--text-primary)" }}>
-              AI Assistant
-            </span>
-          </div>
-          <div style={{ display: "flex", gap: 4 }}>
+        <div className="ws-toolwindow-header">
+          <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <Sparkles size={13} style={{ color: "var(--accent)" }} />
+            AI Assistant
+          </span>
+          <div className="ws-toolwindow-actions">
             {messages.length > 0 && (
               <button
                 onClick={handleClear}
                 title="Clear conversation"
-                style={{
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  color: "var(--text-muted)",
-                  padding: 4,
-                  borderRadius: 4,
-                  display: "flex",
-                  fontSize: 11,
-                }}
+                className="ide-btn"
+                style={{ height: 22, fontSize: 11 }}
               >
                 Clear
               </button>
             )}
-            <button
-              onClick={() => setOpen(false)}
-              style={{
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                color: "var(--text-muted)",
-                padding: 4,
-                borderRadius: 4,
-                display: "flex",
-              }}
-            >
-              <X size={16} />
+            <button onClick={() => setOpen(false)} title="Close" className="ws-icon-btn">
+              <X size={14} />
             </button>
           </div>
         </div>
@@ -301,10 +255,10 @@ export function AiChatPanel() {
           style={{
             flex: 1,
             overflow: "auto",
-            padding: "12px 16px",
+            padding: "8px 12px",
             display: "flex",
             flexDirection: "column",
-            gap: 10,
+            gap: 8,
           }}
         >
           {messages.length === 0 && (
@@ -314,11 +268,11 @@ export function AiChatPanel() {
                   textAlign: "center",
                   color: "var(--text-muted)",
                   fontSize: 12,
-                  padding: "24px 20px 8px",
+                  padding: "20px 12px 8px",
                   lineHeight: 1.6,
                 }}
               >
-                <Sparkles size={24} style={{ color: "var(--accent)", marginBottom: 8 }} />
+                <Sparkles size={16} style={{ color: "var(--accent)", marginBottom: 8 }} />
                 <div style={{ fontWeight: 600, fontSize: 13, color: "var(--text-secondary)", marginBottom: 4 }}>
                   Ask me anything
                 </div>
@@ -335,21 +289,21 @@ export function AiChatPanel() {
                     key={t.label}
                     onClick={() => handlePromptChip(t.prompt)}
                     style={{
-                      padding: "6px 10px",
+                      padding: "5px 8px",
                       fontSize: 11,
-                      background: "var(--bg-surface)",
-                      border: "1px solid var(--border)",
-                      borderRadius: 6,
+                      background: "var(--bg-base)",
+                      border: "1px solid var(--border-subtle)",
+                      borderRadius: "var(--radius-sm)",
                       cursor: "pointer",
                       color: "var(--text-primary)",
                       textAlign: "left",
                       fontFamily: "inherit",
                       flex: "1 0 calc(50% - 6px)",
                       minWidth: 0,
-                      transition: "border-color 0.15s ease",
+                      transition: "background 0.12s ease, border-color 0.12s ease",
                     }}
-                    onMouseEnter={(e) => (e.currentTarget.style.borderColor = "var(--accent)")}
-                    onMouseLeave={(e) => (e.currentTarget.style.borderColor = "var(--border)")}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = "var(--bg-hover)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = "var(--bg-base)")}
                   >
                     <div style={{ fontWeight: 600, fontSize: 11, marginBottom: 1 }}>{t.label}</div>
                     <div style={{ fontSize: 10, color: "var(--text-muted)" }}>{t.description}</div>
@@ -367,6 +321,7 @@ export function AiChatPanel() {
                   gap: 4,
                   fontSize: 10,
                   fontWeight: 600,
+                  letterSpacing: "0.06em",
                   color: "var(--text-muted)",
                   textTransform: "uppercase",
                   justifyContent: msg.role === "user" ? "flex-end" : "flex-start",
@@ -410,28 +365,22 @@ export function AiChatPanel() {
               {lastAssistant && !streaming && (
                 <button
                   onClick={handleRegenerate}
-                  style={{
-                    ...btnBase,
-                    background: "var(--bg-surface)",
-                    border: "1px solid var(--border)",
-                    color: "var(--text-primary)",
-                  }}
+                  className="ide-btn"
+                  style={{ border: "1px solid var(--border)" }}
                 >
-                  <RotateCw size={12} />
+                  <RotateCw size={13} />
                   Regenerate
                 </button>
               )}
               <button
                 onClick={handleInsertAll}
                 disabled={!messages.some((m) => m.role === "assistant" && m.content)}
+                className="ide-btn primary"
                 style={{
-                  ...btnBase,
-                  background: "var(--accent)",
-                  color: "#fff",
                   opacity: messages.some((m) => m.role === "assistant" && m.content) ? 1 : 0.5,
                 }}
               >
-                <FileDown size={12} />
+                <FileDown size={13} />
                 Insert All
               </button>
             </div>
@@ -441,10 +390,10 @@ export function AiChatPanel() {
         {/* Input */}
         <div
           style={{
-            padding: "12px 16px",
-            borderTop: "1px solid var(--border)",
+            padding: "8px 12px",
+            borderTop: "1px solid var(--border-subtle)",
             display: "flex",
-            gap: 8,
+            gap: 6,
             alignItems: "flex-end",
           }}
         >
@@ -460,58 +409,43 @@ export function AiChatPanel() {
             onKeyPress={(e) => e.stopPropagation()}
             placeholder="Ask for content, edits, or ask a question..."
             rows={2}
+            className="ide-input"
             style={{
               flex: 1,
-              padding: "8px 10px",
-              fontSize: 13,
-              fontFamily: "inherit",
-              border: "1px solid var(--border)",
-              borderRadius: 6,
-              background: "var(--bg-surface)",
-              color: "var(--text-primary)",
+              height: "auto",
+              minHeight: 48,
+              padding: "6px 8px",
+              lineHeight: 1.4,
               resize: "none",
-              outline: "none",
             }}
           />
           {streaming ? (
             <button
               onClick={handleStop}
+              title="Stop"
+              className="ide-btn"
               style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: 36,
-                height: 36,
-                border: "none",
-                borderRadius: 6,
-                cursor: "pointer",
+                width: 28,
+                padding: 0,
                 background: "var(--danger)",
                 color: "#fff",
-                flexShrink: 0,
               }}
             >
-              <Square size={14} />
+              <Square size={13} />
             </button>
           ) : (
             <button
               onClick={handleSend}
               disabled={!input.trim()}
+              title="Send"
+              className="ide-btn primary"
               style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: 36,
-                height: 36,
-                border: "none",
-                borderRadius: 6,
-                cursor: "pointer",
-                background: "var(--accent)",
-                color: "#fff",
-                flexShrink: 0,
+                width: 28,
+                padding: 0,
                 opacity: input.trim() ? 1 : 0.5,
               }}
             >
-              <Send size={14} />
+              <Send size={13} />
             </button>
           )}
         </div>

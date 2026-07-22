@@ -68,25 +68,26 @@ export function ImageEditForm({
     <div
       contentEditable={false}
       style={{
-        padding: "16px",
+        padding: "12px",
         borderRadius: "var(--radius-md)",
         border: "1px solid var(--border)",
         background: "var(--bg-surface)",
         display: "flex",
         flexDirection: "column",
-        gap: 12,
+        gap: 8,
       }}
     >
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
         <label
           style={{
-            fontSize: 10,
-            fontWeight: 700,
+            fontSize: 11,
+            fontWeight: 600,
+            letterSpacing: "0.06em",
+            textTransform: "uppercase",
             color: "var(--text-muted)",
-            fontFamily: "var(--font-mono)",
           }}
         >
-          IMAGE URL
+          Image URL
         </label>
         <input
           type="text"
@@ -96,29 +97,22 @@ export function ImageEditForm({
           onClick={(e) => e.stopPropagation()}
           onMouseDown={(e) => e.stopPropagation()}
           placeholder="https://example.com/image.png"
-          style={{
-            padding: "8px 12px",
-            borderRadius: "var(--radius-sm)",
-            border: "1px solid var(--border)",
-            background: "var(--bg-elevated)",
-            color: "var(--text-primary)",
-            fontSize: 12,
-            outline: "none",
-            fontFamily: "var(--font-mono)",
-          }}
+          className="ide-input"
+          style={{ fontFamily: "var(--font-mono)", fontSize: 12 }}
         />
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
         <label
           style={{
-            fontSize: 10,
-            fontWeight: 700,
+            fontSize: 11,
+            fontWeight: 600,
+            letterSpacing: "0.06em",
+            textTransform: "uppercase",
             color: "var(--text-muted)",
-            fontFamily: "var(--font-mono)",
           }}
         >
-          ALT TEXT
+          Alt Text
         </label>
         <input
           type="text"
@@ -131,15 +125,8 @@ export function ImageEditForm({
           onClick={(e) => e.stopPropagation()}
           onMouseDown={(e) => e.stopPropagation()}
           placeholder="Image description..."
-          style={{
-            padding: "8px 12px",
-            borderRadius: "var(--radius-sm)",
-            border: "1px solid var(--border)",
-            background: "var(--bg-elevated)",
-            color: "var(--text-primary)",
-            fontSize: 12,
-            outline: "none",
-          }}
+          className="ide-input"
+          style={{ fontSize: 12 }}
         />
       </div>
 
@@ -150,16 +137,7 @@ export function ImageEditForm({
             onCancel();
           }}
           onMouseDown={(e) => e.stopPropagation()}
-          style={{
-            padding: "5px 12px",
-            borderRadius: 6,
-            border: "1px solid var(--border)",
-            background: "transparent",
-            color: "var(--text-secondary)",
-            fontSize: 11,
-            fontWeight: 600,
-            cursor: "pointer",
-          }}
+          className="ide-btn"
         >
           Cancel
         </button>
@@ -169,16 +147,7 @@ export function ImageEditForm({
             onSave();
           }}
           onMouseDown={(e) => e.stopPropagation()}
-          style={{
-            padding: "5px 16px",
-            borderRadius: 6,
-            border: "none",
-            background: "var(--accent)",
-            color: "#fff",
-            fontSize: 11,
-            fontWeight: 700,
-            cursor: "pointer",
-          }}
+          className="ide-btn primary"
         >
           Save Settings
         </button>

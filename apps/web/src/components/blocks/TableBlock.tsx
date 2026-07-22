@@ -97,7 +97,7 @@ export function TableBlock({ block }: { block: Block }) {
 	}, [isFocused, updateFormats]);
 
 	return (
-		<div style={{ display: "flex", flexDirection: "column", gap: 10, margin: "8px 0" }}>
+		<div style={{ display: "flex", flexDirection: "column", gap: 8, margin: "8px 0" }}>
 			{/* Format Toolbar (Top) */}
 			{isFocused && (
 				<TableFormatToolbar
@@ -111,7 +111,7 @@ export function TableBlock({ block }: { block: Block }) {
 			<div
 				style={{
 					overflowX: "auto",
-					borderRadius: 8,
+					borderRadius: "var(--radius-md)",
 					border: "1px solid var(--border)",
 					background: "var(--bg-surface)",
 				}}
@@ -168,7 +168,7 @@ export function TableBlock({ block }: { block: Block }) {
 				</table>
 			</div>
 
-			{/* Glassmorphic Action Bar */}
+			{/* Grid controls action bar */}
 			<TableGridControls
 				addRow={addRow}
 				deleteRow={deleteRow}

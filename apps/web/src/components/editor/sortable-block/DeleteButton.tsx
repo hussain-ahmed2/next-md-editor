@@ -36,7 +36,8 @@ export function DeleteButton({ onDelete }: DeleteButtonProps) {
           border: "none",
           cursor: "pointer",
           color: "var(--text-muted)",
-          borderRadius: 4,
+          borderRadius: "var(--radius-sm)",
+          transition: "color 0.1s",
           padding: 0,
         }}
         onMouseEnter={(e) => (e.currentTarget.style.color = "var(--danger)")}

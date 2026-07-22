@@ -13,8 +13,8 @@ export const BlockRenderer = memo(function BlockRenderer({ block }: { block: Blo
         style={{
           padding: "8px 12px",
           borderRadius: "var(--radius-sm)",
-          background: "rgba(248, 113, 113, 0.1)",
-          border: "1px solid rgba(248, 113, 113, 0.3)",
+          background: "var(--danger-muted)",
+          border: "1px solid var(--danger-border)",
           color: "var(--danger)",
           fontSize: 12,
           fontFamily: "var(--font-mono)",

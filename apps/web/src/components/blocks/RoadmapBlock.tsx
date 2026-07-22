@@ -67,8 +67,8 @@ export function RoadmapBlock({ block }: { block: Block }) {
         width: "100%",
         background: "var(--bg-surface)",
         border: "1px solid var(--border-subtle)",
-        borderRadius: "var(--radius-lg)",
-        padding: "24px",
+        borderRadius: "var(--radius-md)",
+        padding: "12px",
       }}
     >
       <div style={{ marginBottom: 16, fontSize: 18, fontWeight: 700, color: "var(--text-primary)" }}>
@@ -97,7 +97,7 @@ export function RoadmapBlock({ block }: { block: Block }) {
               type="checkbox"
               checked={item.completed}
               onChange={(e) => handleUpdateItem(item.id, { completed: e.target.checked })}
-              style={{ width: 16, height: 16, cursor: "pointer" }}
+              style={{ width: 16, height: 16, cursor: "pointer", accentColor: "var(--accent)" }}
             />
             
             <input
@@ -118,19 +118,11 @@ export function RoadmapBlock({ block }: { block: Block }) {
 
             <button
               onClick={() => handleRemoveItem(item.id)}
-              style={{
-                background: "transparent",
-                border: "none",
-                color: "var(--text-muted)",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                padding: 4,
-              }}
+              className="ide-btn"
+              style={{ width: 26, padding: 0 }}
               title="Remove task"
             >
-              <Trash2 size={16} />
+              <Trash2 size={14} />
             </button>
           </div>
         ))}
@@ -138,24 +130,15 @@ export function RoadmapBlock({ block }: { block: Block }) {
 
       <button
         onClick={handleAddItem}
+        className="ide-btn"
         style={{
-          marginTop: 16,
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          background: "transparent",
-          border: "1px dashed var(--border)",
-          color: "var(--text-secondary)",
-          padding: "10px 16px",
-          borderRadius: "var(--radius-md)",
-          fontSize: 14,
-          fontWeight: 500,
-          cursor: "pointer",
+          marginTop: 12,
           width: "100%",
-          justifyContent: "center",
+          height: 28,
+          border: "1px dashed var(--border)",
         }}
       >
-        <Plus size={16} /> Add Task
+        <Plus size={14} /> Add Task
       </button>
     </div>
   );

@@ -33,8 +33,8 @@ export function MarkdownPreview({ scrollRef }: { scrollRef?: React.Ref<HTMLDivEl
 				display: "flex",
 				flexDirection: "column",
 				overflow: "hidden",
-				padding: "16px",
-				gap: 12,
+				padding: "12px",
+				gap: 8,
 			}}
 		>
 			<div
@@ -54,7 +54,7 @@ export function MarkdownPreview({ scrollRef }: { scrollRef?: React.Ref<HTMLDivEl
 				<span
 					style={{
 						padding: "2px 6px",
-						borderRadius: 4,
+						borderRadius: "var(--radius-sm)",
 						background: "var(--accent-muted)",
 						color: "var(--accent)",
 						fontSize: 10,
@@ -73,8 +73,8 @@ export function MarkdownPreview({ scrollRef }: { scrollRef?: React.Ref<HTMLDivEl
 					display: "flex",
 					flexDirection: "column",
 					background: "var(--bg-base)",
-					border: "1px solid var(--border)",
-					borderRadius: 6,
+					border: "1px solid var(--border-subtle)",
+					borderRadius: "var(--radius-sm)",
 					overflow: "hidden",
 				}}
 			>

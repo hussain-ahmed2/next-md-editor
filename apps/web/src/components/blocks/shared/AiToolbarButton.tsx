@@ -11,27 +11,12 @@ export function AiToolbarButton({ blockId }: { blockId: string }) {
 			<button
 				onClick={() => setAiDialogOpen(true)}
 				title="Edit with AI"
+				className={aiDialogOpen ? "ide-btn active" : "ide-btn"}
 				style={{
-					background: aiDialogOpen ? "var(--accent)" : "transparent",
-					border: "none",
-					borderRadius: 4,
-					padding: "3px 7px",
-					cursor: "pointer",
-					color: aiDialogOpen ? "#fff" : "var(--text-secondary)",
-					fontSize: 12,
-					transition: "all 0.12s",
-				}}
-				onMouseEnter={(e) => {
-					if (!aiDialogOpen) {
-						e.currentTarget.style.background = "var(--bg-elevated)";
-						e.currentTarget.style.color = "var(--text-primary)";
-					}
-				}}
-				onMouseLeave={(e) => {
-					if (!aiDialogOpen) {
-						e.currentTarget.style.background = "transparent";
-						e.currentTarget.style.color = "var(--text-secondary)";
-					}
+					width: 24,
+					height: 24,
+					padding: 0,
+					transition: "background 0.12s ease, color 0.12s ease",
 				}}
 			>
 				<Sparkles size={13} />

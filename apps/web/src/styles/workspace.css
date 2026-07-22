@@ -2,6 +2,124 @@
    IDE workspace chrome — tool windows, file tree, tabs, status bar
    ============================================================ */
 
+/* ── IDE header + menu bar ──────────────────────────── */
+.ide-header {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 40px;
+  padding: 0 8px 0 10px;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+.ide-menubar {
+  display: flex;
+  align-items: stretch;
+  height: 100%;
+}
+.ide-menubar-item {
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: var(--font-ui-size);
+  font-family: var(--font-sans);
+  cursor: default;
+  position: relative;
+}
+.ide-menubar-item:hover,
+.ide-menubar-item.open {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+.ide-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 1200;
+  min-width: 220px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md);
+  padding: 4px;
+}
+.ide-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 5px 10px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  text-align: left;
+  font-size: var(--font-ui-size);
+  font-family: var(--font-sans);
+  white-space: nowrap;
+}
+.ide-menu-item:hover { background: var(--accent); color: #fff; }
+.ide-menu-item:hover .ide-menu-shortcut { color: rgba(255, 255, 255, 0.75); }
+.ide-menu-item.disabled { opacity: 0.45; pointer-events: none; }
+.ide-menu-sep { height: 1px; margin: 4px 8px; background: var(--border-subtle); }
+.ide-menu-label {
+  padding: 4px 10px 2px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.ide-menu-shortcut {
+  margin-left: auto;
+  padding-left: 24px;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+/* ── Shared IDE controls ────────────────────────────── */
+.ide-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 26px;
+  padding: 0 8px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: var(--font-ui-size);
+  font-family: var(--font-sans);
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.ide-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+.ide-btn.active { background: var(--accent-muted); color: var(--accent); }
+.ide-btn.primary { background: var(--accent); color: #fff; }
+.ide-btn.primary:hover { background: var(--accent-hover); }
+.ide-input,
+.ide-select {
+  height: 26px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-size: var(--font-ui-size);
+  font-family: var(--font-sans);
+  outline: none;
+}
+.ide-input:focus,
+.ide-select:focus { border-color: var(--accent); box-shadow: var(--focus-ring); }
+.ide-select { cursor: pointer; background: var(--bg-surface); }
+
 /* ── Tool-window strip (far-left icon rail) ─────────── */
 .ws-strip {
   width: 40px;
@@ -133,6 +251,20 @@
   color: var(--text-muted);
   font-size: 12px;
   line-height: 1.6;
+}
+/* PyCharm-style indent guide on nested children */
+.ws-tree-children {
+  position: relative;
+}
+.ws-tree-children::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--guide-left, 15px);
+  width: 1px;
+  background: var(--border-subtle);
+  pointer-events: none;
 }
 
 /* ── Context menu ───────────────────────────────────── */

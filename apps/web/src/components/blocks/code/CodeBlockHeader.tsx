@@ -18,41 +18,24 @@ export function CodeBlockHeader({ blockId, lang }: CodeBlockHeaderProps) {
 				display: "flex",
 				alignItems: "center",
 				justifyContent: "space-between",
-				padding: "6px 12px",
-				borderBottom: "1px solid var(--border)",
-				background: "var(--bg-elevated)",
+				height: 32,
+				padding: "0 8px 0 12px",
+				borderBottom: "1px solid var(--border-subtle)",
+				background: "var(--bg-surface)",
 			}}
 		>
-			<div style={{ display: "flex", gap: 6 }}>
-				<span
-					style={{
-						width: 10,
-						height: 10,
-						borderRadius: "50%",
-						background: "#f87171",
-						display: "inline-block",
-					}}
-				/>
-				<span
-					style={{
-						width: 10,
-						height: 10,
-						borderRadius: "50%",
-						background: "#fbbf24",
-						display: "inline-block",
-					}}
-				/>
-				<span
-					style={{
-						width: 10,
-						height: 10,
-						borderRadius: "50%",
-						background: "#4ade80",
-						display: "inline-block",
-					}}
-				/>
-			</div>
-			<div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+			<span
+				style={{
+					fontSize: 11,
+					fontWeight: 600,
+					letterSpacing: "0.06em",
+					textTransform: "uppercase",
+					color: "var(--text-muted)",
+				}}
+			>
+				Code
+			</span>
+			<div style={{ display: "flex", gap: 4, alignItems: "center" }}>
 				<AiToolbarButton blockId={blockId} />
 				<select
 					value={lang}
@@ -60,18 +43,12 @@ export function CodeBlockHeader({ blockId, lang }: CodeBlockHeaderProps) {
 						e.stopPropagation();
 						updateBlock(blockId, { language: e.target.value });
 					}}
+					className="ide-select"
 					style={{
-						background: "transparent",
-						border: "none",
-						color: "var(--text-muted)",
-						fontSize: 11,
-						fontFamily: "var(--font-mono)",
-						outline: "none",
+						height: 24,
+						fontSize: 12,
 						minWidth: 120,
 						maxWidth: 180,
-						textAlign: "right",
-						textAlignLast: "right",
-						cursor: "pointer",
 					}}
 				>
 					<optgroup label="Popular">

@@ -55,9 +55,9 @@ export function withSortable<P extends { block?: Block }>(
         style={{
           opacity: isDragging ? 0.3 : 1,
           position: "relative",
-          borderRadius: "var(--radius-md)",
+          borderRadius: "var(--radius-sm)",
           border: isDragging
-            ? "1.5px dashed var(--accent)"
+            ? "1px dashed var(--accent)"
             : `1px solid ${isSelected ? "var(--accent)" : hovered ? "var(--border)" : "transparent"}`,
           background: isDragging
             ? "var(--accent-muted)"

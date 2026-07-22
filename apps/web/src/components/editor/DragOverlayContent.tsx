@@ -2,6 +2,7 @@
 
 import { useDragOperation } from "@dnd-kit/react";
 import { useEditorStore } from "@next-md-editor/editor-core";
+import { Folder, FileText } from "lucide-react";
 import { BlockRenderer } from "@/components/editor/BlockRenderer";
 
 // No props — all state comes from the library and store directly.
@@ -34,7 +35,12 @@ export function DragOverlayContent() {
           color: "var(--text-primary)",
         }}
       >
-        {source.data.nodeKind === "folder" ? "📁" : "📄"} {source.data.nodeName as string}
+        {source.data.nodeKind === "folder" ? (
+          <Folder size={14} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
+        ) : (
+          <FileText size={14} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
+        )}
+        {source.data.nodeName as string}
       </div>
     );
   }
@@ -48,13 +54,12 @@ export function DragOverlayContent() {
         style={{
           display: "flex",
           alignItems: "center",
-          gap: 10,
-          padding: "8px 14px 8px 10px",
+          gap: 8,
+          padding: "6px 10px 6px 8px",
           background: "var(--bg-elevated)",
           border: "1px solid var(--accent)",
-          borderRadius: "var(--radius-lg)",
-          boxShadow: "0 8px 24px rgba(0,0,0,0.18), 0 0 0 1px var(--accent)",
-          transform: "rotate(-3deg)",
+          borderRadius: "var(--radius-sm)",
+          boxShadow: "var(--shadow-md)",
           cursor: "grabbing",
           pointerEvents: "none",
           userSelect: "none",
@@ -63,8 +68,8 @@ export function DragOverlayContent() {
       >
         <span
           style={{
-            width: 30,
-            height: 30,
+            width: 24,
+            height: 24,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -89,7 +94,7 @@ export function DragOverlayContent() {
             fontWeight: 700,
             color: "white",
             background: "var(--accent)",
-            borderRadius: "var(--radius-full)",
+            borderRadius: "var(--radius-sm)",
             padding: "1px 7px",
             lineHeight: "16px",
             marginLeft: 2,
@@ -110,10 +115,10 @@ export function DragOverlayContent() {
   return activeBlock ? (
     <div
       style={{
-        borderRadius: "var(--radius-md)",
+        borderRadius: "var(--radius-sm)",
         border: "1px solid var(--accent)",
         background: "var(--bg-elevated)",
-        boxShadow: "var(--shadow-lg)",
+        boxShadow: "var(--shadow-md)",
         padding: "8px 12px",
         cursor: "grabbing",
         opacity: 0.9,
@@ -129,15 +134,14 @@ export function DragOverlayContent() {
               right: -10,
               background: "var(--accent)",
               color: "white",
-              fontSize: 12,
-              fontWeight: "bold",
-              width: 24,
-              height: 24,
-              borderRadius: "50%",
+              fontSize: 11,
+              fontWeight: 600,
+              width: 20,
+              height: 20,
+              borderRadius: "var(--radius-sm)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              boxShadow: "var(--shadow-sm)",
               zIndex: 10,
             }}
           >

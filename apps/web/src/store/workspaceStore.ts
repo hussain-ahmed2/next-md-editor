@@ -23,6 +23,9 @@ interface WorkspaceState extends WorkspaceMeta {
   dirtyFileIds: string[];
   /** Node id currently being renamed inline in the tree, if any. */
   renamingNodeId: string | null;
+  /** Pending "create node" request shown as an inline input in the tree
+      (set from the tree itself or the File menu). */
+  creatingIntent: { parentId: string | null; kind: "file" | "folder" } | null;
 
   init: () => void;
   createFile: (parentId: string | null, name: string) => string | null;
@@ -43,6 +46,8 @@ interface WorkspaceState extends WorkspaceMeta {
   toggleFolder: (id: string) => void;
   setExpanded: (id: string, expanded: boolean) => void;
   setRenamingNodeId: (id: string | null) => void;
+  beginCreate: (parentId: string | null, kind: "file" | "folder") => void;
+  clearCreate: () => void;
   markDirty: (id: string) => void;
   clearDirty: (id: string) => void;
 }
@@ -71,6 +76,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   initialized: false,
   dirtyFileIds: [],
   renamingNodeId: null,
+  creatingIntent: null,
 
   init: () => {
     if (get().initialized) return;
@@ -335,6 +341,18 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   },
 
   setRenamingNodeId: (id) => set({ renamingNodeId: id }),
+
+  beginCreate: (parentId, kind) => {
+    set((s) => ({
+      creatingIntent: { parentId, kind },
+      expandedFolderIds:
+        parentId && !s.expandedFolderIds.includes(parentId)
+          ? [...s.expandedFolderIds, parentId]
+          : s.expandedFolderIds,
+    }));
+  },
+
+  clearCreate: () => set({ creatingIntent: null }),
 
   markDirty: (id) =>
     set((s) => (s.dirtyFileIds.includes(id) ? {} : { dirtyFileIds: [...s.dirtyFileIds, id] })),

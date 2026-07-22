@@ -143,12 +143,12 @@ export function EditorCanvas({ scrollRef }: { scrollRef?: React.Ref<HTMLDivEleme
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        padding: isMobile ? "32px 16px" : "60px 48px",
+        padding: isMobile ? "32px 16px" : "40px 40px",
         background: "var(--bg-base)",
       }}
     >
-      {/* paddingBottom mirrors the top 60px so the last block has identical breathing room */}
-      <div style={{ width: "100%", maxWidth: 720, paddingBottom: 60 }}>
+      {/* paddingBottom mirrors the top 40px so the last block has identical breathing room */}
+      <div style={{ width: "100%", maxWidth: 720, paddingBottom: 40 }}>
         {blocks.length === 0 && !isSidebarDrag && <EmptyState />}
 
         {/* No SortableContext — each useSortable registers with the manager directly */}

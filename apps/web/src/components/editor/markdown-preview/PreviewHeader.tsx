@@ -20,10 +20,10 @@ export function PreviewHeader({
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        padding: "8px 14px",
+        height: 32,
+        padding: "0 8px 0 12px",
         background: "var(--bg-surface)",
-        borderBottom: "1px solid var(--border)",
-        height: 44,
+        borderBottom: "1px solid var(--border-subtle)",
         flexShrink: 0,
       }}
     >
@@ -32,7 +32,7 @@ export function PreviewHeader({
           display: "flex",
           alignItems: "center",
           gap: 8,
-          fontSize: 12.5,
+          fontSize: 12,
           color: "var(--text-primary)",
           fontWeight: 500,
         }}
@@ -40,34 +40,15 @@ export function PreviewHeader({
         <FileText size={14} style={{ color: "var(--text-muted)" }} />
         <span>document.md</span>
         <span style={{ color: "var(--border)", userSelect: "none" }}>|</span>
-        <span style={{ fontSize: 11.5, color: "var(--text-secondary)" }}>{blockCount} blocks</span>
+        <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{blockCount} blocks</span>
       </div>
-      <div
-        style={{
-          display: "flex",
-          border: "1px solid var(--border)",
-          borderRadius: 6,
-          overflow: "hidden",
-          background: "var(--bg-base)",
-          padding: 2,
-        }}
-      >
+      <div style={{ display: "flex", gap: 2 }}>
         {(["preview", "raw"] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => onTabChange(tab)}
-            style={{
-              padding: "3px 12px",
-              fontSize: 12,
-              fontWeight: 600,
-              borderRadius: 4,
-              border: "none",
-              background: activeTab === tab ? "var(--bg-elevated)" : "transparent",
-              color: activeTab === tab ? "var(--text-primary)" : "var(--text-muted)",
-              cursor: "pointer",
-              transition: "all 0.1s ease",
-              textTransform: "capitalize",
-            }}
+            className={"ide-btn" + (activeTab === tab ? " active" : "")}
+            style={{ height: 24, padding: "0 10px", fontSize: 12, fontWeight: 600 }}
           >
             {tab === "raw" ? "Code" : "Preview"}
           </button>

@@ -54,24 +54,32 @@ export function ImageBlock({ block }: { block: Block }) {
       {isEditing ? (
         <div
           style={{
-            padding: "16px",
+            padding: "12px",
             borderRadius: "var(--radius-md)",
-            border: "1px dashed var(--border)",
-            background: "var(--bg-elevated)",
+            border: "1px solid var(--border)",
+            background: "var(--bg-surface)",
             display: "flex",
             flexDirection: "column",
-            gap: 12,
+            gap: 8,
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <ImageIcon size={16} style={{ color: "var(--text-primary)" }} />
-            <span style={{ fontWeight: 600, fontSize: 13, color: "var(--text-primary)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <ImageIcon size={13} style={{ color: "var(--text-muted)" }} />
+            <span
+              style={{
+                fontSize: 11,
+                fontWeight: 600,
+                letterSpacing: "0.06em",
+                textTransform: "uppercase",
+                color: "var(--text-muted)",
+              }}
+            >
               Configure Image Block
             </span>
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <label style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <label style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", color: "var(--text-muted)" }}>
               IMAGE URL
             </label>
             <input
@@ -79,21 +87,13 @@ export function ImageBlock({ block }: { block: Block }) {
               value={inputUrl}
               onChange={(e) => setInputUrl(e.target.value)}
               placeholder="https://example.com/image.png"
-              style={{
-                padding: "8px 12px",
-                borderRadius: "var(--radius-sm)",
-                border: "1px solid var(--border)",
-                background: "var(--bg-surface)",
-                color: "var(--text-primary)",
-                fontSize: 13,
-                outline: "none",
-                fontFamily: "var(--font-mono)",
-              }}
+              className="ide-input"
+              style={{ fontFamily: "var(--font-mono)", fontSize: 12 }}
             />
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <label style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <label style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", color: "var(--text-muted)" }}>
               ALT TEXT
             </label>
             <input
@@ -101,50 +101,18 @@ export function ImageBlock({ block }: { block: Block }) {
               value={inputAlt}
               onChange={(e) => setInputAlt(e.target.value)}
               placeholder="Description of the image..."
-              style={{
-                padding: "8px 12px",
-                borderRadius: "var(--radius-sm)",
-                border: "1px solid var(--border)",
-                background: "var(--bg-surface)",
-                color: "var(--text-primary)",
-                fontSize: 13,
-                outline: "none",
-              }}
+              className="ide-input"
+              style={{ fontSize: 12 }}
             />
           </div>
 
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 4 }}>
             {url && (
-              <button
-                onClick={() => setIsEditing(false)}
-                style={{
-                  padding: "6px 12px",
-                  borderRadius: "var(--radius-sm)",
-                  border: "1px solid var(--border)",
-                  background: "transparent",
-                  color: "var(--text-secondary)",
-                  fontSize: 12,
-                  fontWeight: 500,
-                  cursor: "pointer",
-                }}
-              >
+              <button onClick={() => setIsEditing(false)} className="ide-btn">
                 Cancel
               </button>
             )}
-            <button
-              onClick={handleSave}
-              style={{
-                padding: "6px 16px",
-                borderRadius: "var(--radius-sm)",
-                border: "1px solid transparent",
-                background: "var(--accent)",
-                color: "#fff",
-                fontSize: 12,
-                fontWeight: 600,
-                cursor: "pointer",
-                boxShadow: "0 2px 8px var(--accent-glow)",
-              }}
-            >
+            <button onClick={handleSave} className="ide-btn primary">
               Apply Image
             </button>
           </div>
@@ -177,25 +145,24 @@ export function ImageBlock({ block }: { block: Block }) {
             onClick={() => setIsEditing(true)}
             style={{
               position: "absolute",
-              top: 12,
-              right: 12,
-              padding: "4px 10px",
-              borderRadius: "4px",
-              background: "rgba(15, 15, 15, 0.8)",
-              border: "1px solid rgba(255, 255, 255, 0.15)",
-              color: "#fff",
+              top: 8,
+              right: 8,
+              height: 24,
+              padding: "0 8px",
+              borderRadius: "var(--radius-sm)",
+              background: "var(--bg-surface)",
+              border: "1px solid var(--border)",
+              color: "var(--text-primary)",
               fontSize: 11,
-              fontWeight: 600,
+              fontWeight: 500,
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
               gap: 4,
-              boxShadow: "var(--shadow-sm)",
-              backdropFilter: "blur(4px)",
               fontFamily: "var(--font-sans)",
             }}
           >
-            <Edit2 size={12} /> Edit Image
+            <Edit2 size={13} /> Edit Image
           </div>
         </div>
       )}

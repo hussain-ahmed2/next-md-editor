@@ -2,6 +2,7 @@
 
 import { X } from "lucide-react";
 import { useWorkspaceStore } from "@/store/workspaceStore";
+import { FileTypeIcon } from "./FileTypeIcon";
 
 export function EditorTabs() {
   const openTabIds = useWorkspaceStore((s) => s.openTabIds);
@@ -36,6 +37,9 @@ export function EditorTabs() {
             }}
             title={node.name}
           >
+            <span style={{ display: "flex", color: "var(--text-muted)" }}>
+              <FileTypeIcon name={node.name} size={13} />
+            </span>
             {isDirty && <span className="ws-tab-dirty" title="Unsaved changes" />}
             <span>{node.name}</span>
             <span

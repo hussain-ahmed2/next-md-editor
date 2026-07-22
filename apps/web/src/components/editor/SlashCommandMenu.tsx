@@ -35,16 +35,12 @@ export function SlashCommandMenu({
   return (
     <div
       ref={menuRef}
+      className="ide-menu"
       style={{
         position: "absolute",
         top: position.top + 6,
         left: position.left,
         zIndex: 60,
-        background: "var(--bg-elevated)",
-        border: "1px solid var(--border)",
-        borderRadius: "var(--radius-md)",
-        boxShadow: "var(--shadow-lg)",
-        padding: 4,
         display: "flex",
         flexDirection: "column",
         minWidth: 200,
@@ -52,41 +48,18 @@ export function SlashCommandMenu({
         overflowY: "auto",
       }}
     >
-      <div
-        style={{
-          padding: "4px 8px",
-          fontSize: 11,
-          color: "var(--text-muted)",
-          fontWeight: 600,
-          textTransform: "uppercase",
-          letterSpacing: "0.06em",
-        }}
-      >
-        Insert block
-      </div>
+      <div className="ide-menu-label">Insert block</div>
       {items.map((item, index) => {
         const isSelected = index === selectedIndex;
         return (
           <button
             key={item.type}
+            className="ide-menu-item"
             onMouseDown={(e) => {
               e.preventDefault();
               onSelect(item);
             }}
-            style={{
-              padding: "6px 8px",
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              border: "none",
-              borderRadius: "var(--radius-sm)",
-              background: isSelected ? "var(--accent-muted)" : "transparent",
-              color: isSelected ? "var(--text-primary)" : "var(--text-secondary)",
-              fontSize: 13,
-              fontFamily: "var(--font-sans)",
-              cursor: "pointer",
-              textAlign: "left",
-            }}
+            style={isSelected ? { background: "var(--accent)", color: "#fff" } : undefined}
           >
             {item.label}
           </button>

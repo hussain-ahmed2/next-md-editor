@@ -11,8 +11,7 @@ export function DropOverlay({ visible }: { visible: boolean }) {
         position: "fixed",
         inset: 0,
         zIndex: 2000,
-        background: "color-mix(in srgb, var(--bg-base) 70%, transparent)",
-        backdropFilter: "blur(2px)",
+        background: "rgba(0,0,0,0.55)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -24,18 +23,18 @@ export function DropOverlay({ visible }: { visible: boolean }) {
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          gap: 12,
-          padding: "40px 64px",
-          border: "2px dashed var(--accent)",
-          borderRadius: "var(--radius-lg)",
-          background: "var(--bg-surface)",
+          gap: 8,
+          padding: "24px 40px",
+          border: "1px dashed var(--accent)",
+          borderRadius: "var(--radius-md)",
+          background: "var(--bg-elevated)",
           color: "var(--text-primary)",
-          boxShadow: "var(--shadow-lg)",
+          boxShadow: "var(--shadow-md)",
         }}
       >
-        <FileDown size={36} style={{ color: "var(--accent)" }} />
-        <span style={{ fontSize: 15, fontWeight: 600 }}>Drop files to import</span>
-        <span style={{ fontSize: 12.5, color: "var(--text-secondary)" }}>
+        <FileDown size={20} style={{ color: "var(--accent)" }} />
+        <span style={{ fontSize: 13, fontWeight: 600 }}>Drop files to import</span>
+        <span style={{ fontSize: 12, color: "var(--text-secondary)" }}>
           .md files become block documents — anything else opens as text
         </span>
       </div>

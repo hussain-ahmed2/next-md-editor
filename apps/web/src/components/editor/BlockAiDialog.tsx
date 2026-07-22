@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
-import { Sparkles, Square, RotateCw, FileDown, X } from "lucide-react";
+import { Sparkles, Square, RotateCw, FileDown } from "lucide-react";
 import { useEditorStore } from "@next-md-editor/editor-core";
 import { parseMarkdown, serializeToMarkdown } from "@/features/markdown/serializer";
 import { v4 as uuidv4 } from "uuid";
@@ -170,27 +170,13 @@ export function BlockAiDialog({ blockId, onClose }: BlockAiDialogProps) {
 
   const blockLabel = block?.type ?? "block";
 
-  const btnBase: React.CSSProperties = {
-    display: "inline-flex",
-    alignItems: "center",
-    gap: 6,
-    padding: "8px 16px",
-    fontSize: 13,
-    fontWeight: 600,
-    border: "none",
-    borderRadius: 6,
-    cursor: "pointer",
-    fontFamily: "inherit",
-    transition: "opacity 0.15s ease",
-  };
-
   return (
     <>
       <div
         style={{
           position: "fixed",
           inset: 0,
-          background: "rgba(0,0,0,0.4)",
+          background: "rgba(0,0,0,0.55)",
           zIndex: 9998,
         }}
         onClick={onClose}
@@ -208,8 +194,8 @@ export function BlockAiDialog({ blockId, onClose }: BlockAiDialogProps) {
           maxHeight: "calc(100vh - 32px)",
           background: "var(--bg-elevated)",
           border: "1px solid var(--border)",
-          borderRadius: "var(--radius-lg)",
-          boxShadow: "var(--shadow-xl)",
+          borderRadius: "var(--radius-md)",
+          boxShadow: "var(--shadow-md)",
           display: "flex",
           flexDirection: "column",
           overflow: "hidden",
@@ -218,17 +204,17 @@ export function BlockAiDialog({ blockId, onClose }: BlockAiDialogProps) {
         <AiDialogHeader blockLabel={blockLabel} onClose={onClose} />
 
         {/* Body */}
-        <div style={{ padding: "16px 18px", overflowY: "auto", flex: 1 }}>
+        <div style={{ padding: 12, overflowY: "auto", flex: 1 }}>
           {/* Current content preview */}
-          <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 6 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>
             Current content
           </div>
           <div
             style={{
               background: "var(--bg-surface)",
-              border: "1px solid var(--border)",
-              borderRadius: 6,
-              padding: "10px 12px",
+              border: "1px solid var(--border-subtle)",
+              borderRadius: "var(--radius-sm)",
+              padding: "8px 10px",
               fontSize: 12,
               color: "var(--text-secondary)",
               whiteSpace: "pre-wrap",
@@ -236,7 +222,7 @@ export function BlockAiDialog({ blockId, onClose }: BlockAiDialogProps) {
               maxHeight: 120,
               overflow: "auto",
               lineHeight: 1.5,
-              marginBottom: 16,
+              marginBottom: 12,
               fontFamily: "inherit",
             }}
           >
@@ -245,7 +231,7 @@ export function BlockAiDialog({ blockId, onClose }: BlockAiDialogProps) {
 
           {state === "input" && (
             <>
-              <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 6 }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>
                 How should I modify it?
               </div>
               <textarea
@@ -253,43 +239,32 @@ export function BlockAiDialog({ blockId, onClose }: BlockAiDialogProps) {
                 onChange={(e) => setPrompt(e.target.value)}
                 placeholder='e.g. "Make this more concise", "Turn into a question", "Add bullet points", "Rewrite in a formal tone"...'
                 rows={3}
+                className="ide-input"
                 style={{
                   width: "100%",
-                  padding: 10,
-                  fontSize: 13,
-                  fontFamily: "inherit",
-                  border: "1px solid var(--border)",
-                  borderRadius: 6,
-                  background: "var(--bg-surface)",
-                  color: "var(--text-primary)",
+                  height: "auto",
+                  minHeight: 64,
+                  padding: "6px 8px",
+                  lineHeight: 1.5,
                   resize: "vertical",
-                  outline: "none",
                   boxSizing: "border-box",
                 }}
               />
-              <div style={{ marginTop: 12, display: "flex", justifyContent: "flex-end", gap: 8 }}>
+              <div style={{ marginTop: 8, display: "flex", justifyContent: "flex-end", gap: 6 }}>
                 <button
                   onClick={onClose}
-                  style={{
-                    ...btnBase,
-                    background: "var(--bg-surface)",
-                    border: "1px solid var(--border)",
-                    color: "var(--text-primary)",
-                  }}
+                  className="ide-btn"
+                  style={{ border: "1px solid var(--border)" }}
                 >
                   Cancel
                 </button>
                 <button
                   onClick={() => handleGenerate(prompt)}
                   disabled={!prompt.trim()}
-                  style={{
-                    ...btnBase,
-                    background: "var(--accent)",
-                    color: "#fff",
-                    opacity: prompt.trim() ? 1 : 0.5,
-                  }}
+                  className="ide-btn primary"
+                  style={{ opacity: prompt.trim() ? 1 : 0.5 }}
                 >
-                  <Sparkles size={14} />
+                  <Sparkles size={13} />
                   Generate
                 </button>
               </div>
@@ -298,11 +273,11 @@ export function BlockAiDialog({ blockId, onClose }: BlockAiDialogProps) {
 
           {state === "streaming" && (
             <>
-              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
                   Generating
                 </div>
-                <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <svg width="16" height="16" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <style>
                     {`
                       .ai_bounce { animation: ai_bounce_anim 1.05s infinite; fill: var(--accent); }
@@ -324,9 +299,9 @@ export function BlockAiDialog({ blockId, onClose }: BlockAiDialogProps) {
                 ref={previewRef}
                 style={{
                   background: "var(--bg-surface)",
-                  border: "1px solid var(--border)",
-                  borderRadius: 6,
-                  padding: 12,
+                  border: "1px solid var(--border-subtle)",
+                  borderRadius: "var(--radius-sm)",
+                  padding: "8px 10px",
                   fontSize: 12,
                   fontFamily: "var(--font-mono)",
                   color: "var(--text-primary)",
@@ -344,16 +319,16 @@ export function BlockAiDialog({ blockId, onClose }: BlockAiDialogProps) {
 
           {state === "done" && (
             <>
-              <div style={{ fontSize: 11, fontWeight: 600, color: "var(--success)", marginBottom: 6 }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: "var(--success)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>
                 Generation complete
               </div>
               <div
                 ref={previewRef}
                 style={{
                   background: "var(--bg-surface)",
-                  border: "1px solid var(--border)",
-                  borderRadius: 6,
-                  padding: 12,
+                  border: "1px solid var(--border-subtle)",
+                  borderRadius: "var(--radius-sm)",
+                  padding: "8px 10px",
                   fontSize: 12,
                   fontFamily: "var(--font-mono)",
                   color: "var(--text-primary)",
@@ -379,14 +354,10 @@ export function BlockAiDialog({ blockId, onClose }: BlockAiDialogProps) {
               </div>
               <button
                 onClick={handleTryAgain}
-                style={{
-                  ...btnBase,
-                  background: "var(--bg-surface)",
-                  border: "1px solid var(--border)",
-                  color: "var(--text-primary)",
-                }}
+                className="ide-btn"
+                style={{ border: "1px solid var(--border)" }}
               >
-                <RotateCw size={14} />
+                <RotateCw size={13} />
                 Try Again
               </button>
             </div>
@@ -399,21 +370,18 @@ export function BlockAiDialog({ blockId, onClose }: BlockAiDialogProps) {
             style={{
               display: "flex",
               justifyContent: "flex-end",
-              gap: 8,
-              padding: "12px 18px",
-              borderTop: "1px solid var(--border)",
+              gap: 6,
+              padding: "8px 12px",
+              borderTop: "1px solid var(--border-subtle)",
             }}
           >
             {state === "streaming" && (
               <button
                 onClick={handleStop}
-                style={{
-                  ...btnBase,
-                  background: "var(--danger)",
-                  color: "#fff",
-                }}
+                className="ide-btn"
+                style={{ background: "var(--danger)", color: "#fff" }}
               >
-                <Square size={14} />
+                <Square size={13} />
                 Stop
               </button>
             )}
@@ -421,25 +389,14 @@ export function BlockAiDialog({ blockId, onClose }: BlockAiDialogProps) {
               <>
                 <button
                   onClick={() => handleGenerate(prompt)}
-                  style={{
-                    ...btnBase,
-                    background: "var(--bg-surface)",
-                    border: "1px solid var(--border)",
-                    color: "var(--text-primary)",
-                  }}
+                  className="ide-btn"
+                  style={{ border: "1px solid var(--border)" }}
                 >
-                  <RotateCw size={14} />
+                  <RotateCw size={13} />
                   Regenerate
                 </button>
-                <button
-                  onClick={handleUpdate}
-                  style={{
-                    ...btnBase,
-                    background: "var(--accent)",
-                    color: "#fff",
-                  }}
-                >
-                  <FileDown size={14} />
+                <button onClick={handleUpdate} className="ide-btn primary">
+                  <FileDown size={13} />
                   Update Block
                 </button>
               </>

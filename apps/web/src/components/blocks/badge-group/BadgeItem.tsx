@@ -50,7 +50,7 @@ export function BadgeItem({
       <div
         style={{
           position: "absolute",
-          top: -24,
+          top: -30,
           left: "50%",
           transform: "translateX(-50%)",
           display: "flex",
@@ -58,13 +58,13 @@ export function BadgeItem({
           gap: 2,
           background: "var(--bg-elevated)",
           border: "1px solid var(--border)",
-          borderRadius: 4,
-          padding: "2px 4px",
+          borderRadius: "var(--radius-sm)",
+          padding: 2,
           boxShadow: "var(--shadow-md)",
           zIndex: 10,
           opacity: isHovered ? 1 : 0,
           pointerEvents: isHovered ? "auto" : "none",
-          transition: "opacity 0.15s ease",
+          transition: "opacity 0.15s",
         }}
       >
         {/* Invisible bridge to prevent mouse leave on gap */}
@@ -86,22 +86,13 @@ export function BadgeItem({
           onMouseDown={(e) => e.stopPropagation()}
           disabled={index === 0}
           title="Move left"
+          className="ws-icon-btn"
           style={{
-            width: 16,
-            height: 16,
-            borderRadius: 3,
-            border: "1px solid var(--border)",
-            background: "var(--bg-surface)",
-            color: "var(--text-muted)",
             cursor: index === 0 ? "default" : "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: 0,
-            opacity: index === 0 ? 0.3 : 1,
+            opacity: index === 0 ? 0.4 : 1,
           }}
         >
-          <ChevronLeft size={10} />
+          <ChevronLeft size={13} />
         </button>
         <button
           onClick={(e) => {
@@ -111,42 +102,22 @@ export function BadgeItem({
           onMouseDown={(e) => e.stopPropagation()}
           disabled={index === totalCount - 1}
           title="Move right"
+          className="ws-icon-btn"
           style={{
-            width: 16,
-            height: 16,
-            borderRadius: 3,
-            border: "1px solid var(--border)",
-            background: "var(--bg-surface)",
-            color: "var(--text-muted)",
             cursor: index === totalCount - 1 ? "default" : "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: 0,
-            opacity: index === totalCount - 1 ? 0.3 : 1,
+            opacity: index === totalCount - 1 ? 0.4 : 1,
           }}
         >
-          <ChevronRight size={10} />
+          <ChevronRight size={13} />
         </button>
         <button
           onClick={onRemove}
           onMouseDown={(e) => e.stopPropagation()}
           title="Remove"
-          style={{
-            width: 16,
-            height: 16,
-            borderRadius: 3,
-            border: "1px solid var(--danger-border)",
-            background: "var(--danger-muted)",
-            color: "var(--danger)",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: 0,
-          }}
+          className="ws-icon-btn"
+          style={{ color: "var(--danger)" }}
         >
-          <Trash2 size={9} />
+          <Trash2 size={13} />
         </button>
       </div>
     </div>

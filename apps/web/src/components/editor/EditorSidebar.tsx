@@ -15,7 +15,6 @@ import {
 	List,
 	ListOrdered,
 	LayoutGrid,
-	Award,
 	ImageIcon,
 	GitFork,
 	ChevronDown,
@@ -38,115 +37,115 @@ const BLOCK_PALETTE: SidebarBlock[] = [
 	{
 		type: "heading",
 		label: "Heading",
-		icon: <Heading size={18} />,
+		icon: <Heading size={14} />,
 		description: "Section title",
 	},
 	{
 		type: "paragraph",
 		label: "Paragraph",
-		icon: <Text size={18} />,
+		icon: <Text size={14} />,
 		description: "Body text",
 	},
 	{
 		type: "quote",
 		label: "Quote",
-		icon: <Quote size={18} />,
+		icon: <Quote size={14} />,
 		description: "Blockquote",
 	},
 	{
 		type: "code",
 		label: "Code",
-		icon: <Code2 size={18} />,
+		icon: <Code2 size={14} />,
 		description: "Code block",
 	},
 	{
 		type: "divider",
 		label: "Divider",
-		icon: <Minus size={18} />,
+		icon: <Minus size={14} />,
 		description: "Horizontal rule",
 	},
 	{
 		type: "image",
 		label: "Image",
-		icon: <ImageIcon size={18} />,
+		icon: <ImageIcon size={14} />,
 		description: "Insert an image",
 	},
 	{
 		type: "image-grid",
 		label: "Image Grid",
-		icon: <LayoutGrid size={18} />,
+		icon: <LayoutGrid size={14} />,
 		description: "Responsive grid table of images",
 	},
 	{
 		type: "table",
 		label: "Table",
-		icon: <Table size={18} />,
+		icon: <Table size={14} />,
 		description: "Visual GFM grid table",
 	},
 	{
 		type: "callout",
 		label: "Callout",
-		icon: <Lightbulb size={18} />,
+		icon: <Lightbulb size={14} />,
 		description: "Pastel alert callout box",
 	},
 	{
 		type: "bullet-list",
 		label: "Bullet List",
-		icon: <List size={18} />,
+		icon: <List size={14} />,
 		description: "Rich text bullet list block",
 	},
 	{
 		type: "numbered-list",
 		label: "Numbered List",
-		icon: <ListOrdered size={18} />,
+		icon: <ListOrdered size={14} />,
 		description: "Rich text numbered list block",
 	},
 	{
 		type: "badge-group",
 		label: "Badge Group",
-		icon: <Tags size={18} />,
+		icon: <Tags size={14} />,
 		description: "Group of technology or status badges",
 	},
 	{
 		type: "tech-stack",
 		label: "Smart Tech Stack",
-		icon: <LayoutTemplate size={18} />,
+		icon: <LayoutTemplate size={14} />,
 		description: "Quickly build a tech stack with auto-badges",
 	},
 	{
 		type: "hero",
 		label: "Hero Header",
-		icon: <PanelTop size={18} />,
+		icon: <PanelTop size={14} />,
 		description: "Big title, description, and action buttons",
 	},
 	{
 		type: "roadmap",
 		label: "Project Roadmap",
-		icon: <ListTodo size={18} />,
+		icon: <ListTodo size={14} />,
 		description: "Track progress with interactive task lists",
 	},
 	{
 		type: "contributors",
 		label: "Contributors",
-		icon: <Users size={18} />,
+		icon: <Users size={14} />,
 		description: "Showcase open-source contributors",
 	},
 	{
 		type: "github-stats",
 		label: "GitHub Stats",
-		icon: <GitFork size={18} />,
+		icon: <GitFork size={14} />,
 		description: "GitHub profile stats card",
 	},
 	{
 		type: "ai-content",
 		label: "AI Content",
-		icon: <Sparkles size={18} />,
+		icon: <Sparkles size={14} />,
 		description: "AI-generated content from prompts",
 	},
 	{
 		type: "collapsible",
 		label: "Collapsible",
-		icon: <ChevronDown size={18} />,
+		icon: <ChevronDown size={14} />,
 		description: "Expandable details section",
 	},
 ];
@@ -180,15 +179,15 @@ function DraggableSidebarItem({ b, handleAdd }: { b: SidebarBlock; handleAdd: (t
 				flexDirection: "column",
 				alignItems: "center",
 				gap: 4,
-				padding: "10px 6px",
-				borderRadius: "var(--radius-md)",
+				padding: "6px 4px",
+				borderRadius: "var(--radius-sm)",
 				border: "1px solid transparent",
 				background: "transparent",
 				color: "var(--text-secondary)",
 				cursor: isDragging ? "grabbing" : "grab",
 				fontSize: 10,
 				fontWeight: 600,
-				transition: "all 0.15s ease",
+				transition: "background 0.12s ease, color 0.12s ease, border-color 0.12s ease",
 				textAlign: "center",
 				opacity: isDragging ? 0.5 : 1,
 				outline: "none",
@@ -208,8 +207,8 @@ function DraggableSidebarItem({ b, handleAdd }: { b: SidebarBlock; handleAdd: (t
 		>
 			<span
 				style={{
-					width: 32,
-					height: 32,
+					width: 24,
+					height: 24,
 					display: "flex",
 					alignItems: "center",
 					justifyContent: "center",
@@ -256,28 +255,21 @@ export function EditorSidebar() {
 				borderRight: "1px solid var(--border-subtle)",
 				display: "flex",
 				flexDirection: "column",
-				padding: "12px 8px",
-				gap: 8,
-				overflowY: "auto",
+				overflow: "hidden",
 			}}
 		>
-			<div
-				style={{
-					fontSize: 11,
-					fontWeight: 600,
-					letterSpacing: "0.08em",
-					textTransform: "uppercase",
-					color: "var(--text-muted)",
-					padding: "4px 8px 0",
-				}}
-			>
-				Blocks
+			<div className="ws-toolwindow-header">
+				<span>Blocks</span>
 			</div>
 			<div
 				style={{
 					display: "grid",
-					gridTemplateColumns: "repeat(auto-fill, minmax(80px, 1fr))",
-					gap: 4,
+					gridTemplateColumns: "repeat(auto-fill, minmax(72px, 1fr))",
+					gap: 2,
+					padding: 8,
+					overflowY: "auto",
+					flex: 1,
+					alignContent: "start",
 				}}
 			>
 				{BLOCK_PALETTE.map((b) => (

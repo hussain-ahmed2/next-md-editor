@@ -1,6 +1,5 @@
 "use client";
 
-import { GripVertical } from "lucide-react";
 import { useUIStore } from "@/store/uiStore";
 
 interface ResizeBarProps {
@@ -15,42 +14,38 @@ export function ResizeBar({ pane }: ResizeBarProps) {
     pane === "sidebar" ? s.startResizeSidebar : s.startResizePreview
   );
 
+  // 8px invisible hit area (negative margins overlap both panes) with a
+  // 2px visible highlight strip — the JetBrains splitter pattern.
   return (
     <div
       onMouseDown={onMouseDown}
       style={{
         width: 8,
+        margin: "0 -4px",
+        flexShrink: 0,
         cursor: "col-resize",
-        background: isResizing ? "var(--accent-muted)" : "transparent",
         zIndex: 10,
-        transition: "background-color 0.15s ease",
         alignSelf: "stretch",
-        marginLeft: -4,
-        marginRight: -4,
         display: "flex",
-        alignItems: "center",
         justifyContent: "center",
       }}
       onMouseEnter={(e) => {
-        if (!isResizing) {
-          e.currentTarget.style.background = "var(--bg-hover)";
-        }
+        const strip = e.currentTarget.firstElementChild as HTMLElement | null;
+        if (strip && !isResizing) strip.style.background = "var(--accent)";
       }}
       onMouseLeave={(e) => {
-        if (!isResizing) {
-          e.currentTarget.style.background = "transparent";
-        }
+        const strip = e.currentTarget.firstElementChild as HTMLElement | null;
+        if (strip && !isResizing) strip.style.background = "transparent";
       }}
     >
       <div
         style={{
-          color: "var(--text-muted)",
-          opacity: isResizing ? 1 : 0.5,
+          width: 2,
+          background: isResizing ? "var(--accent)" : "transparent",
+          transition: "background-color 0.1s",
           pointerEvents: "none",
         }}
-      >
-        <GripVertical size={12} />
-      </div>
+      />
     </div>
   );
 }

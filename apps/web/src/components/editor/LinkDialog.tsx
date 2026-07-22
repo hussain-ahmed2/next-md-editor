@@ -45,7 +45,7 @@ export function LinkDialog({ initialUrl, position, onApply, onRemove, onCancel }
         border: "1px solid var(--border)",
         borderRadius: "var(--radius-sm)",
         boxShadow: "var(--shadow-md)",
-        padding: "8px 10px",
+        padding: 6,
         display: "flex",
         gap: 6,
         alignItems: "center",
@@ -55,34 +55,18 @@ export function LinkDialog({ initialUrl, position, onApply, onRemove, onCancel }
         <input
           ref={inputRef}
           type="text"
+          className="ide-input"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Enter URL…"
-          style={{
-            padding: "4px 8px",
-            fontSize: 13,
-            borderRadius: 4,
-            border: "1px solid var(--border)",
-            background: "var(--bg-elevated)",
-            color: "var(--text-primary)",
-            outline: "none",
-            width: 240,
-          }}
+          style={{ width: 240 }}
         />
         <button
           type="submit"
           disabled={!url.trim()}
-          style={{
-            padding: "4px 10px",
-            fontSize: 12,
-            fontWeight: 600,
-            borderRadius: 4,
-            border: "none",
-            background: url.trim() ? "var(--accent)" : "var(--bg-hover)",
-            color: url.trim() ? "#fff" : "var(--text-muted)",
-            cursor: url.trim() ? "pointer" : "default",
-          }}
+          className="ide-btn primary"
+          style={!url.trim() ? { opacity: 0.5, cursor: "default" } : undefined}
         >
           Apply
         </button>
@@ -90,34 +74,13 @@ export function LinkDialog({ initialUrl, position, onApply, onRemove, onCancel }
           <button
             type="button"
             onClick={onRemove}
-            style={{
-              padding: "4px 10px",
-              fontSize: 12,
-              fontWeight: 600,
-              borderRadius: 4,
-              border: "none",
-              background: "var(--danger)",
-              color: "#fff",
-              cursor: "pointer",
-            }}
+            className="ide-btn"
+            style={{ background: "var(--danger)", color: "#fff" }}
           >
             Remove
           </button>
         )}
-        <button
-          type="button"
-          onClick={onCancel}
-          style={{
-            padding: "4px 10px",
-            fontSize: 12,
-            fontWeight: 500,
-            borderRadius: 4,
-            border: "1px solid var(--border)",
-            background: "transparent",
-            color: "var(--text-secondary)",
-            cursor: "pointer",
-          }}
-        >
+        <button type="button" onClick={onCancel} className="ide-btn">
           Cancel
         </button>
       </form>

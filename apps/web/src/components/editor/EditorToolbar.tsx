@@ -12,53 +12,61 @@ import { Divider, ToolbarButton } from "./toolbar/ToolbarButton";
 import { ThemeToggle } from "./toolbar/ThemeToggle";
 import { TableOfContents } from "./TableOfContents";
 import { UserMenu } from "@/components/auth/UserMenu";
+import { MenuBar } from "@/components/workspace/MenuBar";
 
 export function EditorToolbar() {
   const [tocOpen, setTocOpen] = useState(false);
+  const isMobile = useUIStore((s) => s.isMobile);
 
   return (
-    <header className="toolbar-header" style={{
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between",
-      padding: "0 20px",
-      height: 44,
-      background: "var(--bg-surface)",
-      borderBottom: "1px solid var(--border-subtle)",
-      flexShrink: 0,
-    }}>
+    <header className="toolbar-header ide-header">
       {/* Logo — links back to the landing page */}
       <Link
         href="/"
         style={{
           display: "flex",
           alignItems: "center",
-          gap: 10,
+          gap: 8,
           textDecoration: "none",
-          marginRight: "auto",
+          marginRight: 6,
+          flexShrink: 0,
         }}
         title="Back to home"
       >
-        <div style={{
-          width: 26,
-          height: 26,
-          borderRadius: "var(--radius-sm)",
-          background: "linear-gradient(135deg, var(--accent), var(--accent-hover))",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: 13,
-          fontWeight: 800,
-          color: "#fff",
-          boxShadow: "0 2px 8px var(--accent-glow)",
-        }}>M</div>
-        <span className="app-name" style={{ fontWeight: 700, fontSize: 14, color: "var(--text-primary)", letterSpacing: "-0.01em" }}>
+        <div
+          style={{
+            width: 22,
+            height: 22,
+            borderRadius: "var(--radius-sm)",
+            background: "var(--accent)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 12,
+            fontWeight: 800,
+            color: "#fff",
+          }}
+        >
+          M
+        </div>
+        <span
+          className="app-name"
+          style={{
+            fontWeight: 600,
+            fontSize: 13,
+            color: "var(--text-primary)",
+            letterSpacing: "-0.01em",
+          }}
+        >
           next-md-editor
         </span>
       </Link>
 
+      {/* Application menus */}
+      {!isMobile && <MenuBar />}
+
       {/* Actions */}
-      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 2, marginLeft: "auto" }}>
         <UndoRedoButtons />
         <ToolbarButton
           onClick={() => useUIStore.getState().setSearchOpen(true)}
@@ -70,20 +78,13 @@ export function EditorToolbar() {
         <TemplateMenu />
         <ModeToggle />
         <div style={{ position: "relative" }}>
-          <ToolbarButton
-            onClick={() => setTocOpen((o) => !o)}
-            tooltip="Table of contents"
-          >
+          <ToolbarButton onClick={() => setTocOpen((o) => !o)} tooltip="Table of contents">
             <ListTree size={14} />
           </ToolbarButton>
           {tocOpen && (
             <>
               <div
-                style={{
-                  position: "fixed",
-                  inset: 0,
-                  zIndex: 99,
-                }}
+                style={{ position: "fixed", inset: 0, zIndex: 99 }}
                 onClick={() => setTocOpen(false)}
               />
               <div
@@ -97,18 +98,18 @@ export function EditorToolbar() {
                   overflow: "auto",
                   background: "var(--bg-elevated)",
                   border: "1px solid var(--border)",
-                  borderRadius: "var(--radius-md)",
-                  boxShadow: "var(--shadow-lg)",
+                  borderRadius: "var(--radius-sm)",
+                  boxShadow: "var(--shadow-md)",
                 }}
               >
                 <div
                   style={{
-                    padding: "8px 16px 4px",
-                    fontSize: 10,
-                    fontWeight: 700,
+                    padding: "8px 12px 4px",
+                    fontSize: 10.5,
+                    fontWeight: 600,
                     color: "var(--text-muted)",
                     textTransform: "uppercase",
-                    letterSpacing: "0.08em",
+                    letterSpacing: "0.07em",
                   }}
                 >
                   Table of Contents

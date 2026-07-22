@@ -6,45 +6,28 @@ import {
   ChevronsDownUp,
   Copy,
   FilePlus,
-  FileText,
   File as FileIcon,
-  FileCode,
-  FileJson,
   Folder,
   FolderOpen,
   FolderPlus,
   Pencil,
   Trash2,
 } from "lucide-react";
+import { FileTypeIcon } from "./FileTypeIcon";
 import type { FileNode } from "@next-md-editor/types";
 import { useDraggable, useDroppable } from "@dnd-kit/react";
 import { CollisionPriority } from "@dnd-kit/abstract";
 import { useWorkspaceStore } from "@/store/workspaceStore";
-import { getExtension, isMarkdownFile, sortedChildren } from "@/lib/workspace-storage";
+import { sortedChildren } from "@/lib/workspace-storage";
 import { useUIStore } from "@/store/uiStore";
 
 export const TREE_ROOT_DROP_ID = "tree-root-drop";
 export const TREE_NODE_TYPE = "tree-node";
 
-const CODE_EXTS = new Set(["js", "jsx", "ts", "tsx", "css", "html", "yml", "yaml", "sh", "py", "toml", "xml"]);
-
-function FileTypeIcon({ name, size = 15 }: { name: string; size?: number }) {
-  if (isMarkdownFile(name)) return <FileText size={size} />;
-  const ext = getExtension(name);
-  if (ext === "json") return <FileJson size={size} />;
-  if (CODE_EXTS.has(ext)) return <FileCode size={size} />;
-  return <FileIcon size={size} />;
-}
-
 interface ContextMenuState {
   x: number;
   y: number;
   nodeId: string | null; // null = tree background (root scope)
-}
-
-interface CreatingState {
-  parentId: string | null;
-  kind: "file" | "folder";
 }
 
 function InlineNameInput({
@@ -206,11 +189,14 @@ export function FileTree() {
   const duplicateFile = useWorkspaceStore((s) => s.duplicateFile);
   const setRenamingNodeId = useWorkspaceStore((s) => s.setRenamingNodeId);
   const setExpanded = useWorkspaceStore((s) => s.setExpanded);
+  // Shared with the File menu ("New File…" opens the inline input here)
+  const creating = useWorkspaceStore((s) => s.creatingIntent);
+  const beginCreate = useWorkspaceStore((s) => s.beginCreate);
+  const clearCreate = useWorkspaceStore((s) => s.clearCreate);
   const isMobile = useUIStore((s) => s.isMobile);
   const setMobileTab = useUIStore((s) => s.setMobileTab);
 
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
-  const [creating, setCreating] = useState<CreatingState | null>(null);
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const treeRef = useRef<HTMLDivElement>(null);
 
@@ -253,8 +239,7 @@ export function FileTree() {
   };
 
   const startCreate = (parentId: string | null, kind: "file" | "folder") => {
-    if (parentId) setExpanded(parentId, true);
-    setCreating({ parentId, kind });
+    beginCreate(parentId, kind);
     closeMenu();
   };
 
@@ -336,9 +321,9 @@ export function FileTree() {
             } else {
               createFolder(parentId, value);
             }
-            setCreating(null);
+            clearCreate();
           }}
-          onCancel={() => setCreating(null)}
+          onCancel={clearCreate}
         />
       </div>
     );
@@ -374,7 +359,10 @@ export function FileTree() {
           onRenameCancel={() => setRenamingNodeId(null)}
         />
         {isFolder && isExpanded && (
-          <div>
+          <div
+            className="ws-tree-children"
+            style={{ "--guide-left": `${15 + depth * 14}px` } as React.CSSProperties}
+          >
             {creating && creating.parentId === node.id && renderCreatingRow(depth + 1)}
             {sortedChildren(nodes, node.id).map((child) => renderNode(child, depth + 1))}
           </div>

@@ -36,8 +36,8 @@ export function CollapsibleBlock({ block }: { block: Block }) {
     <div
       style={{
         borderRadius: "var(--radius-md)",
-        border: "1px solid var(--border)",
-        background: "var(--bg-surface)",
+        border: "1px solid var(--border-subtle)",
+        background: "var(--bg-base)",
         overflow: "hidden",
       }}
     >
@@ -47,10 +47,10 @@ export function CollapsibleBlock({ block }: { block: Block }) {
           display: "flex",
           alignItems: "center",
           gap: 6,
-          padding: "8px 12px",
+          padding: "6px 8px",
           cursor: "pointer",
           userSelect: "none",
-          background: "var(--bg-elevated)",
+          background: "var(--bg-surface)",
           borderBottom: open ? "1px solid var(--border-subtle)" : "none",
         }}
       >
@@ -58,7 +58,6 @@ export function CollapsibleBlock({ block }: { block: Block }) {
           size={14}
           style={{
             color: "var(--text-muted)",
-            transition: "transform 0.15s ease",
             transform: open ? "rotate(90deg)" : "rotate(0deg)",
             flexShrink: 0,
           }}
@@ -82,7 +81,7 @@ export function CollapsibleBlock({ block }: { block: Block }) {
             fontFamily: "var(--font-sans)",
           }}
         />
-        <span style={{ fontSize: 10, color: "var(--text-muted)", whiteSpace: "nowrap" }}>
+        <span style={{ fontSize: 11, color: "var(--text-muted)", whiteSpace: "nowrap" }}>
           {open ? "Click to collapse" : "Click to expand"}
         </span>
       </div>
