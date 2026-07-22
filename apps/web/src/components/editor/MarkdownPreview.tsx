@@ -5,7 +5,6 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
 import { useEditorStore } from "@next-md-editor/editor-core";
-import { useUIStore } from "@/store/uiStore";
 import { useWorkspaceStore } from "@/store/workspaceStore";
 import { serializeToMarkdown } from "@/features/markdown/serializer";
 import { PreviewHeader } from "./markdown-preview/PreviewHeader";
@@ -13,7 +12,6 @@ import { FONT_MONO, getMarkdownComponents, getTableComponents } from "./markdown
 
 export function MarkdownPreview({ scrollRef }: { scrollRef?: React.Ref<HTMLDivElement> }) {
 	const blocks = useEditorStore((s) => s.blocks);
-	const previewRatio = useUIStore((s) => s.previewRatio);
 	const fileName = useWorkspaceStore((s) =>
 		s.activeFileId ? (s.nodes[s.activeFileId]?.name ?? "document.md") : "document.md",
 	);
@@ -31,7 +29,7 @@ export function MarkdownPreview({ scrollRef }: { scrollRef?: React.Ref<HTMLDivEl
 	return (
 		<aside
 			style={{
-				flex: `${Math.round(previewRatio * 100)} 1 0`,
+				flex: 1,
 				background: "var(--bg-surface)",
 				borderLeft: "1px solid var(--border-subtle)",
 				display: "flex",

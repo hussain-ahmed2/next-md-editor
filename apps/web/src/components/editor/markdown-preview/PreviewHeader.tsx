@@ -23,7 +23,7 @@ export function PreviewHeader({
         alignItems: "center",
         justifyContent: "space-between",
         gap: 8,
-        height: 32,
+        height: "var(--tab-height)",
         padding: "0 8px 0 12px",
         background: "var(--bg-surface)",
         borderBottom: "1px solid var(--border-subtle)",

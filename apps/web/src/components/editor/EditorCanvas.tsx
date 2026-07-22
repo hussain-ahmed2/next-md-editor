@@ -26,7 +26,6 @@ function assignRef<T>(ref: React.Ref<T> | undefined, value: T | null) {
 
 export function EditorCanvas({ scrollRef }: { scrollRef?: React.Ref<HTMLDivElement> }) {
   const blocks = useEditorStore((s) => s.blocks);
-  const previewRatio = useUIStore((s) => s.previewRatio);
   const isMobile = useUIStore((s) => s.isMobile);
   const manager = useDragDropManager();
 
@@ -138,7 +137,7 @@ export function EditorCanvas({ scrollRef }: { scrollRef?: React.Ref<HTMLDivEleme
       ref={setRef}
       className="editor-canvas-container"
       style={{
-        flex: `${Math.round((1 - previewRatio) * 100)} 1 0`,
+        flex: 1,
         overflow: "auto",
         display: "flex",
         flexDirection: "column",

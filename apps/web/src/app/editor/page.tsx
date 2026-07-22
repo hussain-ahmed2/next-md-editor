@@ -211,9 +211,6 @@ export default function EditorPage() {
                             minWidth: 0,
                         }}
                     >
-                        {!isMobile && <EditorTabs />}
-                        {!isMobile && hasActiveFile && <Breadcrumbs />}
-
                         {isMobile ? (
                             <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
                                 <div
@@ -245,6 +242,7 @@ export default function EditorPage() {
                                     }}
                                 >
                                     <EditorTabs />
+                                    {hasActiveFile && <Breadcrumbs />}
                                     {renderEditingSurface(canvasScrollRef)}
                                 </div>
                                 <div
@@ -259,37 +257,44 @@ export default function EditorPage() {
                             </div>
                         ) : (
                             <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
-                                {editorMode === "source" && !isTextFile && hasActiveFile ? (
-                                    <div
-                                        style={{
-                                            flex: `${Math.round((1 - previewRatio) * 100)} 1 0`,
-                                            display: "flex",
-                                            overflow: "hidden",
-                                            minWidth: 0,
-                                        }}
-                                    >
+                                {/* Editor column — tabs + breadcrumb sit atop the editing surface */}
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        flex: `${Math.round((1 - previewRatio) * 100)} 1 0`,
+                                        minWidth: 0,
+                                        overflow: "hidden",
+                                    }}
+                                >
+                                    <EditorTabs />
+                                    {hasActiveFile && <Breadcrumbs />}
+                                    {editorMode === "source" && !isTextFile && hasActiveFile ? (
                                         <SourceEditor />
-                                    </div>
-                                ) : (
-                                    renderEditingSurface(canvasScrollRef)
-                                )}
+                                    ) : (
+                                        renderEditingSurface(canvasScrollRef)
+                                    )}
+                                </div>
+
+                                {/* Preview column — its header aligns on the same line as the editor tabs */}
                                 {!isTextFile && hasActiveFile && previewOpen && (
                                     <>
                                         <ResizeBar pane="preview" />
-                                        {editorMode === "source" ? (
-                                            <div
-                                                style={{
-                                                    flex: `${Math.round(previewRatio * 100)} 1 0`,
-                                                    display: "flex",
-                                                    overflow: "hidden",
-                                                    minWidth: 0,
-                                                }}
-                                            >
-                                                <MarkdownPreview />
-                                            </div>
-                                        ) : (
-                                            <MarkdownPreview scrollRef={previewScrollRef} />
-                                        )}
+                                        <div
+                                            style={{
+                                                display: "flex",
+                                                flexDirection: "column",
+                                                flex: `${Math.round(previewRatio * 100)} 1 0`,
+                                                minWidth: 0,
+                                                overflow: "hidden",
+                                            }}
+                                        >
+                                            <MarkdownPreview
+                                                scrollRef={
+                                                    editorMode === "source" ? undefined : previewScrollRef
+                                                }
+                                            />
+                                        </div>
                                     </>
                                 )}
                             </div>
