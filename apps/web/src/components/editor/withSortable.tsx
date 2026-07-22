@@ -3,7 +3,7 @@
 import { useSortable } from "@dnd-kit/react/sortable";
 import { useEditorStore } from "@next-md-editor/editor-core";
 import type { Block } from "@next-md-editor/types";
-import { useState, memo } from "react";
+import { memo } from "react";
 import { GripVertical } from "lucide-react";
 import { DeleteButton } from "./sortable-block/DeleteButton";
 import { PlaceholderBlock } from "./sortable-block/PlaceholderBlock";
@@ -26,7 +26,6 @@ export function withSortable<P extends { block?: Block }>(
     const removeBlocks = useEditorStore((s) => s.removeBlocks);
     const selectBlock = useEditorStore((s) => s.selectBlock);
     const selectedBlockIds = useEditorStore((s) => s.selectedBlockIds);
-    const [hovered, setHovered] = useState(false);
 
     if (isPlaceholder) {
       return (
@@ -53,27 +52,8 @@ export function withSortable<P extends { block?: Block }>(
         id={id}
         className="canvas-block"
         data-selected={isSelected}
-        style={{
-          opacity: isDragging ? 0.3 : 1,
-          position: "relative",
-          display: "flex",
-          alignItems: "stretch",
-          borderRadius: "var(--radius-sm)",
-          border: isDragging ? "1px dashed var(--accent)" : "1px solid transparent",
-          background: isDragging
-            ? "var(--accent-muted)"
-            : isSelected
-              ? "var(--accent-muted)"
-              : hovered
-                ? "var(--bg-elevated)"
-                : "transparent",
-          // Current-line accent bar (like a focused editor line in an IDE)
-          boxShadow: isSelected ? "inset 2px 0 0 var(--accent)" : "none",
-          transition: "background 0.12s, box-shadow 0.12s, border-color 0.12s, opacity 0.15s",
-        }}
+        data-dragging={isDragging}
         onClick={(e) => selectBlock(id, e.shiftKey)}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
       >
         {/* Gutter: line number + drag grip (the whole gutter is the drag handle) */}
         <div
@@ -86,11 +66,11 @@ export function withSortable<P extends { block?: Block }>(
           <span className="canvas-lineno">{index + 1}</span>
         </div>
 
-        <div style={{ flex: 1, minWidth: 0, padding: "6px 12px 6px 4px" }}>
+        <div className="canvas-block-body">
           <WrappedComponent {...(rest as P)} />
         </div>
 
-        {(hovered || isSelected) && <DeleteButton onDelete={handleDelete} />}
+        <DeleteButton onDelete={handleDelete} />
       </div>
     );
   },
