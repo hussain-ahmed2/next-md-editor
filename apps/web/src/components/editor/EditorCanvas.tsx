@@ -147,8 +147,9 @@ export function EditorCanvas({ scrollRef }: { scrollRef?: React.Ref<HTMLDivEleme
         background: "var(--bg-base)",
       }}
     >
-      {/* paddingBottom mirrors the top 40px so the last block has identical breathing room */}
-      <div style={{ width: "100%", maxWidth: 720, paddingBottom: 40 }}>
+      {/* maxWidth widened for the ~40px block gutter so text still reads ~720px.
+          paddingBottom mirrors the top 40px for identical breathing room. */}
+      <div style={{ width: "100%", maxWidth: 760, paddingBottom: 40 }}>
         {blocks.length === 0 && !isSidebarDrag && <EmptyState />}
 
         {/* No SortableContext — each useSortable registers with the manager directly */}

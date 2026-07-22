@@ -413,6 +413,120 @@
   contain-intrinsic-size: auto 48px;
 }
 
+/* ── Canvas editor gutter (PyCharm-style line numbers) ── */
+.canvas-gutter {
+  width: 40px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 4px;
+  padding: 8px 8px 0 0;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+.canvas-gutter:active {
+  cursor: grabbing;
+}
+.canvas-lineno {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--text-muted);
+  opacity: 0.45;
+  transition: color 0.12s, opacity 0.12s;
+}
+.canvas-grip {
+  color: var(--text-muted);
+  opacity: 0;
+  flex-shrink: 0;
+  transition: opacity 0.12s, color 0.12s;
+}
+.canvas-block:hover .canvas-lineno {
+  opacity: 0.9;
+}
+.canvas-block:hover .canvas-grip {
+  opacity: 0.6;
+}
+.canvas-gutter:hover .canvas-grip {
+  opacity: 1;
+  color: var(--accent);
+}
+.canvas-block[data-selected="true"] .canvas-lineno {
+  color: var(--accent);
+  opacity: 1;
+}
+
+/* ── Editor breadcrumbs (below tabs) ────────────────── */
+.ide-breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 26px;
+  padding: 0 12px;
+  background: var(--bg-base);
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 12px;
+  color: var(--text-secondary);
+  overflow-x: auto;
+  white-space: nowrap;
+  flex-shrink: 0;
+  scrollbar-width: none;
+}
+.ide-breadcrumbs::-webkit-scrollbar {
+  display: none;
+}
+.ide-breadcrumb-seg {
+  padding: 1px 4px;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+}
+.ide-breadcrumb-seg.current {
+  color: var(--text-primary);
+}
+.ide-breadcrumb-sep {
+  display: flex;
+  align-items: center;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+/* ── Segmented control (view-mode toggle) ───────────── */
+.ide-segment {
+  display: flex;
+  align-items: stretch;
+  height: 24px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.ide-segment button {
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-family: var(--font-sans);
+  padding: 0 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: background 0.1s, color 0.1s;
+}
+.ide-segment button:not(:last-child) {
+  border-right: 1px solid var(--border);
+}
+.ide-segment button.active {
+  background: var(--accent);
+  color: #fff;
+}
+.ide-segment button:not(.active):hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
 /* ── Editor empty state ─────────────────────────────── */
 .ws-empty-editor {
   flex: 1;

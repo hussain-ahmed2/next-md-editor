@@ -24,6 +24,7 @@ import { useBlockKeyboardShortcuts } from "@/hooks/useBlockKeyboardShortcuts";
 import { ToolWindowStrip } from "@/components/workspace/ToolWindowStrip";
 import { FileTree } from "@/components/workspace/FileTree";
 import { EditorTabs } from "@/components/workspace/EditorTabs";
+import { Breadcrumbs } from "@/components/workspace/Breadcrumbs";
 import { StatusBar } from "@/components/workspace/StatusBar";
 import { useWorkspaceStore } from "@/store/workspaceStore";
 import { getFileFormat } from "@/lib/workspace-storage";
@@ -211,6 +212,7 @@ export default function EditorPage() {
                         }}
                     >
                         {!isMobile && <EditorTabs />}
+                        {!isMobile && hasActiveFile && <Breadcrumbs />}
 
                         {isMobile ? (
                             <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
