@@ -3,6 +3,7 @@
 import { memo } from "react";
 import { BlockRegistry } from "@next-md-editor/editor-core";
 import type { Block } from "@next-md-editor/types";
+import { BlockErrorBoundary } from "./BlockErrorBoundary";
 
 export const BlockRenderer = memo(function BlockRenderer({ block }: { block: Block }) {
   const def = BlockRegistry.get(block.type);
@@ -26,5 +27,10 @@ export const BlockRenderer = memo(function BlockRenderer({ block }: { block: Blo
   }
 
   const Component = def.component;
-  return <Component block={block} />;
+  // A failure in one block must not unmount the whole editor.
+  return (
+    <BlockErrorBoundary blockType={block.type}>
+      <Component block={block} />
+    </BlockErrorBoundary>
+  );
 });
