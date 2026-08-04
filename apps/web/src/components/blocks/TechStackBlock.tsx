@@ -9,7 +9,6 @@ import { X, LayoutTemplate, AlignLeft, AlignCenter, AlignRight } from "lucide-re
 import type { TechBadge } from "@/constants/techStack";
 
 export function TechStackBlock({ block }: { block: Block }) {
-  const blocks = useEditorStore((s) => s.blocks);
   const addBlock = useEditorStore((s) => s.addBlock);
   const removeBlocks = useEditorStore((s) => s.removeBlocks);
   const updateBlock = useEditorStore((s) => s.updateBlock);
@@ -98,7 +97,7 @@ export function TechStackBlock({ block }: { block: Block }) {
         handleEditorKeyboardShortcuts(
           e,
           block,
-          blocks,
+          useEditorStore.getState().blocks,
           selectedBlockIds,
           addBlock,
           removeBlocks,

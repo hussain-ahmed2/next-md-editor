@@ -8,7 +8,6 @@ import { useBlockFocus } from "@/hooks/useBlockFocus";
 import { X, Plus, UserPlus } from "lucide-react";
 
 export function ContributorsBlock({ block }: { block: Block }) {
-  const blocks = useEditorStore((s) => s.blocks);
   const addBlock = useEditorStore((s) => s.addBlock);
   const removeBlocks = useEditorStore((s) => s.removeBlocks);
   const updateBlock = useEditorStore((s) => s.updateBlock);
@@ -55,7 +54,7 @@ export function ContributorsBlock({ block }: { block: Block }) {
         handleEditorKeyboardShortcuts(
           e,
           block,
-          blocks,
+          useEditorStore.getState().blocks,
           selectedBlockIds,
           addBlock,
           removeBlocks,

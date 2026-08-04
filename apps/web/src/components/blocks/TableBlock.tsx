@@ -10,9 +10,10 @@ import { TableGridControls } from "./table/TableGridControls";
 
 export function TableBlock({ block }: { block: Block }) {
 	const updateBlock = useEditorStore((s) => s.updateBlock);
-	const blocks = useEditorStore((s) => s.blocks);
 	const selectedBlockIds = useEditorStore((s) => s.selectedBlockIds);
-	const myBlock = blocks.find((b) => b.id === block.id) ?? block;
+	// Narrow selector: re-renders only when THIS block changes, not on
+	// every keystroke elsewhere in the document.
+	const myBlock = useEditorStore((s) => s.blocks.find((b) => b.id === block.id)) ?? block;
 	const isFocused = selectedBlockIds.includes(block.id);
 
 	const rows = useMemo(

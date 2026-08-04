@@ -14,9 +14,10 @@ import { CodeBlockHeader } from "./code/CodeBlockHeader";
 export function CodeBlock({ block }: { block: Block }) {
 	const { theme } = useTheme();
 	const updateBlock = useEditorStore((s) => s.updateBlock);
-	const blocks = useEditorStore((s) => s.blocks);
 	// Read own data directly from store to bypass prop chain issues
-	const myBlock = blocks.find((b) => b.id === block.id) ?? block;
+	// Narrow selector: re-renders only when THIS block changes, not on
+	// every keystroke elsewhere in the document.
+	const myBlock = useEditorStore((s) => s.blocks.find((b) => b.id === block.id)) ?? block;
 	const code = (myBlock.props.code as string) ?? "";
 	const lang = (myBlock.props.language as string) ?? "ts";
 

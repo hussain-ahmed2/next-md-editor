@@ -10,7 +10,6 @@ import { Image as ImageIcon, Edit2 } from "lucide-react";
 const DEFAULT_IMAGE = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=800&auto=format&fit=crop";
 
 export function ImageBlock({ block }: { block: Block }) {
-  const blocks = useEditorStore((s) => s.blocks);
   const addBlock = useEditorStore((s) => s.addBlock);
   const removeBlocks = useEditorStore((s) => s.removeBlocks);
   const updateBlock = useEditorStore((s) => s.updateBlock);
@@ -43,7 +42,7 @@ export function ImageBlock({ block }: { block: Block }) {
           handleSave();
           return;
         }
-        handleEditorKeyboardShortcuts(e, block, blocks, selectedBlockIds, addBlock, removeBlocks, updateBlock, selectBlock);
+        handleEditorKeyboardShortcuts(e, block, useEditorStore.getState().blocks, selectedBlockIds, addBlock, removeBlocks, updateBlock, selectBlock);
       }}
       style={{
         outline: "none",

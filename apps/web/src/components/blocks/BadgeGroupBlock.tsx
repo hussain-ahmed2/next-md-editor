@@ -11,7 +11,6 @@ import { BadgeItem } from "./badge-group/BadgeItem";
 import { useBlockFocus } from "@/hooks/useBlockFocus";
 
 export function BadgeGroupBlock({ block }: { block: Block }) {
-  const blocks = useEditorStore((s) => s.blocks);
   const addBlock = useEditorStore((s) => s.addBlock);
   const removeBlocks = useEditorStore((s) => s.removeBlocks);
   const updateBlock = useEditorStore((s) => s.updateBlock);
@@ -107,7 +106,7 @@ export function BadgeGroupBlock({ block }: { block: Block }) {
         handleEditorKeyboardShortcuts(
           e,
           block,
-          blocks,
+          useEditorStore.getState().blocks,
           selectedBlockIds,
           addBlock,
           removeBlocks,

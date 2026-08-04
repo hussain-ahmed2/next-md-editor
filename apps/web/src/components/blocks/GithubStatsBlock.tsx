@@ -53,8 +53,9 @@ const labelStyle: React.CSSProperties = {
 
 export function GithubStatsBlock({ block }: { block: Block }) {
   const updateBlock = useEditorStore((s) => s.updateBlock);
-  const blocks = useEditorStore((s) => s.blocks);
-  const myBlock = blocks.find((b) => b.id === block.id) ?? block;
+  // Narrow selector: re-renders only when THIS block changes, not on
+  // every keystroke elsewhere in the document.
+  const myBlock = useEditorStore((s) => s.blocks.find((b) => b.id === block.id)) ?? block;
   const props = myBlock.props as StatsBlockProps;
   const statsInstanceUrl = useSettingsStore((s) => s.statsInstanceUrl);
 

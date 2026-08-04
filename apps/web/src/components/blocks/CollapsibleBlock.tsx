@@ -6,9 +6,10 @@ import type { Block } from "@next-md-editor/types";
 import { ChevronRight, GripVertical } from "lucide-react";
 
 export function CollapsibleBlock({ block }: { block: Block }) {
-  const blocks = useEditorStore((s) => s.blocks);
   const updateBlock = useEditorStore((s) => s.updateBlock);
-  const myBlock = blocks.find((b) => b.id === block.id) ?? block;
+  // Narrow selector: re-renders only when THIS block changes, not on
+  // every keystroke elsewhere in the document.
+  const myBlock = useEditorStore((s) => s.blocks.find((b) => b.id === block.id)) ?? block;
   const summary = (myBlock.props.summary as string) ?? "";
   const content = (myBlock.props.content as string) ?? "";
   const open = (myBlock.props.open as boolean) ?? false;

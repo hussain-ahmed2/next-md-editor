@@ -11,7 +11,6 @@ import { ImageEditForm } from "./image-grid/ImageEditForm";
 import { ImageGridItem } from "./image-grid/ImageGridItem";
 
 export function ImageGridBlock({ block }: { block: Block }) {
-  const blocks = useEditorStore((s) => s.blocks);
   const addBlock = useEditorStore((s) => s.addBlock);
   const removeBlocks = useEditorStore((s) => s.removeBlocks);
   const updateBlock = useEditorStore((s) => s.updateBlock);
@@ -89,7 +88,7 @@ export function ImageGridBlock({ block }: { block: Block }) {
         handleEditorKeyboardShortcuts(
           e,
           block,
-          blocks,
+          useEditorStore.getState().blocks,
           selectedBlockIds,
           addBlock,
           removeBlocks,
