@@ -207,7 +207,10 @@ function remarkCustomBlocks() {
             if (alignMatch) {
               alignment = alignMatch[1].toLowerCase();
             }
-            const imgRegex = /<img\s+[^>]*src="https:\/\/img\.shields\.io\/badge\/([^-]+)-([0-9a-fA-F]+)\?style=[^&]+&logo=([^&]+)&logoColor=white"[^>]*alt="([^"]+)"/gi;
+            // The name segment is lazy (not [^-]+) so escaped hyphens ("--",
+            // e.g. "Objective--C") are captured instead of truncating the
+            // match and dropping the badge.
+            const imgRegex = /<img\s+[^>]*src="https:\/\/img\.shields\.io\/badge\/(.+?)-([0-9a-fA-F]+)\?style=[^&]+&logo=([^&]+)&logoColor=white"[^>]*alt="([^"]+)"/gi;
             let match;
             while ((match = imgRegex.exec(htmlVal)) !== null) {
               const [_, nameRaw, color, logo, name] = match;
@@ -1161,7 +1164,11 @@ function serializeBlock(
         const summary = (block.props.summary as string) ?? "";
         const content = (block.props.content as string) ?? "";
         const open = (block.props.open as boolean) ?? false;
-        text = `<details${open ? " open" : ""}>\n<summary>${summary}</summary>\n\n${content}\n\n</details>`;
+        // No blank lines inside <details>: it is a CommonMark HTML block
+        // (type 6), which ends at the first blank line — that split the
+        // element across three sibling nodes and the parser then dropped
+        // the whole block on re-import.
+        text = `<details${open ? " open" : ""}>\n<summary>${summary}</summary>\n${content}\n</details>`;
         break;
       }
     }

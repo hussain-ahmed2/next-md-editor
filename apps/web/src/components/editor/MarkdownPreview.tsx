@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useDeferredValue } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
@@ -17,7 +17,11 @@ export function MarkdownPreview({ scrollRef }: { scrollRef?: React.Ref<HTMLDivEl
 	const fileName = useWorkspaceStore((s) =>
 		s.activeFileId ? (s.nodes[s.activeFileId]?.name ?? "document.md") : "document.md",
 	);
-	const markdown = serializeToMarkdown(blocks);
+	const liveMarkdown = serializeToMarkdown(blocks);
+	// Let React interrupt the (expensive) markdown parse + preview re-render
+	// when a new keystroke arrives; the preview lags a frame instead of
+	// blocking input.
+	const markdown = useDeferredValue(liveMarkdown);
 	const [activeTab, setActiveTab] = useState<"preview" | "raw">("preview");
 
 	const isImageGrid = markdown.includes("<!-- image-grid -->");

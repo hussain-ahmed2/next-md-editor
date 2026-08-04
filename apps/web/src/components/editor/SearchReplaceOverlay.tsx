@@ -199,7 +199,12 @@ export function SearchReplaceOverlay() {
 
   const handleReplaceAll = useCallback(() => {
     if (matches.length === 0 || !replacement) return;
-    for (const match of matches) {
+    // `matches` holds absolute offsets computed against the pre-replacement
+    // text. Applying them front-to-back shifts every later offset whenever
+    // the replacement length differs from the query, corrupting the text —
+    // so replace from the end backwards, where earlier offsets stay valid.
+    for (let i = matches.length - 1; i >= 0; i--) {
+      const match = matches[i];
       const block = useEditorStore.getState().blocks.find((b) => b.id === match.blockId);
       if (!block) continue;
       replaceInBlock(block, match.field, match, replacement);

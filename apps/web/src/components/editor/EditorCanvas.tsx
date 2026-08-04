@@ -53,8 +53,6 @@ export function EditorCanvas({ scrollRef }: { scrollRef?: React.Ref<HTMLDivEleme
 
   // Local state for the visual insert indicator — computed by the monitor below
   const [insertIndex, setInsertIndex] = useState<number | null>(null);
-  const selectedBlockIds = useEditorStore((s) => s.selectedBlockIds);
-  const focusedBlockId = selectedBlockIds.length > 0 ? selectedBlockIds[selectedBlockIds.length - 1] : null;
 
   // ── useDragDropMonitor: react to drag events without prop drilling ─────────
   // handlers is memoized with [manager] deps so it stays stable.
@@ -163,7 +161,6 @@ export function EditorCanvas({ scrollRef }: { scrollRef?: React.Ref<HTMLDivEleme
                 block={block}
                 isPlaceholder={isPlaceholder}
                 index={blockIdx}
-                showToolbar={block.id === focusedBlockId}
               />
             );
           })}

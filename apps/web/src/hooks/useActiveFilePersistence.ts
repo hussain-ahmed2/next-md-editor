@@ -90,10 +90,13 @@ export function useActiveFilePersistence() {
             : { format: "text", text: plainTextRef.current },
         );
         useWorkspaceStore.getState().clearDirty(id);
+        pendingRef.current = false;
       } catch (e) {
+        // Keep the file dirty and the write pending so the user still sees
+        // unsaved state instead of a false "Saved".
         console.error("Failed to flush file save:", e);
+        setSaveStatus("idle");
       }
-      pendingRef.current = false;
     };
     registerFlush(flush);
     // Also flush when the page is being hidden/closed so nothing is lost.
@@ -101,11 +104,15 @@ export function useActiveFilePersistence() {
     window.addEventListener("pagehide", onHide);
     document.addEventListener("visibilitychange", onHide);
     return () => {
+      // Flush before unregistering: navigating away in-app (e.g. clicking the
+      // logo) unmounts this hook and would otherwise discard the pending
+      // debounced write.
+      flush();
       registerFlush(null);
       window.removeEventListener("pagehide", onHide);
       document.removeEventListener("visibilitychange", onHide);
     };
-  }, []);
+  }, [setSaveStatus]);
 
   // Load content whenever the active file changes
   useEffect(() => {

@@ -2,7 +2,7 @@ import { BlockRegistry } from "@next-md-editor/editor-core";
 import { HeadingBlock } from "@/components/blocks/HeadingBlock";
 import { ParagraphBlock } from "@/components/blocks/ParagraphBlock";
 import { QuoteBlock } from "@/components/blocks/QuoteBlock";
-import { CodeBlock } from "@/components/blocks/CodeBlock";
+import { CodeBlockLazy } from "@/components/blocks/CodeBlockLazy";
 import { DividerBlock } from "@/components/blocks/DividerBlock";
 import { ImageBlock } from "@/components/blocks/ImageBlock";
 import { TableBlock } from "@/components/blocks/TableBlock";
@@ -41,7 +41,7 @@ export function initRegistry() {
 
   BlockRegistry.register({
     type: "code",
-    component: CodeBlock,
+    component: CodeBlockLazy,
     defaultProps: { code: "", language: "ts" },
   });
 

@@ -13,14 +13,13 @@ export type SortableProps = {
   block?: Block;
   isPlaceholder?: boolean;
   index: number;
-  showToolbar?: boolean;
 };
 
 export function withSortable<P extends { block?: Block }>(
   WrappedComponent: React.ComponentType<P>
 ) {
   const SortableHOC = memo(function SortableBlock(props: P & SortableProps) {
-    const { id, isPlaceholder, index, showToolbar, ...rest } = props;
+    const { id, isPlaceholder, index, ...rest } = props;
     const { ref, handleRef, isDragging } = useSortable({ id, index });
 
     const removeBlocks = useEditorStore((s) => s.removeBlocks);
@@ -50,6 +49,8 @@ export function withSortable<P extends { block?: Block }>(
       <div
         ref={ref}
         id={id}
+        // Table of contents and search-jump locate blocks by this attribute
+        data-block-id={id}
         className="canvas-block"
         data-selected={isSelected}
         data-dragging={isDragging}
@@ -73,16 +74,9 @@ export function withSortable<P extends { block?: Block }>(
         <DeleteButton onDelete={handleDelete} />
       </div>
     );
-  },
-  (prevProps, nextProps) => {
-    return (
-      prevProps.id === nextProps.id &&
-      prevProps.index === nextProps.index &&
-      prevProps.isPlaceholder === nextProps.isPlaceholder &&
-      prevProps.showToolbar === nextProps.showToolbar &&
-      prevProps.block === nextProps.block
-    );
   });
+  // Default shallow compare: a hand-rolled comparator here would silently
+  // ignore any prop added later and render stale UI.
 
   return SortableHOC;
 }

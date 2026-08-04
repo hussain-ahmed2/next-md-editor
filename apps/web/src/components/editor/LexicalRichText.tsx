@@ -198,20 +198,22 @@ export function LexicalRichText({
     },
   };
 
-  const onChange = (editorState: EditorState, editor: LexicalEditor) => {
-    editorState.read(() => {
-      const html = $generateHtmlFromNodes(editor, null);
-      
-      // Debounce Zustand update
-      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
-      debounceTimerRef.current = setTimeout(() => {
+  const onChange = (_editorState: EditorState, editor: LexicalEditor) => {
+    // Serialization happens *inside* the debounce: $generateHtmlFromNodes
+    // builds and stringifies a full DOM tree for the block, so running it
+    // per keystroke was the largest typing cost. Reading the editor state
+    // lazily in the timer also guarantees we serialize the latest content.
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    debounceTimerRef.current = setTimeout(() => {
+      editor.getEditorState().read(() => {
+        const html = $generateHtmlFromNodes(editor, null);
         if (onChangeOverride) {
           onChangeOverride(html);
         } else {
           updateBlock(blockId, { content: html });
         }
-      }, 400);
-    });
+      });
+    }, 400);
   };
 
   return (

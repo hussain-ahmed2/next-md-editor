@@ -3,9 +3,8 @@
 import { EditorToolbar } from "@/components/editor/EditorToolbar";
 import { EditorSidebar } from "@/components/editor/EditorSidebar";
 import { EditorCanvas } from "@/components/editor/EditorCanvas";
-import { SourceEditor } from "@/components/editor/SourceEditor";
+import dynamic from "next/dynamic";
 import { MarkdownPreview } from "@/components/editor/MarkdownPreview";
-import { PlainFileEditor } from "@/components/editor/PlainFileEditor";
 import { useCallback, useEffect, useState } from "react";
 import { flushSync } from "react-dom";
 import { DragDropProvider, DragOverlay, DragStartEvent } from "@dnd-kit/react";
@@ -36,6 +35,23 @@ import { DragOverlayContent } from "@/components/editor/DragOverlayContent";
 import { SearchReplaceOverlay } from "@/components/editor/SearchReplaceOverlay";
 import { AiChatPanel } from "@/components/editor/AiChatPanel";
 import { DropOverlay } from "@/components/editor/DropOverlay";
+
+// CodeMirror is ~1 MB; these two surfaces are the only things that need it
+// up front (the source toggle and non-markdown files), so keep it out of the
+// initial editor bundle.
+const CodeMirrorLoading = () => (
+    <div className="ws-empty-editor" style={{ fontSize: 12 }}>
+        Loading editor…
+    </div>
+);
+const SourceEditor = dynamic(
+    () => import("@/components/editor/SourceEditor").then((m) => m.SourceEditor),
+    { ssr: false, loading: CodeMirrorLoading },
+);
+const PlainFileEditor = dynamic(
+    () => import("@/components/editor/PlainFileEditor").then((m) => m.PlainFileEditor),
+    { ssr: false, loading: CodeMirrorLoading },
+);
 
 // Disable dropAnimation entirely — the default "snap back" animation causes
 // a brief flicker of the drag overlay at the original block position after
@@ -77,6 +93,7 @@ export default function EditorPage() {
     const activeFileName = useWorkspaceStore((s) =>
         s.activeFileId ? (s.nodes[s.activeFileId]?.name ?? null) : null,
     );
+    const activeFileId = useWorkspaceStore((s) => s.activeFileId);
 
     // Initialize and run workspace + persistence side effects
     useActiveFilePersistence();
@@ -171,7 +188,11 @@ export default function EditorPage() {
     const renderEditingSurface = (scrollRef?: React.Ref<HTMLDivElement>) => {
         if (!hasActiveFile) return <EmptyEditorState />;
         if (isTextFile) return <PlainFileEditor fileName={activeFileName} />;
-        if (editorMode === "source") return <SourceEditor />;
+        // `key` remounts the source editor per file: it seeds its buffer from
+        // the active document on mount, so reusing the instance across a file
+        // switch would let "Apply Changes" write the old file's markdown into
+        // the new file.
+        if (editorMode === "source") return <SourceEditor key={activeFileId} />;
         return <EditorCanvas scrollRef={scrollRef} />;
     };
 
@@ -270,7 +291,7 @@ export default function EditorPage() {
                                     <EditorTabs />
                                     {hasActiveFile && <Breadcrumbs />}
                                     {editorMode === "source" && !isTextFile && hasActiveFile ? (
-                                        <SourceEditor />
+                                        <SourceEditor key={activeFileId} />
                                     ) : (
                                         renderEditingSurface(canvasScrollRef)
                                     )}

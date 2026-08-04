@@ -6,7 +6,7 @@ import type { Block } from "@next-md-editor/types";
 import { handleEditorKeyboardShortcuts } from "@/utils/editorShortcuts";
 import { useBlockFocus } from "@/hooks/useBlockFocus";
 import { X, LayoutTemplate, AlignLeft, AlignCenter, AlignRight } from "lucide-react";
-import { TECH_DICTIONARY } from "@/constants/techStack";
+import type { TechBadge } from "@/constants/techStack";
 
 export function TechStackBlock({ block }: { block: Block }) {
   const blocks = useEditorStore((s) => s.blocks);
@@ -16,7 +16,7 @@ export function TechStackBlock({ block }: { block: Block }) {
   const selectBlock = useEditorStore((s) => s.selectBlock);
   const selectedBlockIds = useEditorStore((s) => s.selectedBlockIds);
 
-  const techs = (block.props.techs as typeof TECH_DICTIONARY) ?? [];
+  const techs = (block.props.techs as TechBadge[]) ?? [];
   const alignment = (block.props.alignment as string) ?? "left";
 
   const [search, setSearch] = useState("");
@@ -24,17 +24,34 @@ export function TechStackBlock({ block }: { block: Block }) {
   const ref = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // The badge dictionary is ~370 KB — load it only when the picker is first
+  // opened rather than shipping it to every user in the editor bundle.
+  const [dictionary, setDictionary] = useState<TechBadge[] | null>(null);
+  useEffect(() => {
+    if (!showDropdown || dictionary) return;
+    let cancelled = false;
+    import("@/constants/techStack")
+      .then((m) => {
+        if (!cancelled) setDictionary(m.TECH_DICTIONARY);
+      })
+      .catch((e) => console.error("Failed to load tech stack dictionary:", e));
+    return () => {
+      cancelled = true;
+    };
+  }, [showDropdown, dictionary]);
+
   useBlockFocus(ref, block.id, selectedBlockIds);
 
   const filteredTech = useMemo(() => {
-    if (!search.trim()) return TECH_DICTIONARY;
+    if (!dictionary) return [];
+    if (!search.trim()) return dictionary;
     const lower = search.toLowerCase();
-    return TECH_DICTIONARY.filter(
+    return dictionary.filter(
       (t) => t.name.toLowerCase().includes(lower) || t.id.includes(lower)
     );
-  }, [search]);
+  }, [search, dictionary]);
 
-  const handleAddTech = (tech: typeof TECH_DICTIONARY[0]) => {
+  const handleAddTech = (tech: TechBadge) => {
     if (techs.find((t) => t.id === tech.id)) return;
     updateBlock(block.id, {
       techs: [...techs, tech],
@@ -147,7 +164,11 @@ export function TechStackBlock({ block }: { block: Block }) {
                   flexDirection: "column",
                 }}
               >
-                {filteredTech.length === 0 ? (
+                {!dictionary ? (
+                  <div style={{ padding: "8px 12px", fontSize: 12, color: "var(--text-muted)" }}>
+                    Loading technologies…
+                  </div>
+                ) : filteredTech.length === 0 ? (
                   <div style={{ padding: "8px 12px", fontSize: 12, color: "var(--text-muted)" }}>
                     No exact match found in curated list.
                   </div>

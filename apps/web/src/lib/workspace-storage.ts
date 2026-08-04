@@ -165,16 +165,17 @@ export function loadFileContent(id: string, storage: KVStorage = defaultStorage(
   }
 }
 
+/**
+ * Persists a file's content. Throws on failure (quota exceeded / private
+ * browsing) so callers can avoid reporting a save that did not happen —
+ * silently swallowing this made the UI claim "Saved" while data was lost.
+ */
 export function saveFileContent(
   id: string,
   content: FileContent,
   storage: KVStorage = defaultStorage(),
 ): void {
-  try {
-    storage.setItem(fileKey(id), JSON.stringify(content));
-  } catch (e) {
-    console.error("Failed to persist file content (storage full or unavailable):", e);
-  }
+  storage.setItem(fileKey(id), JSON.stringify(content));
 }
 
 export function deleteFileContent(id: string, storage: KVStorage = defaultStorage()): void {
@@ -207,6 +208,14 @@ export function loadOrCreateWorkspace(storage: KVStorage = defaultStorage()): Wo
 
   const readme = makeNode("README.md", "file", null);
   const meta = freshWorkspace(readme);
+
+  // Seed an empty content entry so features that read the file directly
+  // (PDF/print, ZIP export) work before the first keystroke ever lands.
+  try {
+    saveFileContent(readme.id, emptyFileContent(readme.name), storage);
+  } catch {
+    // Storage unavailable — the editor still works in-memory.
+  }
 
   // Migrate the legacy single-document blocks key into README.md.
   try {

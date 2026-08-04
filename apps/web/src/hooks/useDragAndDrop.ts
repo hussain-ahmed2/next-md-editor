@@ -165,7 +165,21 @@ export function useDragAndDrop() {
               ? selectedBlockIds
               : [source.id as string];
 
-          moveBlocks(idsToMove, toIndex);
+          // dnd-kit reports `source.index` as if only the dragged block were
+          // removed, but moveBlocks removes the whole selection first. When
+          // dragging a multi-block selection downward, each additional moved
+          // block that sat above the drop point shifts the target left by one.
+          let insertIndex = toIndex;
+          if (idsToMove.length > 1) {
+            const movedAbove = idsToMove.reduce((count, id) => {
+              if (id === source.id) return count;
+              const idx = blocks.findIndex((b) => b.id === id);
+              return idx !== -1 && idx < toIndex ? count + 1 : count;
+            }, 0);
+            insertIndex = Math.max(0, toIndex - movedAbove);
+          }
+
+          moveBlocks(idsToMove, insertIndex);
         }
       }
     },

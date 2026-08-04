@@ -17,6 +17,19 @@ import {
 } from "@/lib/workspace-storage";
 import { flushPendingSave } from "@/lib/persistence-bridge";
 
+/**
+ * `saveFileContent` throws when storage is full/unavailable so the editor can
+ * avoid reporting a false "Saved". Tree operations, however, should still
+ * complete (the node exists in memory) rather than aborting mid-mutation.
+ */
+function trySaveFileContent(id: string, content: FileContent): void {
+  try {
+    saveFileContent(id, content);
+  } catch (e) {
+    console.error("Failed to persist file content (storage full or unavailable):", e);
+  }
+}
+
 interface WorkspaceState extends WorkspaceMeta {
   initialized: boolean;
   /** Files edited since their last localStorage write (drives tab dirty dots). */
@@ -93,7 +106,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     const state = get();
     const finalName = uniqueSiblingName(state.nodes, parentId, name.trim());
     const node = makeNode(finalName, "file", parentId);
-    saveFileContent(node.id, emptyFileContent(finalName));
+    trySaveFileContent(node.id, emptyFileContent(finalName));
     flushPendingSave();
     set((s) => ({
       nodes: { ...s.nodes, [node.id]: node },
@@ -114,7 +127,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     const finalName = uniqueSiblingName(state.nodes, parentId, name.trim());
     const node = makeNode(finalName, "file", parentId);
     // Content must exist in storage before the persistence hook loads the file.
-    saveFileContent(node.id, content);
+    trySaveFileContent(node.id, content);
     flushPendingSave();
     set((s) => ({
       nodes: { ...s.nodes, [node.id]: node },
@@ -162,7 +175,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       const parentId = ensureFolder(segments.slice(0, -1).join("/"));
       const node = makeNode(uniqueSiblingName(nodes, parentId, fileName), "file", parentId);
       nodes[node.id] = node;
-      saveFileContent(node.id, file.content);
+      trySaveFileContent(node.id, file.content);
       firstFileId ??= node.id;
     }
 
@@ -250,7 +263,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     const copyName = uniqueSiblingName(state.nodes, node.parentId, node.name);
     const copy = makeNode(copyName, "file", node.parentId);
     const content = loadFileContent(id) ?? emptyFileContent(node.name);
-    saveFileContent(copy.id, content);
+    trySaveFileContent(copy.id, content);
     set((s) => ({
       nodes: { ...s.nodes, [copy.id]: copy },
       openTabIds: [...s.openTabIds, copy.id],
