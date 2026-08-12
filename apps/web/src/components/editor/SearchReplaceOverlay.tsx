@@ -199,7 +199,12 @@ export function SearchReplaceOverlay() {
 
   const handleReplaceAll = useCallback(() => {
     if (matches.length === 0 || !replacement) return;
-    for (const match of matches) {
+    // `matches` holds absolute offsets computed against the pre-replacement
+    // text. Applying them front-to-back shifts every later offset whenever
+    // the replacement length differs from the query, corrupting the text —
+    // so replace from the end backwards, where earlier offsets stay valid.
+    for (let i = matches.length - 1; i >= 0; i--) {
+      const match = matches[i];
       const block = useEditorStore.getState().blocks.find((b) => b.id === match.blockId);
       if (!block) continue;
       replaceInBlock(block, match.field, match, replacement);
@@ -228,8 +233,8 @@ export function SearchReplaceOverlay() {
       style={{
         display: "flex",
         alignItems: "center",
-        gap: 8,
-        padding: "6px 16px",
+        gap: 6,
+        padding: "4px 8px",
         background: "var(--bg-surface)",
         borderBottom: "1px solid var(--border-subtle)",
         flexShrink: 0,
@@ -243,16 +248,11 @@ export function SearchReplaceOverlay() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Find…"
+          className="ide-input"
           style={{
             width: "100%",
-            padding: "5px 28px 5px 8px",
-            borderRadius: "var(--radius-sm)",
-            border: "1px solid var(--border)",
-            background: "var(--bg-base)",
-            color: "var(--text-primary)",
-            fontSize: 12.5,
-            outline: "none",
-            fontFamily: "var(--font-sans)",
+            height: 24,
+            paddingRight: 28,
             boxSizing: "border-box",
           }}
         />
@@ -262,7 +262,7 @@ export function SearchReplaceOverlay() {
             right: 6,
             top: "50%",
             transform: "translateY(-50%)",
-            fontSize: 10,
+            fontSize: 11,
             color: "var(--text-muted)",
             pointerEvents: "none",
             whiteSpace: "nowrap",
@@ -277,19 +277,13 @@ export function SearchReplaceOverlay() {
           onClick={handlePrev}
           disabled={matches.length === 0}
           title="Previous match (Shift+Enter)"
+          className="ide-btn"
           style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
             width: 24,
             height: 24,
-            border: "1px solid var(--border)",
-            borderRadius: "var(--radius-sm)",
-            background: "transparent",
-            color: "var(--text-secondary)",
+            padding: 0,
             cursor: matches.length > 0 ? "pointer" : "default",
             opacity: matches.length > 0 ? 1 : 0.4,
-            padding: 0,
           }}
         >
           <ArrowUp size={12} />
@@ -298,19 +292,13 @@ export function SearchReplaceOverlay() {
           onClick={handleNext}
           disabled={matches.length === 0}
           title="Next match (Enter)"
+          className="ide-btn"
           style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
             width: 24,
             height: 24,
-            border: "1px solid var(--border)",
-            borderRadius: "var(--radius-sm)",
-            background: "transparent",
-            color: "var(--text-secondary)",
+            padding: 0,
             cursor: matches.length > 0 ? "pointer" : "default",
             opacity: matches.length > 0 ? 1 : 0.4,
-            padding: 0,
           }}
         >
           <ArrowDown size={12} />
@@ -324,16 +312,10 @@ export function SearchReplaceOverlay() {
             value={replacement}
             onChange={(e) => setReplacement(e.target.value)}
             placeholder="Replace…"
+            className="ide-input"
             style={{
               width: "100%",
-              padding: "5px 8px",
-              borderRadius: "var(--radius-sm)",
-              border: "1px solid var(--border)",
-              background: "var(--bg-base)",
-              color: "var(--text-primary)",
-              fontSize: 12.5,
-              outline: "none",
-              fontFamily: "var(--font-sans)",
+              height: 24,
               boxSizing: "border-box",
             }}
           />
@@ -342,19 +324,13 @@ export function SearchReplaceOverlay() {
           onClick={handleReplace}
           disabled={matches.length === 0 || !replacement}
           title="Replace"
+          className="ide-btn"
           style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
             width: 24,
             height: 24,
-            border: "1px solid var(--border)",
-            borderRadius: "var(--radius-sm)",
-            background: "transparent",
-            color: "var(--text-secondary)",
+            padding: 0,
             cursor: matches.length > 0 && replacement ? "pointer" : "default",
             opacity: matches.length > 0 && replacement ? 1 : 0.4,
-            padding: 0,
           }}
         >
           <Replace size={12} />
@@ -363,24 +339,17 @@ export function SearchReplaceOverlay() {
           onClick={handleReplaceAll}
           disabled={matches.length === 0 || !replacement}
           title="Replace all"
+          className="ide-btn"
           style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
             height: 24,
-            border: "1px solid var(--border)",
-            borderRadius: "var(--radius-sm)",
-            background: "transparent",
-            color: "var(--text-secondary)",
-            cursor: matches.length > 0 && replacement ? "pointer" : "default",
-            opacity: matches.length > 0 && replacement ? 1 : 0.4,
             padding: "0 6px",
             fontSize: 11,
-            whiteSpace: "nowrap",
+            cursor: matches.length > 0 && replacement ? "pointer" : "default",
+            opacity: matches.length > 0 && replacement ? 1 : 0.4,
           }}
         >
           <ReplaceAll size={12} />
-          <span style={{ marginLeft: 3 }}>All</span>
+          <span>All</span>
         </button>
       </div>
 
@@ -388,40 +357,16 @@ export function SearchReplaceOverlay() {
         <button
           onClick={() => setMatchCase((c) => !c)}
           title="Match case"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            width: 24,
-            height: 24,
-            border: `1px solid ${matchCase ? "var(--accent)" : "var(--border)"}`,
-            borderRadius: "var(--radius-sm)",
-            background: matchCase ? "var(--accent-muted)" : "transparent",
-            color: matchCase ? "var(--accent)" : "var(--text-secondary)",
-            cursor: "pointer",
-            padding: 0,
-          }}
+          className={"ide-btn" + (matchCase ? " active" : "")}
+          style={{ width: 24, height: 24, padding: 0 }}
         >
           <CaseSensitive size={12} />
         </button>
         <button
           onClick={() => setUseRegex((r) => !r)}
           title="Use regex"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            width: 24,
-            height: 24,
-            border: `1px solid ${useRegex ? "var(--accent)" : "var(--border)"}`,
-            borderRadius: "var(--radius-sm)",
-            background: useRegex ? "var(--accent-muted)" : "transparent",
-            color: useRegex ? "var(--accent)" : "var(--text-secondary)",
-            cursor: "pointer",
-            padding: 0,
-            fontSize: 10,
-            fontWeight: 700,
-          }}
+          className={"ide-btn" + (useRegex ? " active" : "")}
+          style={{ width: 24, height: 24, padding: 0 }}
         >
           <Regex size={12} />
         </button>
@@ -430,20 +375,8 @@ export function SearchReplaceOverlay() {
       <button
         onClick={() => setSearchOpen(false)}
         title="Close (Esc)"
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          width: 24,
-          height: 24,
-          border: "none",
-          borderRadius: "var(--radius-sm)",
-          background: "transparent",
-          color: "var(--text-secondary)",
-          cursor: "pointer",
-          marginLeft: "auto",
-          padding: 0,
-        }}
+        className="ide-btn"
+        style={{ width: 24, height: 24, padding: 0, marginLeft: "auto" }}
       >
         <X size={14} />
       </button>

@@ -1,19 +1,27 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useDeferredValue } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
+import rehypeSanitize from "rehype-sanitize";
+import { markdownSanitizeSchema } from "@/lib/sanitize-schema";
 import { useEditorStore } from "@next-md-editor/editor-core";
-import { useUIStore } from "@/store/uiStore";
+import { useWorkspaceStore } from "@/store/workspaceStore";
 import { serializeToMarkdown } from "@/features/markdown/serializer";
 import { PreviewHeader } from "./markdown-preview/PreviewHeader";
 import { FONT_MONO, getMarkdownComponents, getTableComponents } from "./markdown-preview/previewComponents";
 
 export function MarkdownPreview({ scrollRef }: { scrollRef?: React.Ref<HTMLDivElement> }) {
 	const blocks = useEditorStore((s) => s.blocks);
-	const previewRatio = useUIStore((s) => s.previewRatio);
-	const markdown = serializeToMarkdown(blocks);
+	const fileName = useWorkspaceStore((s) =>
+		s.activeFileId ? (s.nodes[s.activeFileId]?.name ?? "document.md") : "document.md",
+	);
+	const liveMarkdown = serializeToMarkdown(blocks);
+	// Let React interrupt the (expensive) markdown parse + preview re-render
+	// when a new keystroke arrives; the preview lags a frame instead of
+	// blocking input.
+	const markdown = useDeferredValue(liveMarkdown);
 	const [activeTab, setActiveTab] = useState<"preview" | "raw">("preview");
 
 	const isImageGrid = markdown.includes("<!-- image-grid -->");
@@ -27,59 +35,22 @@ export function MarkdownPreview({ scrollRef }: { scrollRef?: React.Ref<HTMLDivEl
 	return (
 		<aside
 			style={{
-				flex: `${Math.round(previewRatio * 100)} 1 0`,
+				flex: 1,
 				background: "var(--bg-surface)",
 				borderLeft: "1px solid var(--border-subtle)",
 				display: "flex",
 				flexDirection: "column",
 				overflow: "hidden",
-				padding: "16px",
-				gap: 12,
+				minWidth: 0,
 			}}
 		>
-			<div
-				style={{
-					display: "flex",
-					alignItems: "center",
-					justifyContent: "space-between",
-					fontSize: 12,
-					color: "var(--text-secondary)",
-				}}
-			>
-				<div style={{ display: "flex", alignItems: "center", gap: 6, fontWeight: 500 }}>
-					<span style={{ color: "var(--text-muted)" }}>next-md-editor</span>
-					<span style={{ color: "var(--text-muted)" }}>/</span>
-					<span style={{ color: "var(--text-primary)", fontWeight: 600 }}>document.md</span>
-				</div>
-				<span
-					style={{
-						padding: "2px 6px",
-						borderRadius: 4,
-						background: "var(--accent-muted)",
-						color: "var(--accent)",
-						fontSize: 10,
-						fontWeight: 600,
-						letterSpacing: "0.02em",
-						textTransform: "uppercase",
-					}}
-				>
-					GitHub GFM View
-				</span>
-			</div>
-
-      <div
-				style={{
-					flex: 1,
-					display: "flex",
-					flexDirection: "column",
-					background: "var(--bg-base)",
-					border: "1px solid var(--border)",
-					borderRadius: 6,
-					overflow: "hidden",
-				}}
-			>
-				<PreviewHeader blockCount={blocks.length} activeTab={activeTab} onTabChange={setActiveTab} />
-				<div ref={scrollRef} style={{ flex: 1, overflow: "auto" }}>
+			<PreviewHeader
+				fileName={fileName}
+				blockCount={blocks.length}
+				activeTab={activeTab}
+				onTabChange={setActiveTab}
+			/>
+			<div ref={scrollRef} style={{ flex: 1, overflow: "auto", background: "var(--bg-base)" }}>
 					{blocks.length === 0 ? (
 						<div
 							style={{
@@ -114,7 +85,7 @@ export function MarkdownPreview({ scrollRef }: { scrollRef?: React.Ref<HTMLDivEl
 						<div className="markdown-body" style={{ padding: "32px" }}>
 							<ReactMarkdown
 								remarkPlugins={[remarkGfm]}
-								rehypePlugins={[rehypeRaw]}
+								rehypePlugins={[rehypeRaw, [rehypeSanitize, markdownSanitizeSchema]]}
 								components={{ ...markdownComponents, ...tableComponents }}
 							>
 								{markdown}
@@ -122,7 +93,6 @@ export function MarkdownPreview({ scrollRef }: { scrollRef?: React.Ref<HTMLDivEl
 						</div>
 					)}
 				</div>
-			</div>
 		</aside>
 	);
 }

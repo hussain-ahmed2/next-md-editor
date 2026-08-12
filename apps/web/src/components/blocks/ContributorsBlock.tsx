@@ -8,7 +8,6 @@ import { useBlockFocus } from "@/hooks/useBlockFocus";
 import { X, Plus, UserPlus } from "lucide-react";
 
 export function ContributorsBlock({ block }: { block: Block }) {
-  const blocks = useEditorStore((s) => s.blocks);
   const addBlock = useEditorStore((s) => s.addBlock);
   const removeBlocks = useEditorStore((s) => s.removeBlocks);
   const updateBlock = useEditorStore((s) => s.updateBlock);
@@ -55,7 +54,7 @@ export function ContributorsBlock({ block }: { block: Block }) {
         handleEditorKeyboardShortcuts(
           e,
           block,
-          blocks,
+          useEditorStore.getState().blocks,
           selectedBlockIds,
           addBlock,
           removeBlocks,
@@ -66,13 +65,13 @@ export function ContributorsBlock({ block }: { block: Block }) {
       style={{
         outline: "none",
         width: "100%",
-        padding: "16px",
-        borderRadius: "var(--radius-lg)",
+        padding: "12px",
+        borderRadius: "var(--radius-md)",
         border: "1px solid var(--border-subtle)",
         background: "var(--bg-surface)",
         display: "flex",
         flexDirection: "column",
-        gap: 16,
+        gap: 8,
       }}
     >
       {/* Controls */}
@@ -82,18 +81,18 @@ export function ContributorsBlock({ block }: { block: Block }) {
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          gap: 16,
-          padding: "10px 14px",
+          gap: 8,
+          padding: "4px 8px",
           background: "var(--bg-base)",
-          borderRadius: "var(--radius-md)",
+          borderRadius: "var(--radius-sm)",
           border: "1px solid var(--border-subtle)",
           userSelect: "none",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1 }}>
-          <UserPlus size={16} color="var(--text-muted)" />
-          <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1 }}>
-            <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1 }}>
+          <UserPlus size={14} color="var(--text-muted)" />
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flex: 1 }}>
+            <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", whiteSpace: "nowrap" }}>
               Add GitHub User:
             </span>
             <input
@@ -107,32 +106,17 @@ export function ContributorsBlock({ block }: { block: Block }) {
                   handleAddUsername();
                 }
               }}
-              style={{
-                flex: 1,
-                maxWidth: 200,
-                padding: "4px 8px",
-                fontSize: 12,
-                background: "var(--bg-surface)",
-                border: "1px solid var(--border)",
-                borderRadius: "var(--radius-sm)",
-                color: "var(--text-primary)",
-                outline: "none",
-              }}
+              className="ide-input"
+              style={{ flex: 1, maxWidth: 200 }}
               placeholder="torvalds"
             />
             <button
               onClick={handleAddUsername}
               disabled={!inputVal.trim()}
+              className="ide-btn primary"
               style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: 24,
-                height: 24,
-                background: "var(--accent)",
-                color: "white",
-                border: "none",
-                borderRadius: "var(--radius-sm)",
+                width: 26,
+                padding: 0,
                 cursor: inputVal.trim() ? "pointer" : "not-allowed",
                 opacity: inputVal.trim() ? 1 : 0.5,
               }}
@@ -144,23 +128,14 @@ export function ContributorsBlock({ block }: { block: Block }) {
 
         <div style={{ width: 1, height: 16, background: "var(--border)" }} />
 
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)" }}>
             Size:
           </span>
           <select
             value={avatarSize}
             onChange={(e) => handleUpdateSize(Number(e.target.value))}
-            style={{
-              padding: "4px 24px 4px 8px",
-              fontSize: 12,
-              background: "var(--bg-surface)",
-              border: "1px solid var(--border)",
-              borderRadius: "var(--radius-sm)",
-              color: "var(--text-primary)",
-              outline: "none",
-              cursor: "pointer",
-            }}
+            className="ide-select"
           >
             <option value={32}>Small (32px)</option>
             <option value={48}>Medium (48px)</option>
@@ -192,7 +167,6 @@ export function ContributorsBlock({ block }: { block: Block }) {
               width: avatarSize,
               height: avatarSize,
               borderRadius: "50%",
-              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
               border: "2px solid var(--bg-surface)",
             }}
             onMouseEnter={(e) => {
@@ -235,7 +209,6 @@ export function ContributorsBlock({ block }: { block: Block }) {
                 cursor: "pointer",
                 opacity: 0,
                 transition: "opacity 0.15s ease",
-                boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
               }}
               title="Remove"
             >

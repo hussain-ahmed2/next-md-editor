@@ -30,7 +30,7 @@ export default function OGImage() {
             left: 0,
             width: "100%",
             height: 6,
-            background: "#238636",
+            background: "#3574f0",
           }}
         />
 
@@ -60,7 +60,7 @@ export default function OGImage() {
               width: 52,
               height: 52,
               borderRadius: 12,
-              background: "#238636",
+              background: "#3574f0",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",

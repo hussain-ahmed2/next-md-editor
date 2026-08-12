@@ -31,7 +31,7 @@ export function TableOfContents({ onClose }: { onClose?: () => void }) {
 
 	if (items.length === 0) {
 		return (
-			<div style={{ padding: 20, textAlign: "center", color: "var(--text-muted)", fontSize: 12 }}>
+			<div style={{ padding: 12, textAlign: "center", color: "var(--text-muted)", fontSize: 12 }}>
 				No headings found
 			</div>
 		);
@@ -74,11 +74,11 @@ export function TableOfContents({ onClose }: { onClose?: () => void }) {
 						background: "transparent",
 						cursor: "pointer",
 						textAlign: "left",
-						padding: "6px 16px 6px " + (12 + (item.level - 1) * 16) + "px",
+						padding: "5px 12px 5px " + (12 + (item.level - 1) * 16) + "px",
 						fontSize: Math.max(11, 14 - item.level) + "px",
 						fontWeight: item.level <= 2 ? 600 : 400,
 						color: "var(--text-secondary)",
-						transition: "all 0.1s ease",
+						transition: "background 0.1s ease, color 0.1s ease, border-color 0.1s ease",
 						borderRadius: 0,
 						borderLeft: "2px solid transparent",
 						fontFamily: "var(--font-sans)",

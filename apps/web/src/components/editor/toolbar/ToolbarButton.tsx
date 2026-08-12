@@ -21,35 +21,25 @@ export function ToolbarButton({
   tooltip,
   onMouseDown,
 }: ToolbarButtonProps) {
+  const className = [
+    "toolbar-btn",
+    "ide-btn",
+    primary ? "primary" : "",
+    active ? "active" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
     <button
       id={id}
-      className="toolbar-btn"
+      className={className}
       onClick={onClick}
       onMouseDown={onMouseDown}
       title={tooltip}
       style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 5,
-        padding: "5px 8px",
-        borderRadius: "var(--radius-sm)",
-        border: `1px solid ${primary ? "transparent" : active ? "var(--accent)" : "var(--border)"}`,
-        background: primary
-          ? "var(--accent)"
-          : active
-          ? "var(--accent-muted)"
-          : "transparent",
-        color: primary ? "#fff" : active ? "var(--accent)" : "var(--text-secondary)",
-        fontSize: 12.5,
         fontWeight: 500,
-        height: 28,
-        boxSizing: "border-box",
-        flexShrink: 0,
-        cursor: "pointer",
-        transition: "all 0.15s ease",
-        fontFamily: "var(--font-sans)",
-        whiteSpace: "nowrap",
+        transition: "background 0.1s ease, color 0.1s ease",
       }}
     >
       {children}

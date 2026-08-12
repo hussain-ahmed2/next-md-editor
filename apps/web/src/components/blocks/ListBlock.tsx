@@ -8,8 +8,9 @@ import type { ListItemData } from "./listBlockUtils";
 import { LexicalRichText } from "@/components/editor/LexicalRichText";
 
 export function ListBlock({ block }: { block: Block }) {
-  const blocks = useEditorStore((s) => s.blocks);
-  const myBlock = blocks.find((b) => b.id === block.id) ?? block;
+  // Narrow selector: re-renders only when THIS block changes, not on
+  // every keystroke elsewhere in the document.
+  const myBlock = useEditorStore((s) => s.blocks.find((b) => b.id === block.id)) ?? block;
   const styleType = (myBlock.props.style as "bullet" | "numbered") ?? "bullet";
 
   const initialHtml = useMemo(() => {

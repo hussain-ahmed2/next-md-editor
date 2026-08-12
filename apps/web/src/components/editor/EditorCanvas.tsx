@@ -26,7 +26,6 @@ function assignRef<T>(ref: React.Ref<T> | undefined, value: T | null) {
 
 export function EditorCanvas({ scrollRef }: { scrollRef?: React.Ref<HTMLDivElement> }) {
   const blocks = useEditorStore((s) => s.blocks);
-  const previewRatio = useUIStore((s) => s.previewRatio);
   const isMobile = useUIStore((s) => s.isMobile);
   const manager = useDragDropManager();
 
@@ -54,8 +53,6 @@ export function EditorCanvas({ scrollRef }: { scrollRef?: React.Ref<HTMLDivEleme
 
   // Local state for the visual insert indicator — computed by the monitor below
   const [insertIndex, setInsertIndex] = useState<number | null>(null);
-  const selectedBlockIds = useEditorStore((s) => s.selectedBlockIds);
-  const focusedBlockId = selectedBlockIds.length > 0 ? selectedBlockIds[selectedBlockIds.length - 1] : null;
 
   // ── useDragDropMonitor: react to drag events without prop drilling ─────────
   // handlers is memoized with [manager] deps so it stays stable.
@@ -138,17 +135,18 @@ export function EditorCanvas({ scrollRef }: { scrollRef?: React.Ref<HTMLDivEleme
       ref={setRef}
       className="editor-canvas-container"
       style={{
-        flex: `${Math.round((1 - previewRatio) * 100)} 1 0`,
+        flex: 1,
         overflow: "auto",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        padding: isMobile ? "32px 16px" : "60px 48px",
+        padding: isMobile ? "32px 16px" : "40px 40px",
         background: "var(--bg-base)",
       }}
     >
-      {/* paddingBottom mirrors the top 60px so the last block has identical breathing room */}
-      <div style={{ width: "100%", maxWidth: 720, paddingBottom: 60 }}>
+      {/* maxWidth widened for the ~40px block gutter so text still reads ~720px.
+          paddingBottom mirrors the top 40px for identical breathing room. */}
+      <div style={{ width: "100%", maxWidth: 760, paddingBottom: 40 }}>
         {blocks.length === 0 && !isSidebarDrag && <EmptyState />}
 
         {/* No SortableContext — each useSortable registers with the manager directly */}
@@ -163,7 +161,6 @@ export function EditorCanvas({ scrollRef }: { scrollRef?: React.Ref<HTMLDivEleme
                 block={block}
                 isPlaceholder={isPlaceholder}
                 index={blockIdx}
-                showToolbar={block.id === focusedBlockId}
               />
             );
           })}

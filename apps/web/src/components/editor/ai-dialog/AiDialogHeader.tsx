@@ -12,13 +12,13 @@ export function AiDialogHeader({ blockLabel, onClose }: AiDialogHeaderProps) {
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        padding: "14px 18px",
-        borderBottom: "1px solid var(--border)",
+        padding: "8px 12px",
+        borderBottom: "1px solid var(--border-subtle)",
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <Sparkles size={16} style={{ color: "var(--accent)" }} />
-        <span style={{ fontWeight: 700, fontSize: 14, color: "var(--text-primary)" }}>
+        <Sparkles size={14} style={{ color: "var(--accent)" }} />
+        <span style={{ fontWeight: 600, fontSize: 13, color: "var(--text-primary)" }}>
           AI Block Editor
         </span>
         <span
@@ -27,28 +27,18 @@ export function AiDialogHeader({ blockLabel, onClose }: AiDialogHeaderProps) {
             fontWeight: 600,
             color: "var(--text-muted)",
             textTransform: "uppercase",
-            letterSpacing: "0.04em",
+            letterSpacing: "0.06em",
             background: "var(--bg-surface)",
-            padding: "2px 6px",
-            borderRadius: 4,
+            border: "1px solid var(--border-subtle)",
+            padding: "1px 6px",
+            borderRadius: "var(--radius-sm)",
           }}
         >
           {blockLabel}
         </span>
       </div>
-      <button
-        onClick={onClose}
-        style={{
-          background: "none",
-          border: "none",
-          cursor: "pointer",
-          color: "var(--text-muted)",
-          padding: 4,
-          borderRadius: 4,
-          display: "flex",
-        }}
-      >
-        <X size={16} />
+      <button onClick={onClose} title="Close" className="ws-icon-btn">
+        <X size={14} />
       </button>
     </div>
   );

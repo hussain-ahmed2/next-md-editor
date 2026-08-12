@@ -8,9 +8,10 @@ import { LexicalRichText } from "@/components/editor/LexicalRichText";
 
 export function CalloutBlock({ block }: { block: Block }) {
   const updateBlock = useEditorStore((s) => s.updateBlock);
-  const blocks = useEditorStore((s) => s.blocks);
 
-  const myBlock = blocks.find((b) => b.id === block.id) ?? block;
+  // Narrow selector: re-renders only when THIS block changes, not on
+  // every keystroke elsewhere in the document.
+  const myBlock = useEditorStore((s) => s.blocks.find((b) => b.id === block.id)) ?? block;
   const content = (myBlock.props.content as string) || (myBlock.props.text ? renderInlineMarkdown(myBlock.props.text as string) : "");
   const type = ((myBlock.props.type as string) ?? "note").toLowerCase() as CalloutKey;
   const config = CALLOUT_TYPES[type] ?? CALLOUT_TYPES.note;
@@ -27,7 +28,7 @@ export function CalloutBlock({ block }: { block: Block }) {
         borderLeft: `4px solid ${config.accent}`,
         background: config.bg,
         margin: "8px 0",
-        transition: "all 0.15s ease",
+        transition: "background 0.15s ease, border-color 0.15s ease",
       }}
     >
       {/* WYSIWYG Editable content */}
@@ -43,7 +44,7 @@ export function CalloutBlock({ block }: { block: Block }) {
           initialHtml={content} 
           placeholder="Callout content" 
           topUI={
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: 20, marginBottom: 8 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: 24, marginBottom: 8 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 600, color: config.accent }}>
                 <span>{config.icon}</span>
                 <span>{config.label}</span>
@@ -51,15 +52,8 @@ export function CalloutBlock({ block }: { block: Block }) {
               <select
                 value={type}
                 onChange={(e) => updateBlock(block.id, { type: e.target.value })}
-                style={{
-                  background: "transparent",
-                  border: "none",
-                  color: "var(--text-muted)",
-                  fontSize: 11,
-                  cursor: "pointer",
-                  outline: "none",
-                  fontWeight: 500,
-                }}
+                className="ide-select"
+                style={{ height: 24, fontSize: 11 }}
               >
                 {Object.keys(CALLOUT_TYPES).map((k) => (
                   <option key={k} value={k} style={{ background: "var(--bg-surface)", color: "var(--text-primary)" }}>

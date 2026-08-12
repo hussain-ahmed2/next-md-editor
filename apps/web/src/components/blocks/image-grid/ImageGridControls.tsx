@@ -23,30 +23,32 @@ export function ImageGridControls({
         alignItems: "center",
         justifyContent: "space-between",
         padding: "4px 8px",
-        background: "var(--bg-elevated)",
-        borderRadius: "var(--radius-md)",
-        border: "1px solid var(--border)",
+        background: "var(--bg-surface)",
+        borderRadius: "var(--radius-sm)",
+        border: "1px solid var(--border-subtle)",
       }}
     >
       <div
         className="image-grid-title-wrapper"
-        style={{ display: "flex", alignItems: "center", gap: 8 }}
+        style={{ display: "flex", alignItems: "center", gap: 6 }}
       >
-        <LayoutGrid size={14} style={{ color: "var(--accent)" }} />
+        <LayoutGrid size={13} style={{ color: "var(--text-muted)" }} />
         <span
           style={{
             fontSize: 11,
-            fontWeight: 700,
-            color: "var(--text-primary)",
+            fontWeight: 600,
+            letterSpacing: "0.06em",
+            textTransform: "uppercase",
+            color: "var(--text-muted)",
           }}
         >
-          IMAGE GRID
+          Image Grid
         </span>
       </div>
 
       <div
         className="image-grid-actions"
-        style={{ display: "flex", alignItems: "center", gap: 16 }}
+        style={{ display: "flex", alignItems: "center", gap: 8 }}
       >
         {/* Custom Column Stepper */}
         <div
@@ -57,13 +59,14 @@ export function ImageGridControls({
         >
           <span
             style={{
-              fontSize: 10,
-              fontWeight: 700,
+              fontSize: 11,
+              fontWeight: 600,
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
               color: "var(--text-muted)",
-              fontFamily: "var(--font-mono)",
             }}
           >
-            COLS:
+            Cols
           </span>
           <input
             type="number"
@@ -79,50 +82,21 @@ export function ImageGridControls({
             }}
             onClick={(e) => e.stopPropagation()}
             onMouseDown={(e) => e.stopPropagation()}
-            style={{
-              width: 48,
-              padding: "2px 6px",
-              fontSize: 11,
-              fontWeight: 700,
-              borderRadius: 4,
-              border: "1px solid var(--border)",
-              background: "var(--bg-surface)",
-              color: "var(--text-primary)",
-              textAlign: "center",
-              outline: "none",
-            }}
+            className="ide-input"
+            style={{ width: 48, height: 24, fontSize: 12, textAlign: "center", padding: "0 4px" }}
           />
         </div>
 
         <button
-          className="image-grid-add-btn"
+          className="image-grid-add-btn ide-btn"
           onClick={(e) => {
             e.stopPropagation();
             onAddImage();
           }}
           onMouseDown={(e) => e.stopPropagation()}
-          style={{
-            border: "1px solid var(--border)",
-            background: "transparent",
-            color: "var(--text-primary)",
-            fontSize: 11,
-            fontWeight: 600,
-            padding: "4px 10px",
-            borderRadius: 6,
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            gap: 4,
-            transition: "all 0.15s ease",
-          }}
-          onMouseEnter={(e) =>
-            (e.currentTarget.style.background = "var(--bg-surface)")
-          }
-          onMouseLeave={(e) =>
-            (e.currentTarget.style.background = "transparent")
-          }
+          style={{ transition: "background 0.1s, color 0.1s" }}
         >
-          <Plus size={11} /> Add Image
+          <Plus size={13} /> Add Image
         </button>
       </div>
     </div>

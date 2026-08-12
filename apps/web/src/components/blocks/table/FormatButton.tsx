@@ -12,6 +12,7 @@ export function FormatButton({ command, label, icon, active, onUpdateFormats }: 
 	return (
 		<button
 			title={label}
+			className={active ? "ide-btn active" : "ide-btn"}
 			onMouseDown={(e) => {
 				e.preventDefault(); // Keep focus in contentEditable
 				if (command === "code") {
@@ -88,28 +89,9 @@ export function FormatButton({ command, label, icon, active, onUpdateFormats }: 
 				onUpdateFormats();
 			}}
 			style={{
-				display: "inline-flex",
-				alignItems: "center",
-				justifyContent: "center",
-				background: active ? "var(--accent)" : "transparent",
-				border: "none",
-				borderRadius: 4,
-				padding: "4px 6px",
-				cursor: "pointer",
-				color: active ? "#fff" : "var(--text-secondary)",
-				transition: "all 0.12s",
-			}}
-			onMouseEnter={(e) => {
-				if (!active) {
-					e.currentTarget.style.background = "var(--bg-elevated)";
-					e.currentTarget.style.color = "var(--text-primary)";
-				}
-			}}
-			onMouseLeave={(e) => {
-				if (!active) {
-					e.currentTarget.style.background = "transparent";
-					e.currentTarget.style.color = "var(--text-secondary)";
-				}
+				width: 26,
+				padding: 0,
+				transition: "background 0.1s, color 0.1s",
 			}}
 		>
 			{icon}

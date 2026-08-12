@@ -15,24 +15,33 @@ export function TableGridControls({
 		<div
 			style={{
 				display: "flex",
-				gap: 8,
+				gap: 4,
 				alignItems: "center",
 				flexWrap: "wrap",
 				padding: "4px 8px",
-				background: "var(--bg-elevated)",
-				border: "1px dashed var(--border)",
-				borderRadius: 6,
+				background: "var(--bg-surface)",
+				border: "1px solid var(--border-subtle)",
+				borderRadius: "var(--radius-sm)",
 			}}
 		>
-			<span style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 500, marginRight: 4 }}>
-				GRID CONTROLS:
+			<span
+				style={{
+					fontSize: 11,
+					color: "var(--text-muted)",
+					fontWeight: 600,
+					letterSpacing: "0.06em",
+					textTransform: "uppercase",
+					marginRight: 4,
+				}}
+			>
+				Grid Controls
 			</span>
 			{[
 				{
 					label: "Add Row",
 					icon: (
 						<>
-							<PlusCircle size={12} /> Row
+							<PlusCircle size={13} /> Row
 						</>
 					),
 					action: addRow,
@@ -41,7 +50,7 @@ export function TableGridControls({
 					label: "Delete Row",
 					icon: (
 						<>
-							<MinusCircle size={12} /> Row
+							<MinusCircle size={13} /> Row
 						</>
 					),
 					action: deleteRow,
@@ -50,7 +59,7 @@ export function TableGridControls({
 					label: "Add Col",
 					icon: (
 						<>
-							<Columns2 size={12} /> Add Col
+							<Columns2 size={13} /> Add Col
 						</>
 					),
 					action: addColumn,
@@ -59,7 +68,7 @@ export function TableGridControls({
 					label: "Delete Col",
 					icon: (
 						<>
-							<Rows2 size={12} /> Del Col
+							<Rows2 size={13} /> Del Col
 						</>
 					),
 					action: deleteColumn,
@@ -68,19 +77,9 @@ export function TableGridControls({
 				<button
 					key={label}
 					onClick={action}
-					style={{
-						display: "flex",
-						alignItems: "center",
-						gap: 4,
-						padding: "4px 8px",
-						fontSize: 11,
-						fontWeight: 600,
-						borderRadius: 4,
-						border: "1px solid var(--border)",
-						background: "transparent",
-						color: "var(--text-secondary)",
-						cursor: "pointer",
-					}}
+					title={label}
+					className="ide-btn"
+					style={{ fontSize: 12, transition: "background 0.1s, color 0.1s" }}
 				>
 					{icon}
 				</button>

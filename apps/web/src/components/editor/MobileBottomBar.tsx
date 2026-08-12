@@ -1,6 +1,6 @@
 "use client";
 
-import { LayoutGrid, Edit3, Eye } from "lucide-react";
+import { LayoutGrid, Edit3, Eye, FolderTree } from "lucide-react";
 import { useUIStore } from "@/store/uiStore";
 
 export function MobileBottomBar() {
@@ -17,11 +17,33 @@ export function MobileBottomBar() {
         display: "flex",
         justifyContent: "space-around",
         alignItems: "center",
-        boxShadow: "var(--shadow-sm)",
         zIndex: 9999,
         flexShrink: 0,
       }}
     >
+      {/* Files Tab */}
+      <button
+        onClick={() => onTabChange("files")}
+        style={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 2,
+          border: "none",
+          background: activeTab === "files" ? "var(--accent-muted)" : "transparent",
+          color: activeTab === "files" ? "var(--accent)" : "var(--text-secondary)",
+          cursor: "pointer",
+          transition: "background 0.1s, color 0.1s",
+          padding: "2px 0",
+          height: "100%",
+        }}
+      >
+        <FolderTree size={14} />
+        <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.01em" }}>Files</span>
+      </button>
+
       {/* Blocks Tab */}
       <button
         onClick={() => onTabChange("blocks")}
@@ -33,22 +55,16 @@ export function MobileBottomBar() {
           justifyContent: "center",
           gap: 2,
           border: "none",
-          background: "transparent",
+          background: activeTab === "blocks" ? "var(--accent-muted)" : "transparent",
           color: activeTab === "blocks" ? "var(--accent)" : "var(--text-secondary)",
           cursor: "pointer",
-          transition: "all 0.2s ease",
+          transition: "background 0.1s, color 0.1s",
           padding: "2px 0",
           height: "100%",
         }}
       >
-        <LayoutGrid
-          size={14}
-          style={{
-            transform: activeTab === "blocks" ? "scale(1.08)" : "scale(1)",
-            transition: "transform 0.2s ease",
-          }}
-        />
-        <span style={{ fontSize: 9.5, fontWeight: 600, letterSpacing: "0.01em" }}>Blocks</span>
+        <LayoutGrid size={14} />
+        <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.01em" }}>Blocks</span>
       </button>
 
       {/* Canvas Tab */}
@@ -62,22 +78,16 @@ export function MobileBottomBar() {
           justifyContent: "center",
           gap: 2,
           border: "none",
-          background: "transparent",
+          background: activeTab === "editor" ? "var(--accent-muted)" : "transparent",
           color: activeTab === "editor" ? "var(--accent)" : "var(--text-secondary)",
           cursor: "pointer",
-          transition: "all 0.2s ease",
+          transition: "background 0.1s, color 0.1s",
           padding: "2px 0",
           height: "100%",
         }}
       >
-        <Edit3
-          size={14}
-          style={{
-            transform: activeTab === "editor" ? "scale(1.08)" : "scale(1)",
-            transition: "transform 0.2s ease",
-          }}
-        />
-        <span style={{ fontSize: 9.5, fontWeight: 600, letterSpacing: "0.01em" }}>Canvas</span>
+        <Edit3 size={14} />
+        <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.01em" }}>Canvas</span>
       </button>
 
       {/* Preview Tab */}
@@ -91,22 +101,16 @@ export function MobileBottomBar() {
           justifyContent: "center",
           gap: 2,
           border: "none",
-          background: "transparent",
+          background: activeTab === "preview" ? "var(--accent-muted)" : "transparent",
           color: activeTab === "preview" ? "var(--accent)" : "var(--text-secondary)",
           cursor: "pointer",
-          transition: "all 0.2s ease",
+          transition: "background 0.1s, color 0.1s",
           padding: "2px 0",
           height: "100%",
         }}
       >
-        <Eye
-          size={14}
-          style={{
-            transform: activeTab === "preview" ? "scale(1.08)" : "scale(1)",
-            transition: "transform 0.2s ease",
-          }}
-        />
-        <span style={{ fontSize: 9.5, fontWeight: 600, letterSpacing: "0.01em" }}>Preview</span>
+        <Eye size={14} />
+        <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.01em" }}>Preview</span>
       </button>
     </div>
   );

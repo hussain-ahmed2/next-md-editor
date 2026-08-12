@@ -84,7 +84,7 @@ export function BadgePicker({
         background: "var(--bg-elevated)",
         border: "1px solid var(--border)",
         borderRadius: "var(--radius-md)",
-        boxShadow: "var(--shadow-lg)",
+        boxShadow: "var(--shadow-md)",
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
@@ -145,114 +145,70 @@ export function BadgePicker({
           }}
         >
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            <label style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>LABEL</label>
+            <label style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", color: "var(--text-muted)" }}>LABEL</label>
             <input
               type="text"
               placeholder="e.g. license, build"
               value={customLabel}
               onChange={(e) => setCustomLabel(e.target.value)}
-              style={{
-                padding: "6px 10px",
-                borderRadius: 4,
-                border: "1px solid var(--border)",
-                background: "var(--bg-surface)",
-                color: "var(--text-primary)",
-                fontSize: 11,
-                outline: "none",
-              }}
+              className="ide-input"
+              style={{ fontSize: 12 }}
             />
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            <label style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>MESSAGE (OPTIONAL)</label>
+            <label style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", color: "var(--text-muted)" }}>MESSAGE (OPTIONAL)</label>
             <input
               type="text"
               placeholder="e.g. MIT, passing"
               value={customMessage}
               onChange={(e) => setCustomMessage(e.target.value)}
-              style={{
-                padding: "6px 10px",
-                borderRadius: 4,
-                border: "1px solid var(--border)",
-                background: "var(--bg-surface)",
-                color: "var(--text-primary)",
-                fontSize: 11,
-                outline: "none",
-              }}
+              className="ide-input"
+              style={{ fontSize: 12 }}
             />
           </div>
           <div style={{ display: "flex", gap: 8 }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1 }}>
-              <label style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>COLOR (HEX/NAME)</label>
+              <label style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", color: "var(--text-muted)" }}>COLOR (HEX/NAME)</label>
               <input
                 type="text"
                 placeholder="e.g. blue, 4E9BCD"
                 value={customColor}
                 onChange={(e) => setCustomColor(e.target.value)}
-                style={{
-                  padding: "6px 10px",
-                  borderRadius: 4,
-                  border: "1px solid var(--border)",
-                  background: "var(--bg-surface)",
-                  color: "var(--text-primary)",
-                  fontSize: 11,
-                  outline: "none",
-                }}
+                className="ide-input"
+                style={{ fontSize: 12 }}
               />
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1 }}>
-              <label style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>LOGO (OPTIONAL)</label>
+              <label style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", color: "var(--text-muted)" }}>LOGO (OPTIONAL)</label>
               <input
                 type="text"
                 placeholder="e.g. github, react"
                 value={customLogo}
                 onChange={(e) => setCustomLogo(e.target.value)}
-                style={{
-                  padding: "6px 10px",
-                  borderRadius: 4,
-                  border: "1px solid var(--border)",
-                  background: "var(--bg-surface)",
-                  color: "var(--text-primary)",
-                  fontSize: 11,
-                  outline: "none",
-                }}
+                className="ide-input"
+                style={{ fontSize: 12 }}
               />
             </div>
           </div>
 
-          <div style={{ borderTop: "1px solid var(--border)", margin: "4px 0" }} />
+          <div style={{ borderTop: "1px solid var(--border-subtle)", margin: "4px 0" }} />
 
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            <label style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>OR DIRECT BADGE URL</label>
+            <label style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", color: "var(--text-muted)" }}>OR DIRECT BADGE URL</label>
             <input
               type="text"
               placeholder="https://example.com/badge.svg"
               value={customUrl}
               onChange={(e) => setCustomUrl(e.target.value)}
-              style={{
-                padding: "6px 10px",
-                borderRadius: 4,
-                border: "1px solid var(--border)",
-                background: "var(--bg-surface)",
-                color: "var(--text-primary)",
-                fontSize: 11,
-                outline: "none",
-              }}
+              className="ide-input"
+              style={{ fontSize: 12 }}
             />
           </div>
 
           <button
             onClick={handleCreateCustom}
-            style={{
-              marginTop: 4,
-              padding: "8px 12px",
-              borderRadius: 6,
-              border: "none",
-              background: "var(--accent)",
-              color: "#fff",
-              fontSize: 11,
-              fontWeight: 700,
-              cursor: "pointer",
-            }}
+            className="ide-btn primary"
+            style={{ marginTop: 4 }}
           >
             Create Badge
           </button>
@@ -269,7 +225,7 @@ export function BadgePicker({
               borderBottom: "1px solid var(--border)",
             }}
           >
-            <Search size={12} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
+            <Search size={13} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
             <input
               type="text"
               placeholder="Search tech..."
@@ -324,11 +280,11 @@ export function BadgePicker({
                   alignItems: "center",
                   gap: 4,
                   padding: "6px 4px",
-                  borderRadius: 6,
+                  borderRadius: "var(--radius-sm)",
                   border: "1px solid transparent",
                   background: "transparent",
                   cursor: "pointer",
-                  transition: "all 0.1s ease",
+                  transition: "background 0.1s, border-color 0.1s",
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.background = "var(--bg-hover)";
@@ -351,7 +307,7 @@ export function BadgePicker({
                 />
                 <span
                   style={{
-                    fontSize: 8,
+                    fontSize: 10,
                     color: "var(--text-muted)",
                     whiteSpace: "nowrap",
                     overflow: "hidden",

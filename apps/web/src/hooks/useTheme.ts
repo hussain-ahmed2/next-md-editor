@@ -16,7 +16,11 @@ export function useTheme() {
   const toggle = useCallback(() => {
     const next: Theme = theme === "dark" ? "light" : "dark";
     document.documentElement.dataset.theme = next;
-    localStorage.setItem(STORAGE_KEY, next);
+    try {
+      localStorage.setItem(STORAGE_KEY, next);
+    } catch {
+      /* private mode / quota — theme still applies for this session */
+    }
     setTheme(next);
   }, [theme]);
 

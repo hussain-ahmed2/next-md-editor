@@ -3,8 +3,8 @@
 import { useSortable } from "@dnd-kit/react/sortable";
 import { useEditorStore } from "@next-md-editor/editor-core";
 import type { Block } from "@next-md-editor/types";
-import { useState, memo } from "react";
-import { DragHandle } from "./sortable-block/DragHandle";
+import { memo } from "react";
+import { GripVertical } from "lucide-react";
 import { DeleteButton } from "./sortable-block/DeleteButton";
 import { PlaceholderBlock } from "./sortable-block/PlaceholderBlock";
 
@@ -13,20 +13,18 @@ export type SortableProps = {
   block?: Block;
   isPlaceholder?: boolean;
   index: number;
-  showToolbar?: boolean;
 };
 
 export function withSortable<P extends { block?: Block }>(
   WrappedComponent: React.ComponentType<P>
 ) {
   const SortableHOC = memo(function SortableBlock(props: P & SortableProps) {
-    const { id, isPlaceholder, index, showToolbar, ...rest } = props;
+    const { id, isPlaceholder, index, ...rest } = props;
     const { ref, handleRef, isDragging } = useSortable({ id, index });
 
     const removeBlocks = useEditorStore((s) => s.removeBlocks);
     const selectBlock = useEditorStore((s) => s.selectBlock);
     const selectedBlockIds = useEditorStore((s) => s.selectedBlockIds);
-    const [hovered, setHovered] = useState(false);
 
     if (isPlaceholder) {
       return (
@@ -51,52 +49,34 @@ export function withSortable<P extends { block?: Block }>(
       <div
         ref={ref}
         id={id}
-        style={{
-          opacity: isDragging ? 0.3 : 1,
-          position: "relative",
-          borderRadius: "var(--radius-md)",
-          border: isDragging
-            ? "1.5px dashed var(--accent)"
-            : `1px solid ${isSelected ? "var(--accent)" : hovered ? "var(--border)" : "transparent"}`,
-          background: isDragging
-            ? "var(--accent-muted)"
-            : isSelected
-              ? "var(--accent-muted)"
-              : hovered
-                ? "var(--bg-elevated)"
-                : "transparent",
-          transition: "border-color 0.15s, background 0.15s, opacity 0.15s",
-          padding: "2px 0",
-        }}
+        // Table of contents and search-jump locate blocks by this attribute
+        data-block-id={id}
+        className="canvas-block"
+        data-selected={isSelected}
+        data-dragging={isDragging}
         onClick={(e) => selectBlock(id, e.shiftKey)}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
       >
-        <DragHandle
-          handleRef={handleRef}
-          hovered={hovered}
-          isSelected={isSelected}
-        />
+        {/* Gutter: line number + drag grip (the whole gutter is the drag handle) */}
+        <div
+          ref={handleRef}
+          className="canvas-gutter"
+          title="Drag to reorder"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <GripVertical className="canvas-grip" size={13} />
+          <span className="canvas-lineno">{index + 1}</span>
+        </div>
 
-        {(hovered || isSelected) && (
-          <DeleteButton onDelete={handleDelete} />
-        )}
-
-        <div style={{ padding: "6px 12px" }}>
+        <div className="canvas-block-body">
           <WrappedComponent {...(rest as P)} />
         </div>
+
+        <DeleteButton onDelete={handleDelete} />
       </div>
     );
-  },
-  (prevProps, nextProps) => {
-    return (
-      prevProps.id === nextProps.id &&
-      prevProps.index === nextProps.index &&
-      prevProps.isPlaceholder === nextProps.isPlaceholder &&
-      prevProps.showToolbar === nextProps.showToolbar &&
-      prevProps.block === nextProps.block
-    );
   });
-  
+  // Default shallow compare: a hand-rolled comparator here would silently
+  // ignore any prop added later and render stale UI.
+
   return SortableHOC;
 }

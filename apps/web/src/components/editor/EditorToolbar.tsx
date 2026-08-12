@@ -1,90 +1,72 @@
 "use client";
 
 import { useState } from "react";
-import { CheckCheck, Loader2, ListTree, Search, Sparkles } from "lucide-react";
+import Link from "next/link";
+import { ListTree, Search, Sparkles } from "lucide-react";
 import { useUIStore } from "@/store/uiStore";
-import { useEditorStore } from "@next-md-editor/editor-core";
 import { UndoRedoButtons } from "./toolbar/UndoRedoButtons";
 import { ModeToggle } from "./toolbar/ModeToggle";
 import { TemplateMenu } from "./toolbar/TemplateMenu";
-import { FileActions } from "./toolbar/FileActions";
+import { ExportMenu } from "./toolbar/ExportMenu";
 import { Divider, ToolbarButton } from "./toolbar/ToolbarButton";
 import { ThemeToggle } from "./toolbar/ThemeToggle";
-import { getDocStats } from "@/features/document-stats";
 import { TableOfContents } from "./TableOfContents";
+import { UserMenu } from "@/components/auth/UserMenu";
+import { MenuBar } from "@/components/workspace/MenuBar";
 
 export function EditorToolbar() {
-  const saveStatus = useUIStore((s) => s.saveStatus);
-  const blocks = useEditorStore((s) => s.blocks);
-  const stats = getDocStats(blocks);
   const [tocOpen, setTocOpen] = useState(false);
+  const isMobile = useUIStore((s) => s.isMobile);
 
   return (
-    <header className="toolbar-header" style={{
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between",
-      padding: "0 20px",
-      height: 52,
-      background: "var(--bg-surface)",
-      borderBottom: "1px solid var(--border-subtle)",
-      flexShrink: 0,
-    }}>
-      {/* Logo */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <div style={{
-          width: 28,
-          height: 28,
-          borderRadius: 8,
-          background: "linear-gradient(135deg, var(--accent), var(--accent-hover))",
+    <header className="toolbar-header ide-header">
+      {/* Logo — links back to the landing page */}
+      <Link
+        href="/"
+        style={{
           display: "flex",
           alignItems: "center",
-          justifyContent: "center",
-          fontSize: 13,
-          fontWeight: 800,
-          color: "#fff",
-          boxShadow: "0 2px 8px var(--accent-glow)",
-        }}>M</div>
-        <span className="app-name" style={{ fontWeight: 700, fontSize: 15, color: "var(--text-primary)", letterSpacing: "-0.01em" }}>
+          gap: 8,
+          textDecoration: "none",
+          marginRight: 6,
+          flexShrink: 0,
+        }}
+        title="Back to home"
+      >
+        <div
+          style={{
+            width: 22,
+            height: 22,
+            borderRadius: "var(--radius-sm)",
+            background: "var(--accent)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 12,
+            fontWeight: 800,
+            color: "#fff",
+          }}
+        >
+          M
+        </div>
+        <span
+          className="app-name"
+          style={{
+            fontWeight: 600,
+            fontSize: 13,
+            color: "var(--text-primary)",
+            letterSpacing: "-0.01em",
+          }}
+        >
           next-md-editor
         </span>
-      </div>
+      </Link>
 
-      {/* Save Status Indicator */}
-      <div style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 6,
-        fontSize: 12,
-        color: "var(--text-secondary)",
-        marginLeft: 16,
-        marginRight: "auto",
-        transition: "opacity 0.2s ease",
-      }}>
-        {saveStatus === "saving" && (
-          <>
-            <Loader2 size={13} style={{ color: "var(--warning)", animation: "spin 1s linear infinite" }} />
-            <span className="save-status-label" style={{ color: "var(--text-secondary)", opacity: 0.8, fontWeight: 500 }}>Saving changes…</span>
-          </>
-        )}
-        {saveStatus === "saved" && (
-          <>
-            <CheckCheck size={13} style={{ color: "var(--success)" }} />
-            <span className="save-status-label" style={{ color: "var(--text-secondary)", opacity: 0.8, fontWeight: 500 }}>Saved to browser</span>
-          </>
-        )}
-        {stats.words > 0 && (
-          <>
-            <span style={{ color: "var(--text-muted)", margin: "0 2px" }}>·</span>
-            <span style={{ color: "var(--text-muted)", fontSize: 11, whiteSpace: "nowrap" }}>
-              {stats.words} words · {stats.readingTime}
-            </span>
-          </>
-        )}
-      </div>
+      {/* Application menus */}
+      {!isMobile && <MenuBar />}
 
       {/* Actions */}
-      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 2, marginLeft: "auto" }}>
         <UndoRedoButtons />
         <ToolbarButton
           onClick={() => useUIStore.getState().setSearchOpen(true)}
@@ -96,20 +78,13 @@ export function EditorToolbar() {
         <TemplateMenu />
         <ModeToggle />
         <div style={{ position: "relative" }}>
-          <ToolbarButton
-            onClick={() => setTocOpen((o) => !o)}
-            tooltip="Table of contents"
-          >
+          <ToolbarButton onClick={() => setTocOpen((o) => !o)} tooltip="Table of contents">
             <ListTree size={14} />
           </ToolbarButton>
           {tocOpen && (
             <>
               <div
-                style={{
-                  position: "fixed",
-                  inset: 0,
-                  zIndex: 99,
-                }}
+                style={{ position: "fixed", inset: 0, zIndex: 99 }}
                 onClick={() => setTocOpen(false)}
               />
               <div
@@ -123,18 +98,18 @@ export function EditorToolbar() {
                   overflow: "auto",
                   background: "var(--bg-elevated)",
                   border: "1px solid var(--border)",
-                  borderRadius: "var(--radius-md)",
-                  boxShadow: "var(--shadow-lg)",
+                  borderRadius: "var(--radius-sm)",
+                  boxShadow: "var(--shadow-md)",
                 }}
               >
                 <div
                   style={{
-                    padding: "8px 16px 4px",
-                    fontSize: 10,
-                    fontWeight: 700,
+                    padding: "8px 12px 4px",
+                    fontSize: 10.5,
+                    fontWeight: 600,
                     color: "var(--text-muted)",
                     textTransform: "uppercase",
-                    letterSpacing: "0.08em",
+                    letterSpacing: "0.07em",
                   }}
                 >
                   Table of Contents
@@ -152,7 +127,8 @@ export function EditorToolbar() {
           <span className="btn-label">AI Chat</span>
         </ToolbarButton>
         <ThemeToggle />
-        <FileActions />
+        <UserMenu />
+        <ExportMenu />
       </div>
     </header>
   );

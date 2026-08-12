@@ -2,7 +2,7 @@
 
 import { useEditorStore } from "@next-md-editor/editor-core";
 import type { Block } from "@next-md-editor/types";
-import { useMemo, useCallback, useState, useEffect } from "react";
+import { useMemo, useCallback, useState, useEffect, useRef } from "react";
 import { htmlToMarkdown } from "@/utils/editorShortcuts";
 import { TableCell } from "./table/TableCell";
 import { TableFormatToolbar } from "./table/TableFormatToolbar";
@@ -10,9 +10,10 @@ import { TableGridControls } from "./table/TableGridControls";
 
 export function TableBlock({ block }: { block: Block }) {
 	const updateBlock = useEditorStore((s) => s.updateBlock);
-	const blocks = useEditorStore((s) => s.blocks);
 	const selectedBlockIds = useEditorStore((s) => s.selectedBlockIds);
-	const myBlock = blocks.find((b) => b.id === block.id) ?? block;
+	// Narrow selector: re-renders only when THIS block changes, not on
+	// every keystroke elsewhere in the document.
+	const myBlock = useEditorStore((s) => s.blocks.find((b) => b.id === block.id)) ?? block;
 	const isFocused = selectedBlockIds.includes(block.id);
 
 	const rows = useMemo(
@@ -24,15 +25,49 @@ export function TableBlock({ block }: { block: Block }) {
 		[myBlock.props.rows],
 	);
 
+	// Cell typing is debounced to match the rich-text blocks: htmlToMarkdown
+	// runs a full unified pipeline, and each commit re-serializes the whole
+	// document for the preview, so doing it per keystroke was very costly.
+	const pendingCellRef = useRef<{ rIdx: number; cIdx: number; html: string } | null>(null);
+	const cellTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+	const commitPendingCell = useCallback(() => {
+		const pending = pendingCellRef.current;
+		if (!pending) return;
+		pendingCellRef.current = null;
+		const markdownValue = htmlToMarkdown(pending.html);
+		const currentRows =
+			(useEditorStore.getState().blocks.find((b) => b.id === block.id)?.props
+				.rows as string[][]) ?? rows;
+		if (currentRows[pending.rIdx]?.[pending.cIdx] === markdownValue) return;
+		const nextRows = currentRows.map((r, ri) =>
+			ri === pending.rIdx ? r.map((c, ci) => (ci === pending.cIdx ? markdownValue : c)) : r,
+		);
+		updateBlock(block.id, { rows: nextRows });
+	}, [rows, block.id, updateBlock]);
+
 	const handleCellInput = useCallback(
 		(rIdx: number, cIdx: number, html: string) => {
-			const markdownValue = htmlToMarkdown(html);
-			const nextRows = rows.map((r, ri) =>
-				ri === rIdx ? r.map((c, ci) => (ci === cIdx ? markdownValue : c)) : r,
-			);
-			updateBlock(block.id, { rows: nextRows });
+			pendingCellRef.current = { rIdx, cIdx, html };
+			if (cellTimerRef.current) clearTimeout(cellTimerRef.current);
+			cellTimerRef.current = setTimeout(commitPendingCell, 400);
 		},
-		[rows, block.id, updateBlock],
+		[commitPendingCell],
+	);
+
+	// Never lose the last keystrokes when the block unmounts (tab switch,
+	// file switch, block delete). Held in a ref so this runs on unmount only,
+	// not every time `rows` changes.
+	const commitRef = useRef(commitPendingCell);
+	useEffect(() => {
+		commitRef.current = commitPendingCell;
+	}, [commitPendingCell]);
+	useEffect(
+		() => () => {
+			if (cellTimerRef.current) clearTimeout(cellTimerRef.current);
+			commitRef.current();
+		},
+		[],
 	);
 
 	// Add a new row to the table
@@ -97,7 +132,7 @@ export function TableBlock({ block }: { block: Block }) {
 	}, [isFocused, updateFormats]);
 
 	return (
-		<div style={{ display: "flex", flexDirection: "column", gap: 10, margin: "8px 0" }}>
+		<div style={{ display: "flex", flexDirection: "column", gap: 8, margin: "8px 0" }}>
 			{/* Format Toolbar (Top) */}
 			{isFocused && (
 				<TableFormatToolbar
@@ -111,7 +146,7 @@ export function TableBlock({ block }: { block: Block }) {
 			<div
 				style={{
 					overflowX: "auto",
-					borderRadius: 8,
+					borderRadius: "var(--radius-md)",
 					border: "1px solid var(--border)",
 					background: "var(--bg-surface)",
 				}}
@@ -168,7 +203,7 @@ export function TableBlock({ block }: { block: Block }) {
 				</table>
 			</div>
 
-			{/* Glassmorphic Action Bar */}
+			{/* Grid controls action bar */}
 			<TableGridControls
 				addRow={addRow}
 				deleteRow={deleteRow}

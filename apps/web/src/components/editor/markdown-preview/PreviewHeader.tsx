@@ -1,15 +1,17 @@
 "use client";
 
 import React from "react";
-import { FileText } from "lucide-react";
+import { Code2, Eye, FileText } from "lucide-react";
 
 interface PreviewHeaderProps {
+  fileName: string;
   blockCount: number;
   activeTab: "preview" | "raw";
   onTabChange: (tab: "preview" | "raw") => void;
 }
 
 export function PreviewHeader({
+  fileName,
   blockCount,
   activeTab,
   onTabChange,
@@ -20,10 +22,11 @@ export function PreviewHeader({
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        padding: "8px 14px",
+        gap: 8,
+        height: "var(--tab-height)",
+        padding: "0 8px 0 12px",
         background: "var(--bg-surface)",
-        borderBottom: "1px solid var(--border)",
-        height: 44,
+        borderBottom: "1px solid var(--border-subtle)",
         flexShrink: 0,
       }}
     >
@@ -32,46 +35,52 @@ export function PreviewHeader({
           display: "flex",
           alignItems: "center",
           gap: 8,
-          fontSize: 12.5,
+          fontSize: 12,
           color: "var(--text-primary)",
           fontWeight: 500,
+          minWidth: 0,
         }}
       >
-        <FileText size={14} style={{ color: "var(--text-muted)" }} />
-        <span>document.md</span>
+        <FileText size={14} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
+        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {fileName}
+        </span>
         <span style={{ color: "var(--border)", userSelect: "none" }}>|</span>
-        <span style={{ fontSize: 11.5, color: "var(--text-secondary)" }}>{blockCount} blocks</span>
+        <span style={{ fontSize: 11, color: "var(--text-muted)", flexShrink: 0 }}>
+          {blockCount} blocks
+        </span>
       </div>
-      <div
-        style={{
-          display: "flex",
-          border: "1px solid var(--border)",
-          borderRadius: 6,
-          overflow: "hidden",
-          background: "var(--bg-base)",
-          padding: 2,
-        }}
-      >
-        {(["preview", "raw"] as const).map((tab) => (
+
+      <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+        <span
+          style={{
+            fontSize: 10,
+            fontWeight: 600,
+            letterSpacing: "0.04em",
+            color: "var(--text-muted)",
+          }}
+          title="Rendered with GitHub-Flavored Markdown styling"
+        >
+          GFM
+        </span>
+        <div className="ide-segment" role="tablist" aria-label="Preview view mode">
           <button
-            key={tab}
-            onClick={() => onTabChange(tab)}
-            style={{
-              padding: "3px 12px",
-              fontSize: 12,
-              fontWeight: 600,
-              borderRadius: 4,
-              border: "none",
-              background: activeTab === tab ? "var(--bg-elevated)" : "transparent",
-              color: activeTab === tab ? "var(--text-primary)" : "var(--text-muted)",
-              cursor: "pointer",
-              transition: "all 0.1s ease",
-              textTransform: "capitalize",
-            }}
+            role="tab"
+            aria-selected={activeTab === "preview"}
+            className={activeTab === "preview" ? "active" : ""}
+            onClick={() => onTabChange("preview")}
           >
-            {tab === "raw" ? "Code" : "Preview"}
+            <Eye size={12} /> Preview
           </button>
-        ))}
+          <button
+            role="tab"
+            aria-selected={activeTab === "raw"}
+            className={activeTab === "raw" ? "active" : ""}
+            onClick={() => onTabChange("raw")}
+          >
+            <Code2 size={12} /> Code
+          </button>
+        </div>
       </div>
     </div>
   );

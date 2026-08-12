@@ -36,11 +36,11 @@ export async function GET(
     }
 
     const profile = (await fetchGitHub(
-      `https://api.github.com/users/${cleanUser}`,
+      `https://api.github.com/users/${encodeURIComponent(cleanUser)}`,
     )) as GitHubProfile;
 
     const repos = (await fetchGitHub(
-      `https://api.github.com/users/${cleanUser}/repos?sort=updated&per_page=100`,
+      `https://api.github.com/users/${encodeURIComponent(cleanUser)}/repos?sort=updated&per_page=100`,
     )) as GitHubRepo[];
 
     const stats = computeStats(profile, repos);

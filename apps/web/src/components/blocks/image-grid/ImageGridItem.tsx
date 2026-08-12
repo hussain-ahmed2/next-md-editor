@@ -53,9 +53,9 @@ export function ImageGridItem({
           style={{
             position: "absolute",
             inset: 0,
-            background: "rgba(10, 10, 10, 0.4)",
+            background: "rgba(0, 0, 0, 0.55)",
             opacity: 0,
-            transition: "opacity 0.2s ease",
+            transition: "opacity 0.15s",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -67,38 +67,40 @@ export function ImageGridItem({
           <button
             onClick={(e) => onStartEdit(img, e)}
             style={{
-              padding: "4px 8px",
-              borderRadius: 4,
-              border: "1px solid var(--border-subtle)",
-              background: "var(--bg-elevated)",
+              height: 24,
+              padding: "0 8px",
+              borderRadius: "var(--radius-sm)",
+              border: "1px solid var(--border)",
+              background: "var(--bg-surface)",
               color: "var(--text-primary)",
-              fontSize: 10,
-              fontWeight: 600,
+              fontSize: 11,
+              fontWeight: 500,
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
               gap: 4,
             }}
           >
-            <Edit2 size={10} /> Edit
+            <Edit2 size={13} /> Edit
           </button>
           <button
             onClick={(e) => onRemove(img.id, e)}
             style={{
-              padding: "4px 8px",
-              borderRadius: 4,
+              height: 24,
+              padding: "0 8px",
+              borderRadius: "var(--radius-sm)",
               border: "1px solid var(--danger-border)",
               background: "var(--danger-muted)",
               color: "var(--danger)",
-              fontSize: 10,
-              fontWeight: 600,
+              fontSize: 11,
+              fontWeight: 500,
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
               gap: 4,
             }}
           >
-            <Trash2 size={10} /> Delete
+            <Trash2 size={13} /> Delete
           </button>
         </div>
       </div>

@@ -24,21 +24,19 @@ export function AiDraggableBlock({ block }: { block: Block }) {
         cursor: "grab",
         padding: "8px 12px",
         paddingLeft: "32px",
-        border: "1px solid var(--border)",
+        border: "1px solid var(--border-subtle)",
         borderRadius: "var(--radius-md)",
         marginBottom: 8,
         background: "var(--bg-base)",
         userSelect: "none",
         touchAction: "none",
-        transition: "all 0.15s ease",
+        transition: "background 0.12s ease, border-color 0.12s ease, opacity 0.12s ease",
         position: "relative",
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.borderColor = "var(--accent)";
         e.currentTarget.style.background = "var(--bg-hover)";
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = "var(--border)";
         e.currentTarget.style.background = "var(--bg-base)";
       }}
     >

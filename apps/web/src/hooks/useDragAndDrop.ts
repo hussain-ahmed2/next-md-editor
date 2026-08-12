@@ -6,6 +6,7 @@ import { PointerSensor, PointerActivationConstraints } from "@dnd-kit/dom";
 import { isSortable } from "@dnd-kit/react/sortable";
 import type { Block } from "@next-md-editor/types";
 import { CANVAS_ROOT_ID } from "@/components/editor/EditorCanvas";
+import { useWorkspaceStore } from "@/store/workspaceStore";
 
 // Module-level sensor config — PointerSensor handles mouse + touch via Pointer Events API
 const SENSORS = [
@@ -89,6 +90,18 @@ export function useDragAndDrop() {
 
       if (!source || canceled) return;
 
+      // ── Project tree node → folder / root move ───────────────────────────
+      if (source.data?.isTreeNode === true) {
+        if (!target) return;
+        const nodeId = source.data.nodeId as string;
+        if (target.data?.isTreeFolderDrop === true) {
+          useWorkspaceStore.getState().moveNode(nodeId, target.data.folderId as string);
+        } else if (target.data?.isTreeRootDrop === true) {
+          useWorkspaceStore.getState().moveNode(nodeId, null);
+        }
+        return;
+      }
+
       // ── Desktop sidebar → canvas drop ────────────────────────────────────
       if (source.data?.isSidebarItem === true) {
         if (!target) return;
@@ -152,7 +165,21 @@ export function useDragAndDrop() {
               ? selectedBlockIds
               : [source.id as string];
 
-          moveBlocks(idsToMove, toIndex);
+          // dnd-kit reports `source.index` as if only the dragged block were
+          // removed, but moveBlocks removes the whole selection first. When
+          // dragging a multi-block selection downward, each additional moved
+          // block that sat above the drop point shifts the target left by one.
+          let insertIndex = toIndex;
+          if (idsToMove.length > 1) {
+            const movedAbove = idsToMove.reduce((count, id) => {
+              if (id === source.id) return count;
+              const idx = blocks.findIndex((b) => b.id === id);
+              return idx !== -1 && idx < toIndex ? count + 1 : count;
+            }, 0);
+            insertIndex = Math.max(0, toIndex - movedAbove);
+          }
+
+          moveBlocks(idsToMove, insertIndex);
         }
       }
     },

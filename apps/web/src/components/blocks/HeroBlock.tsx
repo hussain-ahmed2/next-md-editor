@@ -8,7 +8,6 @@ import { useBlockFocus } from "@/hooks/useBlockFocus";
 import { Link, Image as ImageIcon, Settings } from "lucide-react";
 
 export function HeroBlock({ block }: { block: Block }) {
-  const blocks = useEditorStore((s) => s.blocks);
   const addBlock = useEditorStore((s) => s.addBlock);
   const removeBlocks = useEditorStore((s) => s.removeBlocks);
   const updateBlock = useEditorStore((s) => s.updateBlock);
@@ -40,7 +39,7 @@ export function HeroBlock({ block }: { block: Block }) {
         handleEditorKeyboardShortcuts(
           e,
           block,
-          blocks,
+          useEditorStore.getState().blocks,
           selectedBlockIds,
           addBlock,
           removeBlocks,
@@ -54,7 +53,7 @@ export function HeroBlock({ block }: { block: Block }) {
         position: "relative",
         background: "var(--bg-surface)",
         border: "1px solid var(--border-subtle)",
-        borderRadius: "var(--radius-lg)",
+        borderRadius: "var(--radius-md)",
         overflow: "hidden",
       }}
     >
@@ -62,30 +61,18 @@ export function HeroBlock({ block }: { block: Block }) {
         contentEditable={false}
         style={{
           position: "absolute",
-          top: 16,
-          right: 16,
+          top: 8,
+          right: 8,
           zIndex: 10,
         }}
       >
         <button
           onClick={() => setShowSettings(!showSettings)}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            width: 32,
-            height: 32,
-            background: showSettings ? "var(--accent)" : "var(--bg-base)",
-            color: showSettings ? "white" : "var(--text-muted)",
-            border: "1px solid var(--border)",
-            borderRadius: "50%",
-            cursor: "pointer",
-            boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
-            transition: "all 0.2s",
-          }}
+          className={showSettings ? "ide-btn active" : "ide-btn"}
+          style={{ width: 26, padding: 0 }}
           title="Hero Settings"
         >
-          <Settings size={16} />
+          <Settings size={15} />
         </button>
       </div>
 
@@ -95,14 +82,14 @@ export function HeroBlock({ block }: { block: Block }) {
           style={{
             background: "var(--bg-base)",
             borderBottom: "1px solid var(--border-subtle)",
-            padding: "16px 20px",
+            padding: "12px",
             display: "grid",
             gridTemplateColumns: "1fr 1fr",
-            gap: 16,
+            gap: 8,
           }}
         >
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", display: "flex", alignItems: "center", gap: 6 }}>
+            <label style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 6 }}>
               <ImageIcon size={14} /> Logo URL
             </label>
             <input
@@ -110,12 +97,12 @@ export function HeroBlock({ block }: { block: Block }) {
               value={logoUrl}
               onChange={(e) => updateProp("logoUrl", e.target.value)}
               placeholder="https://..."
-              style={{ padding: "6px 8px", fontSize: 13, border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", background: "var(--bg-surface)", color: "var(--text-primary)" }}
+              className="ide-input"
             />
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", display: "flex", alignItems: "center", gap: 6 }}>
+            <label style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 6 }}>
               <Link size={14} /> Primary Button Text
             </label>
             <input
@@ -123,12 +110,12 @@ export function HeroBlock({ block }: { block: Block }) {
               value={primaryBtnText}
               onChange={(e) => updateProp("primaryBtnText", e.target.value)}
               placeholder="Get Started"
-              style={{ padding: "6px 8px", fontSize: 13, border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", background: "var(--bg-surface)", color: "var(--text-primary)" }}
+              className="ide-input"
             />
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", display: "flex", alignItems: "center", gap: 6 }}>
+            <label style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 6 }}>
               <Link size={14} /> Primary Button URL
             </label>
             <input
@@ -136,12 +123,12 @@ export function HeroBlock({ block }: { block: Block }) {
               value={primaryBtnUrl}
               onChange={(e) => updateProp("primaryBtnUrl", e.target.value)}
               placeholder="https://..."
-              style={{ padding: "6px 8px", fontSize: 13, border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", background: "var(--bg-surface)", color: "var(--text-primary)" }}
+              className="ide-input"
             />
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", display: "flex", alignItems: "center", gap: 6 }}>
+            <label style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 6 }}>
               <Link size={14} /> Secondary Button Text
             </label>
             <input
@@ -149,12 +136,12 @@ export function HeroBlock({ block }: { block: Block }) {
               value={secondaryBtnText}
               onChange={(e) => updateProp("secondaryBtnText", e.target.value)}
               placeholder="Documentation"
-              style={{ padding: "6px 8px", fontSize: 13, border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", background: "var(--bg-surface)", color: "var(--text-primary)" }}
+              className="ide-input"
             />
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", display: "flex", alignItems: "center", gap: 6 }}>
+            <label style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 6 }}>
               <Link size={14} /> Secondary Button URL
             </label>
             <input
@@ -162,7 +149,7 @@ export function HeroBlock({ block }: { block: Block }) {
               value={secondaryBtnUrl}
               onChange={(e) => updateProp("secondaryBtnUrl", e.target.value)}
               placeholder="https://..."
-              style={{ padding: "6px 8px", fontSize: 13, border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", background: "var(--bg-surface)", color: "var(--text-primary)" }}
+              className="ide-input"
             />
           </div>
         </div>

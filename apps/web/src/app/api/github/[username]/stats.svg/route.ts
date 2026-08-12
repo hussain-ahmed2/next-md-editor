@@ -508,8 +508,8 @@ export async function GET(
     if (cached && Date.now() - cached.updatedAt.getTime() < CACHE_TTL) {
       stats = cached.data as unknown as ComputedStats;
     } else {
-      const profile = (await fetchGitHub(`https://api.github.com/users/${cleanUser}`)) as GitHubProfile;
-      const repos = (await fetchGitHub(`https://api.github.com/users/${cleanUser}/repos?sort=updated&per_page=100`)) as GitHubRepo[];
+      const profile = (await fetchGitHub(`https://api.github.com/users/${encodeURIComponent(cleanUser)}`)) as GitHubProfile;
+      const repos = (await fetchGitHub(`https://api.github.com/users/${encodeURIComponent(cleanUser)}/repos?sort=updated&per_page=100`)) as GitHubRepo[];
       stats = computeStats(profile, repos);
       const contrib = await fetchContributions(cleanUser, GITHUB_TOKEN);
       stats.contributions = contrib.contributions;

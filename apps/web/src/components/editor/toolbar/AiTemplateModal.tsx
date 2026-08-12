@@ -100,8 +100,7 @@ export function AiTemplateModal({ isOpen, onClose }: AiTemplateModalProps) {
         alignItems: "center",
         justifyContent: "center",
         padding: 20,
-        background: "rgba(0, 0, 0, 0.4)",
-        backdropFilter: "blur(4px)",
+        background: "rgba(0, 0, 0, 0.55)",
       }}
       onClick={onClose}
     >
@@ -112,59 +111,42 @@ export function AiTemplateModal({ isOpen, onClose }: AiTemplateModalProps) {
           maxHeight: "85vh",
           background: "var(--bg-elevated)",
           border: "1px solid var(--border)",
-          borderRadius: "var(--radius-lg)",
-          boxShadow: "var(--shadow-xl)",
+          borderRadius: "var(--radius-md)",
+          boxShadow: "var(--shadow-md)",
           display: "flex",
           flexDirection: "column",
           overflow: "hidden",
-          animation: "slideIn 0.2s ease-out",
         }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "16px 20px",
-            borderBottom: "1px solid var(--border)",
-            background: "var(--bg-surface)",
-          }}
+          className="ws-toolwindow-header"
+          style={{ background: "var(--bg-surface)" }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <Sparkles size={18} style={{ color: "var(--accent)" }} />
-            <span style={{ fontWeight: 600, fontSize: 15, color: "var(--text-primary)" }}>
-              Generate AI README
-            </span>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <Sparkles size={13} style={{ color: "var(--accent)" }} />
+            <span>Generate AI README</span>
           </div>
           <button
+            className="ide-btn"
             onClick={onClose}
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              color: "var(--text-muted)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: 4,
-              borderRadius: 6,
-            }}
+            style={{ width: 24, height: 24, padding: 0 }}
           >
-            <X size={18} />
+            <X size={14} />
           </button>
         </div>
 
         {/* Content Body */}
         <div style={{ display: "flex", flexDirection: "column", overflow: "hidden", flex: 1 }}>
           {!result && !streaming && !error ? (
-            <div style={{ padding: 24, display: "flex", flexDirection: "column", gap: 16 }}>
-              <div style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.5 }}>
+            <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+              <div style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.5 }}>
                 Describe your project briefly. The AI will generate a comprehensive README document complete with installation steps, usage examples, and structure.
               </div>
               <textarea
                 ref={inputRef}
+                className="ide-input"
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 onKeyDown={(e) => {
@@ -177,52 +159,23 @@ export function AiTemplateModal({ isOpen, onClose }: AiTemplateModalProps) {
                 rows={4}
                 style={{
                   width: "100%",
-                  padding: "12px",
-                  fontSize: 14,
-                  fontFamily: "inherit",
-                  border: "1px solid var(--border)",
-                  borderRadius: 8,
-                  background: "var(--bg-base)",
-                  color: "var(--text-primary)",
+                  height: "auto",
+                  padding: "6px 8px",
+                  lineHeight: 1.5,
                   resize: "none",
-                  outline: "none",
                 }}
               />
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 4 }}>
-                <button
-                  onClick={onClose}
-                  style={{
-                    padding: "8px 16px",
-                    borderRadius: 6,
-                    border: "1px solid var(--border)",
-                    background: "transparent",
-                    color: "var(--text-primary)",
-                    fontSize: 13,
-                    fontWeight: 500,
-                    cursor: "pointer",
-                  }}
-                >
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 6 }}>
+                <button className="ide-btn" onClick={onClose}>
                   Cancel
                 </button>
                 <button
+                  className="ide-btn primary"
                   onClick={handleGenerate}
                   disabled={!prompt.trim()}
-                  style={{
-                    padding: "8px 16px",
-                    borderRadius: 6,
-                    border: "none",
-                    background: "var(--accent)",
-                    color: "#fff",
-                    fontSize: 13,
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 6,
-                    opacity: prompt.trim() ? 1 : 0.5,
-                  }}
+                  style={{ opacity: prompt.trim() ? 1 : 0.5 }}
                 >
-                  <Sparkles size={14} />
+                  <Sparkles size={13} />
                   Generate
                 </button>
               </div>
@@ -232,10 +185,10 @@ export function AiTemplateModal({ isOpen, onClose }: AiTemplateModalProps) {
               <div
                 style={{
                   flex: 1,
-                  padding: 20,
+                  padding: 12,
                   overflowY: "auto",
                   background: "var(--bg-base)",
-                  fontSize: 13,
+                  fontSize: 12,
                   lineHeight: 1.6,
                   color: "var(--text-primary)",
                   whiteSpace: "pre-wrap",
@@ -251,89 +204,67 @@ export function AiTemplateModal({ isOpen, onClose }: AiTemplateModalProps) {
               
               <div
                 style={{
-                  padding: "12px 20px",
-                  borderTop: "1px solid var(--border)",
+                  padding: "8px 12px",
+                  borderTop: "1px solid var(--border-subtle)",
                   background: "var(--bg-surface)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between",
                 }}
               >
-                <div style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--text-muted)", fontSize: 12 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--text-muted)", fontSize: 12 }}>
                   {streaming ? (
                     <>
-                      <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} />
+                      <Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} />
                       Generating content...
                     </>
                   ) : error ? (
                     "Failed to generate."
                   ) : (
                     <>
-                      <Check size={14} style={{ color: "var(--success)" }} />
+                      <Check size={13} style={{ color: "var(--success)" }} />
                       Generation complete.
                     </>
                   )}
                 </div>
-                <div style={{ display: "flex", gap: 8 }}>
+                <div style={{ display: "flex", gap: 6 }}>
                   {streaming ? (
                     <button
                       onClick={handleStop}
                       style={{
-                        padding: "6px 12px",
-                        borderRadius: 6,
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 5,
+                        height: 26,
+                        padding: "0 10px",
                         border: "none",
+                        borderRadius: "var(--radius-sm)",
                         background: "var(--danger)",
                         color: "#fff",
                         fontSize: 12,
-                        fontWeight: 600,
+                        fontWeight: 500,
+                        fontFamily: "var(--font-sans)",
                         cursor: "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 6,
                       }}
                     >
-                      <Square size={12} fill="currentColor" />
+                      <Square size={11} fill="currentColor" />
                       Stop
                     </button>
                   ) : (
                     <>
                       <button
+                        className="ide-btn"
                         onClick={() => {
                           setResult("");
                           setError(null);
                           setTimeout(() => inputRef.current?.focus(), 100);
                         }}
-                        style={{
-                          padding: "6px 12px",
-                          borderRadius: 6,
-                          border: "1px solid var(--border)",
-                          background: "transparent",
-                          color: "var(--text-primary)",
-                          fontSize: 12,
-                          fontWeight: 500,
-                          cursor: "pointer",
-                        }}
                       >
                         Try Again
                       </button>
                       {!error && (
-                        <button
-                          onClick={handleInsert}
-                          style={{
-                            padding: "6px 16px",
-                            borderRadius: 6,
-                            border: "none",
-                            background: "var(--accent)",
-                            color: "#fff",
-                            fontSize: 12,
-                            fontWeight: 600,
-                            cursor: "pointer",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 6,
-                          }}
-                        >
-                          <FileDown size={14} />
+                        <button className="ide-btn primary" onClick={handleInsert}>
+                          <FileDown size={13} />
                           Load into Editor
                         </button>
                       )}

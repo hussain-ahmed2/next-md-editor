@@ -52,42 +52,13 @@ export function SourceEditor() {
         background: "var(--bg-base)",
       }}
     >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "8px 16px",
-          borderBottom: "1px solid var(--border-subtle)",
-          background: "var(--bg-surface)",
-          flexShrink: 0,
-        }}
-      >
-        <span
-          style={{
-            fontSize: 11,
-            fontWeight: 700,
-            fontFamily: "var(--font-mono)",
-            color: "var(--text-muted)",
-            letterSpacing: "0.05em",
-          }}
-        >
-          MARKDOWN SOURCE
-        </span>
-        <div style={{ display: "flex", gap: 6 }}>
+      <div className="ws-toolwindow-header" style={{ background: "var(--bg-surface)" }}>
+        <span>MARKDOWN SOURCE</span>
+        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
           <button
             onClick={handleApply}
-            style={{
-              padding: "4px 12px",
-              borderRadius: "var(--radius-sm)",
-              border: "1px solid var(--accent)",
-              background: "var(--accent)",
-              color: "#fff",
-              fontSize: 12,
-              fontWeight: 600,
-              cursor: "pointer",
-              fontFamily: "var(--font-sans)",
-            }}
+            className="ide-btn primary"
+            style={{ height: 24, fontSize: 12, fontWeight: 600 }}
           >
             Apply Changes
           </button>

@@ -30,6 +30,7 @@ export function EmojiToolbarButton() {
 		<div style={{ display: "flex", alignItems: "center", gap: 2, marginLeft: 8 }}>
 			<button
 				ref={emojiBtnRef}
+				className={emojiPicker ? "ide-btn active" : "ide-btn"}
 				onMouseDown={() => {
 					// Save range on mouse down before any focus is lost
 					const selection = window.getSelection();
@@ -40,28 +41,9 @@ export function EmojiToolbarButton() {
 				onClick={() => setEmojiPicker((p) => !p)}
 				title="Emoji"
 				style={{
-					display: "inline-flex",
-					alignItems: "center",
-					justifyContent: "center",
-					background: emojiPicker ? "var(--accent)" : "transparent",
-					border: "none",
-					borderRadius: 4,
-					padding: "4px 6px",
-					cursor: "pointer",
-					color: emojiPicker ? "#fff" : "var(--text-secondary)",
-					transition: "all 0.12s",
-				}}
-				onMouseEnter={(e) => {
-					if (!emojiPicker) {
-						e.currentTarget.style.background = "var(--bg-elevated)";
-						e.currentTarget.style.color = "var(--text-primary)";
-					}
-				}}
-				onMouseLeave={(e) => {
-					if (!emojiPicker) {
-						e.currentTarget.style.background = "transparent";
-						e.currentTarget.style.color = "var(--text-secondary)";
-					}
+					width: 26,
+					padding: 0,
+					transition: "background 0.1s, color 0.1s",
 				}}
 			>
 				<Smile size={14} />

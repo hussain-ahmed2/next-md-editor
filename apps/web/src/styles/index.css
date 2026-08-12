@@ -3,3 +3,5 @@
 @import "./themes/light.css";
 @import "./base.css";
 @import "./components.css";
+@import "./landing.css";
+@import "./workspace.css";

@@ -31,6 +31,15 @@ export function EmojiPicker({ onSelect, onClose, buttonRef }: EmojiPickerProps) 
     setReady(true);
   }, [buttonRef]);
 
+  // Close on Escape for keyboard users
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
   const filtered = useMemo(() => {
     if (!query) return EMOJIS;
     const q = query.toLowerCase();
@@ -57,7 +66,7 @@ export function EmojiPicker({ onSelect, onClose, buttonRef }: EmojiPickerProps) 
           background: "var(--bg-elevated)",
           border: "1px solid var(--border)",
           borderRadius: "var(--radius-md)",
-          boxShadow: "var(--shadow-lg)",
+          boxShadow: "var(--shadow-md)",
           display: "flex",
           flexDirection: "column",
           overflow: "hidden",
@@ -69,9 +78,9 @@ export function EmojiPicker({ onSelect, onClose, buttonRef }: EmojiPickerProps) 
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search emoji..."
           style={{
-            padding: "8px 10px",
+            padding: "6px 8px",
             border: "none",
-            borderBottom: "1px solid var(--border)",
+            borderBottom: "1px solid var(--border-subtle)",
             background: "var(--bg-surface)",
             color: "var(--text-primary)",
             fontSize: 12,
@@ -98,16 +107,16 @@ export function EmojiPicker({ onSelect, onClose, buttonRef }: EmojiPickerProps) 
               }}
               title={`:${e.shortcode}:`}
               style={{
-                width: 30,
-                height: 30,
+                width: 26,
+                height: 26,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 border: "none",
                 background: "transparent",
-                borderRadius: 4,
+                borderRadius: "var(--radius-sm)",
                 cursor: "pointer",
-                fontSize: 18,
+                fontSize: 16,
                 padding: 0,
                 transition: "background 0.1s ease",
               }}

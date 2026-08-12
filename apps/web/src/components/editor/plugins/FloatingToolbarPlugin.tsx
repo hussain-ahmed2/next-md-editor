@@ -205,17 +205,18 @@ export function FloatingToolbarPlugin({ blockId }: { blockId: string }) {
                 display: "inline-flex",
                 alignItems: "center",
                 justifyContent: "center",
-                background: active ? "var(--accent)" : "transparent",
+                height: 24,
+                background: active ? "var(--accent-muted)" : "transparent",
                 border: "none",
-                borderRadius: 4,
-                padding: "4px 6px",
+                borderRadius: "var(--radius-sm)",
+                padding: "0 6px",
                 cursor: "pointer",
-                color: active ? "#fff" : "var(--text-secondary)",
-                transition: "all 0.12s",
+                color: active ? "var(--accent)" : "var(--text-secondary)",
+                transition: "background 0.1s, color 0.1s",
               }}
               onMouseEnter={(e) => {
                 if (!active) {
-                  e.currentTarget.style.background = "var(--bg-elevated)";
+                  e.currentTarget.style.background = "var(--bg-hover)";
                   e.currentTarget.style.color = "var(--text-primary)";
                 }
               }}
@@ -240,17 +241,18 @@ export function FloatingToolbarPlugin({ blockId }: { blockId: string }) {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              background: emojiPicker ? "var(--accent)" : "transparent",
+              height: 24,
+              background: emojiPicker ? "var(--accent-muted)" : "transparent",
               border: "none",
-              borderRadius: 4,
-              padding: "3px 7px",
+              borderRadius: "var(--radius-sm)",
+              padding: "0 6px",
               cursor: "pointer",
-              color: emojiPicker ? "#fff" : "var(--text-secondary)",
-              transition: "all 0.12s",
+              color: emojiPicker ? "var(--accent)" : "var(--text-secondary)",
+              transition: "background 0.1s, color 0.1s",
             }}
             onMouseEnter={(e) => {
               if (!emojiPicker) {
-                e.currentTarget.style.background = "var(--bg-elevated)";
+                e.currentTarget.style.background = "var(--bg-hover)";
                 e.currentTarget.style.color = "var(--text-primary)";
               }
             }}
@@ -276,18 +278,22 @@ export function FloatingToolbarPlugin({ blockId }: { blockId: string }) {
           onClick={() => setAiDialogOpen(true)}
           title="Edit with AI"
           style={{
-            background: aiDialogOpen ? "var(--accent)" : "transparent",
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            height: 24,
+            background: aiDialogOpen ? "var(--accent-muted)" : "transparent",
             border: "none",
-            borderRadius: 4,
-            padding: "3px 7px",
+            borderRadius: "var(--radius-sm)",
+            padding: "0 6px",
             cursor: "pointer",
-            color: aiDialogOpen ? "#fff" : "var(--text-secondary)",
+            color: aiDialogOpen ? "var(--accent)" : "var(--text-secondary)",
             fontSize: 12,
-            transition: "all 0.12s",
+            transition: "background 0.1s, color 0.1s",
           }}
           onMouseEnter={(e) => {
             if (!aiDialogOpen) {
-              e.currentTarget.style.background = "var(--bg-elevated)";
+              e.currentTarget.style.background = "var(--bg-hover)";
               e.currentTarget.style.color = "var(--text-primary)";
             }
           }}

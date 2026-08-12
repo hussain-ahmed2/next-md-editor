@@ -6,9 +6,10 @@ import type { Block } from "@next-md-editor/types";
 import { ChevronRight, GripVertical } from "lucide-react";
 
 export function CollapsibleBlock({ block }: { block: Block }) {
-  const blocks = useEditorStore((s) => s.blocks);
   const updateBlock = useEditorStore((s) => s.updateBlock);
-  const myBlock = blocks.find((b) => b.id === block.id) ?? block;
+  // Narrow selector: re-renders only when THIS block changes, not on
+  // every keystroke elsewhere in the document.
+  const myBlock = useEditorStore((s) => s.blocks.find((b) => b.id === block.id)) ?? block;
   const summary = (myBlock.props.summary as string) ?? "";
   const content = (myBlock.props.content as string) ?? "";
   const open = (myBlock.props.open as boolean) ?? false;
@@ -36,8 +37,8 @@ export function CollapsibleBlock({ block }: { block: Block }) {
     <div
       style={{
         borderRadius: "var(--radius-md)",
-        border: "1px solid var(--border)",
-        background: "var(--bg-surface)",
+        border: "1px solid var(--border-subtle)",
+        background: "var(--bg-base)",
         overflow: "hidden",
       }}
     >
@@ -47,10 +48,10 @@ export function CollapsibleBlock({ block }: { block: Block }) {
           display: "flex",
           alignItems: "center",
           gap: 6,
-          padding: "8px 12px",
+          padding: "6px 8px",
           cursor: "pointer",
           userSelect: "none",
-          background: "var(--bg-elevated)",
+          background: "var(--bg-surface)",
           borderBottom: open ? "1px solid var(--border-subtle)" : "none",
         }}
       >
@@ -58,7 +59,6 @@ export function CollapsibleBlock({ block }: { block: Block }) {
           size={14}
           style={{
             color: "var(--text-muted)",
-            transition: "transform 0.15s ease",
             transform: open ? "rotate(90deg)" : "rotate(0deg)",
             flexShrink: 0,
           }}
@@ -82,7 +82,7 @@ export function CollapsibleBlock({ block }: { block: Block }) {
             fontFamily: "var(--font-sans)",
           }}
         />
-        <span style={{ fontSize: 10, color: "var(--text-muted)", whiteSpace: "nowrap" }}>
+        <span style={{ fontSize: 11, color: "var(--text-muted)", whiteSpace: "nowrap" }}>
           {open ? "Click to collapse" : "Click to expand"}
         </span>
       </div>

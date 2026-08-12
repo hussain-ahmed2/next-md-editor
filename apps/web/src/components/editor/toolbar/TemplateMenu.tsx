@@ -49,45 +49,24 @@ export function TemplateMenu() {
       </ToolbarButton>
       {templateOpen && (
         <div
-          style={{
-            position: "absolute",
-            top: "calc(100% + 4px)",
-            left: 0,
-            zIndex: 100,
-            width: 220,
-            background: "var(--bg-elevated)",
-            border: "1px solid var(--border)",
-            borderRadius: "var(--radius-md)",
-            boxShadow: "var(--shadow-lg)",
-            display: "flex",
-            flexDirection: "column",
-            padding: "4px",
-            gap: 2,
-          }}
+          className="ide-menu"
+          style={{ top: "calc(100% + 4px)", width: 220 }}
         >
+          <div className="ide-menu-label">Templates</div>
           {TEMPLATES.map((tmpl) => (
             <button
               key={tmpl.id}
+              className="ide-menu-item"
               onClick={() => handleLoadTemplate(tmpl)}
               style={{
-                display: "flex",
                 flexDirection: "column",
+                alignItems: "flex-start",
                 gap: 2,
-                padding: "8px 10px",
-                borderRadius: "var(--radius-sm)",
-                border: "none",
-                background: "transparent",
-                cursor: "pointer",
-                textAlign: "left",
-                transition: "background 0.1s ease",
+                padding: "6px 10px",
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "var(--bg-hover)")}
-              onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
             >
-              <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>
-                {tmpl.name}
-              </span>
-              <span style={{ fontSize: 11, color: "var(--text-muted)", lineHeight: 1.3 }}>
+              <span style={{ fontWeight: 500 }}>{tmpl.name}</span>
+              <span style={{ fontSize: 11, opacity: 0.7, lineHeight: 1.3 }}>
                 {tmpl.description}
               </span>
             </button>

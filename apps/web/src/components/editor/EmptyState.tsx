@@ -20,11 +20,11 @@ export function EmptyState() {
   };
 
   const templateIcons: Record<string, React.ReactNode> = {
-    "github-profile": <BookOpen size={18} />,
-    "project-readme": <FileText size={18} />,
-    "api-docs": <FileCode2 size={18} />,
-    blank: <NotebookText size={18} />,
-    demo: <Zap size={18} />,
+    "github-profile": <BookOpen size={16} />,
+    "project-readme": <FileText size={16} />,
+    "api-docs": <FileCode2 size={16} />,
+    blank: <NotebookText size={16} />,
+    demo: <Zap size={16} />,
   };
 
   return (
@@ -34,35 +34,35 @@ export function EmptyState() {
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        padding: "60px 40px",
-        gap: 24,
+        padding: "48px 32px",
+        gap: 16,
         textAlign: "center",
       }}
     >
       <div
         style={{
-          width: 64,
-          height: 64,
-          borderRadius: 20,
+          width: 48,
+          height: 48,
+          borderRadius: "var(--radius-md)",
           background: "var(--accent-muted)",
-          border: "1px solid var(--border)",
+          border: "1px solid var(--border-subtle)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontSize: 28,
+          fontSize: 22,
         }}
       >
         ✦
       </div>
-      <div style={{ fontSize: 18, fontWeight: 700, color: "var(--text-primary)" }}>
+      <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>
         Start writing
       </div>
       <div
         style={{
-          fontSize: 14,
+          fontSize: 13,
           color: "var(--text-muted)",
           maxWidth: 400,
-          lineHeight: 1.7,
+          lineHeight: 1.5,
         }}
       >
         Pick a template to get started, or drag a block from the sidebar to build from scratch.
@@ -84,14 +84,14 @@ export function EmptyState() {
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
-              gap: 8,
-              padding: "16px 12px",
+              gap: 6,
+              padding: "12px 10px",
               borderRadius: "var(--radius-md)",
               border: "1px solid var(--border-subtle)",
               background: "var(--bg-surface)",
               cursor: "pointer",
               textAlign: "center",
-              transition: "all 0.15s ease",
+              transition: "background 0.15s ease, border-color 0.15s ease",
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.background = "var(--bg-hover)";
@@ -104,9 +104,9 @@ export function EmptyState() {
           >
             <div
               style={{
-                width: 36,
-                height: 36,
-                borderRadius: 10,
+                width: 28,
+                height: 28,
+                borderRadius: "var(--radius-sm)",
                 background: "var(--accent-muted)",
                 color: "var(--accent)",
                 display: "flex",
@@ -114,7 +114,7 @@ export function EmptyState() {
                 justifyContent: "center",
               }}
             >
-              {templateIcons[tmpl.id] ?? <FileText size={18} />}
+              {templateIcons[tmpl.id] ?? <FileText size={16} />}
             </div>
             <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>
               {tmpl.name}

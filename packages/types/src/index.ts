@@ -64,6 +64,33 @@ export interface EditorState {
   redo: () => void;
 }
 
+// ── Workspace / file tree ─────────────────────────────────────────────────────
+
+export type FileKind = "file" | "folder";
+
+export interface FileNode {
+  id: string;
+  parentId: string | null;
+  name: string;
+  kind: FileKind;
+  /** Sibling sort hint. Display currently sorts folders-first then by name. */
+  order: number;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface WorkspaceMeta {
+  version: 1;
+  nodes: Record<string, FileNode>;
+  openTabIds: string[];
+  activeFileId: string | null;
+  expandedFolderIds: string[];
+}
+
+export type FileContent =
+  | { format: "blocks"; blocks: Block[] }
+  | { format: "text"; text: string };
+
 export interface BlockDefinition {
   type: BlockType;
   component: (props: { block: Block }) => ReactNode;

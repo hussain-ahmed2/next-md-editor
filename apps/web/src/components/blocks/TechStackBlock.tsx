@@ -6,17 +6,16 @@ import type { Block } from "@next-md-editor/types";
 import { handleEditorKeyboardShortcuts } from "@/utils/editorShortcuts";
 import { useBlockFocus } from "@/hooks/useBlockFocus";
 import { X, LayoutTemplate, AlignLeft, AlignCenter, AlignRight } from "lucide-react";
-import { TECH_DICTIONARY } from "@/constants/techStack";
+import type { TechBadge } from "@/constants/techStack";
 
 export function TechStackBlock({ block }: { block: Block }) {
-  const blocks = useEditorStore((s) => s.blocks);
   const addBlock = useEditorStore((s) => s.addBlock);
   const removeBlocks = useEditorStore((s) => s.removeBlocks);
   const updateBlock = useEditorStore((s) => s.updateBlock);
   const selectBlock = useEditorStore((s) => s.selectBlock);
   const selectedBlockIds = useEditorStore((s) => s.selectedBlockIds);
 
-  const techs = (block.props.techs as typeof TECH_DICTIONARY) ?? [];
+  const techs = (block.props.techs as TechBadge[]) ?? [];
   const alignment = (block.props.alignment as string) ?? "left";
 
   const [search, setSearch] = useState("");
@@ -24,17 +23,34 @@ export function TechStackBlock({ block }: { block: Block }) {
   const ref = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // The badge dictionary is ~370 KB — load it only when the picker is first
+  // opened rather than shipping it to every user in the editor bundle.
+  const [dictionary, setDictionary] = useState<TechBadge[] | null>(null);
+  useEffect(() => {
+    if (!showDropdown || dictionary) return;
+    let cancelled = false;
+    import("@/constants/techStack")
+      .then((m) => {
+        if (!cancelled) setDictionary(m.TECH_DICTIONARY);
+      })
+      .catch((e) => console.error("Failed to load tech stack dictionary:", e));
+    return () => {
+      cancelled = true;
+    };
+  }, [showDropdown, dictionary]);
+
   useBlockFocus(ref, block.id, selectedBlockIds);
 
   const filteredTech = useMemo(() => {
-    if (!search.trim()) return TECH_DICTIONARY;
+    if (!dictionary) return [];
+    if (!search.trim()) return dictionary;
     const lower = search.toLowerCase();
-    return TECH_DICTIONARY.filter(
+    return dictionary.filter(
       (t) => t.name.toLowerCase().includes(lower) || t.id.includes(lower)
     );
-  }, [search]);
+  }, [search, dictionary]);
 
-  const handleAddTech = (tech: typeof TECH_DICTIONARY[0]) => {
+  const handleAddTech = (tech: TechBadge) => {
     if (techs.find((t) => t.id === tech.id)) return;
     updateBlock(block.id, {
       techs: [...techs, tech],
@@ -81,7 +97,7 @@ export function TechStackBlock({ block }: { block: Block }) {
         handleEditorKeyboardShortcuts(
           e,
           block,
-          blocks,
+          useEditorStore.getState().blocks,
           selectedBlockIds,
           addBlock,
           removeBlocks,
@@ -92,13 +108,13 @@ export function TechStackBlock({ block }: { block: Block }) {
       style={{
         outline: "none",
         width: "100%",
-        padding: "16px",
-        borderRadius: "var(--radius-lg)",
+        padding: "12px",
+        borderRadius: "var(--radius-md)",
         border: "1px solid var(--border-subtle)",
         background: "var(--bg-surface)",
         display: "flex",
         flexDirection: "column",
-        gap: 16,
+        gap: 8,
       }}
     >
       {/* Controls */}
@@ -108,18 +124,18 @@ export function TechStackBlock({ block }: { block: Block }) {
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          gap: 16,
-          padding: "10px 14px",
+          gap: 8,
+          padding: "4px 8px",
           background: "var(--bg-base)",
-          borderRadius: "var(--radius-md)",
+          borderRadius: "var(--radius-sm)",
           border: "1px solid var(--border-subtle)",
           userSelect: "none",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1 }}>
-          <LayoutTemplate size={16} color="var(--text-muted)" />
-          <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, position: "relative" }} ref={dropdownRef}>
-            <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", whiteSpace: "nowrap" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1 }}>
+          <LayoutTemplate size={14} color="var(--text-muted)" />
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flex: 1, position: "relative" }} ref={dropdownRef}>
+            <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", whiteSpace: "nowrap" }}>
               Add Tech:
             </span>
             <input
@@ -130,40 +146,28 @@ export function TechStackBlock({ block }: { block: Block }) {
                 setSearch(e.target.value);
                 setShowDropdown(true);
               }}
-              style={{
-                flex: 1,
-                maxWidth: 240,
-                padding: "4px 8px",
-                fontSize: 12,
-                background: "var(--bg-surface)",
-                border: "1px solid var(--border)",
-                borderRadius: "var(--radius-sm)",
-                color: "var(--text-primary)",
-                outline: "none",
-              }}
+              className="ide-input"
+              style={{ flex: 1, maxWidth: 240 }}
               placeholder="Search e.g. React..."
             />
             {showDropdown && (
               <div
+                className="ide-menu"
                 style={{
-                  position: "absolute",
-                  top: "100%",
                   left: 60,
                   marginTop: 4,
                   width: 240,
                   maxHeight: 200,
                   overflowY: "auto",
-                  background: "var(--bg-base)",
-                  border: "1px solid var(--border)",
-                  borderRadius: "var(--radius-md)",
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                  zIndex: 50,
                   display: "flex",
                   flexDirection: "column",
-                  padding: 4,
                 }}
               >
-                {filteredTech.length === 0 ? (
+                {!dictionary ? (
+                  <div style={{ padding: "8px 12px", fontSize: 12, color: "var(--text-muted)" }}>
+                    Loading technologies…
+                  </div>
+                ) : filteredTech.length === 0 ? (
                   <div style={{ padding: "8px 12px", fontSize: 12, color: "var(--text-muted)" }}>
                     No exact match found in curated list.
                   </div>
@@ -175,21 +179,7 @@ export function TechStackBlock({ block }: { block: Block }) {
                         e.stopPropagation();
                         handleAddTech(tech);
                       }}
-                      style={{
-                        padding: "6px 8px",
-                        background: "transparent",
-                        border: "none",
-                        textAlign: "left",
-                        fontSize: 12,
-                        color: "var(--text-primary)",
-                        cursor: "pointer",
-                        borderRadius: "var(--radius-sm)",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 8,
-                      }}
-                      onMouseEnter={(e) => (e.currentTarget.style.background = "var(--bg-surface)")}
-                      onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                      className="ide-menu-item"
                     >
                       <img
                         src={`https://img.shields.io/badge/-${tech.color}?style=flat&logo=${tech.logo}&logoColor=white`}
@@ -214,7 +204,7 @@ export function TechStackBlock({ block }: { block: Block }) {
                       });
                     }}
                     style={{
-                      padding: "6px 8px",
+                      padding: "5px 10px",
                       background: "transparent",
                       border: "none",
                       borderTop: "1px solid var(--border-subtle)",
@@ -227,8 +217,9 @@ export function TechStackBlock({ block }: { block: Block }) {
                       display: "flex",
                       alignItems: "center",
                       gap: 8,
+                      transition: "background 0.1s ease",
                     }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = "var(--bg-surface)")}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = "var(--bg-hover)")}
                     onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                   >
                     + Add custom &quot;{search.trim()}&quot; badge
@@ -241,60 +232,30 @@ export function TechStackBlock({ block }: { block: Block }) {
 
         <div style={{ width: 1, height: 16, background: "var(--border)" }} />
 
-        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
           <button
             onClick={() => handleUpdateAlignment("left")}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: 28,
-              height: 28,
-              borderRadius: "var(--radius-sm)",
-              border: "1px solid transparent",
-              background: alignment === "left" ? "var(--bg-surface)" : "transparent",
-              color: alignment === "left" ? "var(--text-primary)" : "var(--text-muted)",
-              cursor: "pointer",
-            }}
+            className={alignment === "left" ? "ide-btn active" : "ide-btn"}
+            style={{ width: 26, padding: 0 }}
             title="Align Left"
           >
-            <AlignLeft size={16} />
+            <AlignLeft size={15} />
           </button>
           <button
             onClick={() => handleUpdateAlignment("center")}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: 28,
-              height: 28,
-              borderRadius: "var(--radius-sm)",
-              border: "1px solid transparent",
-              background: alignment === "center" ? "var(--bg-surface)" : "transparent",
-              color: alignment === "center" ? "var(--text-primary)" : "var(--text-muted)",
-              cursor: "pointer",
-            }}
+            className={alignment === "center" ? "ide-btn active" : "ide-btn"}
+            style={{ width: 26, padding: 0 }}
             title="Align Center"
           >
-            <AlignCenter size={16} />
+            <AlignCenter size={15} />
           </button>
           <button
             onClick={() => handleUpdateAlignment("right")}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: 28,
-              height: 28,
-              borderRadius: "var(--radius-sm)",
-              border: "1px solid transparent",
-              background: alignment === "right" ? "var(--bg-surface)" : "transparent",
-              color: alignment === "right" ? "var(--text-primary)" : "var(--text-muted)",
-              cursor: "pointer",
-            }}
+            className={alignment === "right" ? "ide-btn active" : "ide-btn"}
+            style={{ width: 26, padding: 0 }}
             title="Align Right"
           >
-            <AlignRight size={16} />
+            <AlignRight size={15} />
           </button>
         </div>
       </div>
@@ -357,7 +318,6 @@ export function TechStackBlock({ block }: { block: Block }) {
                   cursor: "pointer",
                   opacity: 0,
                   transition: "opacity 0.15s ease",
-                  boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
                   zIndex: 10,
                 }}
                 title="Remove"

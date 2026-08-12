@@ -60,7 +60,7 @@ export function HeadingBlock({ block }: { block: Block }) {
           letterSpacing: level === 1 ? "-0.03em" : "-0.01em",
         }}
         topUI={
-          <div style={{ display: "flex", gap: 6, marginBottom: 2 }}>
+          <div style={{ display: "flex", gap: 4, marginBottom: 2 }}>
             {[1, 2, 3, 4, 5, 6].map((l) => (
               <button
                 key={l}
@@ -71,14 +71,15 @@ export function HeadingBlock({ block }: { block: Block }) {
                 style={{
                   padding: "1px 7px",
                   fontSize: 11,
-                  fontWeight: 700,
-                  borderRadius: 4,
+                  fontWeight: 600,
+                  borderRadius: "var(--radius-sm)",
                   border: "1px solid",
                   borderColor: level === l ? "var(--accent)" : "var(--border)",
                   background: level === l ? "var(--accent-muted)" : "transparent",
                   color: level === l ? "var(--accent)" : "var(--text-muted)",
                   cursor: "pointer",
                   fontFamily: "var(--font-mono)",
+                  transition: "background 0.1s ease, color 0.1s ease, border-color 0.1s ease",
                 }}
               >
                 H{l}
